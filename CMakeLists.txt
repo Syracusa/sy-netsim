@@ -13,3 +13,5 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(cjson)
 add_subdirectory(simulator)
+add_subdirectory(simnet)
+add_subdirectory(simmac)
