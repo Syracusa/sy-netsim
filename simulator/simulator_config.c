@@ -4,11 +4,17 @@
 #include "cJSON.h"
 
 #include "log.h"
-#include "config.h"
+#include "simulator_config.h"
 
 static char *read_file(const char *filename)
 {
     FILE *f = fopen(filename, "r");
+
+    if (!f){
+        fprintf(stderr, "Can't open file %s\n", filename);
+        exit(2);
+    }
+
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET); /* same as rewind(f); */
@@ -22,11 +28,11 @@ static char *read_file(const char *filename)
     return string;
 }
 
-void parse_config(SimPhyCtx *spctx)
+void parse_config(SimulatorCtx *sctx)
 {
     char *config_string = read_file("../config.json");
     cJSON *json = cJSON_Parse(config_string);
-    if (json == NULL){
+    if (json == NULL) {
         const char *error_ptr = cJSON_GetErrorPtr();
         fprintf(stderr, "Config file parse error!\n");
         if (error_ptr != NULL)
@@ -39,8 +45,9 @@ void parse_config(SimPhyCtx *spctx)
 
     cJSON *node_list_json = cJSON_GetObjectItemCaseSensitive(json, "nodes");
     if (cJSON_IsArray(node_list_json)) {
-        cJSON *node_id_json = NULL; 
-        cJSON_ArrayForEach(node_id_json, node_list_json) {
+        cJSON *node_id_json = NULL;
+        cJSON_ArrayForEach(node_id_json, node_list_json)
+        {
             if (cJSON_IsNumber(node_id_json)) {
                 LOGD("Node ID : %d\n", node_id_json->valueint);
             } else {

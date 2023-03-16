@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "simphy.h": "c"
+        "simphy.h": "c",
+        "simulator.h": "c",
+        "time.h": "c"
     }
 }

@@ -67,7 +67,7 @@ static void delete_context(SimPhyCtx* spctx)
 
 int main()
 {
-    printf("SIMNET STARTED\n");
+    printf("SIMPHY STARTED\n");
     SimPhyCtx *spctx = create_context();
 
     /* TODO : Read config from file */
