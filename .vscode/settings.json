@@ -2,6 +2,12 @@
     "files.associations": {
         "simphy.h": "c",
         "simulator.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "array": "c",
+        "string": "c",
+        "buffer": "c",
+        "internet": "c",
+        "socket": "c",
+        "string_view": "c"
     }
 }
