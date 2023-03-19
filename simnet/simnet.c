@@ -7,12 +7,16 @@
 
 #include "mq.h"
 #include "util.h"
+#include "timerqueue.h"
 
 #include "log.h"
 #include "params.h"
 
+
+
 typedef struct
 {
+    TqCtx *timerqueue;
     int node_id;
 
     int mqid_recv_mac;
@@ -62,8 +66,7 @@ void mainloop(SimNetCtx *snctx)
     while (1) {
         clock_gettime(CLOCK_REALTIME, &before);
 
-        // send_mq(snctx);
-        // recv_mq(snctx);
+        timerqueue_work(snctx->timerqueue);
 
         clock_gettime(CLOCK_REALTIME, &after);
         timespec_sub(&after, &before, &diff);
@@ -75,14 +78,16 @@ void mainloop(SimNetCtx *snctx)
     }
 }
 
-static SimNetCtx *create_simmac_context()
+static SimNetCtx *create_simnet_context()
 {
     SimNetCtx *snctx = malloc(sizeof(SimNetCtx));
     memset(snctx, 0x00, sizeof(SimNetCtx));
+
+    snctx->timerqueue = create_timerqueue();
     return snctx;
 }
 
-static void delete_simmac_context(SimNetCtx *snctx)
+static void delete_simnet_context(SimNetCtx *snctx)
 {
     free(snctx);
 }
@@ -103,13 +108,32 @@ static void parse_arg(SimNetCtx *snctx, int argc, char *argv[])
     printf("SIMMAC NODE ID : %u\n", snctx->node_id);
 }
 
+static void send_dummy_packet(void *arg)
+{
+    SimNetCtx *snctx = arg;
+    fprintf(stderr, "Dummy send test! nid : %u\n", snctx->node_id);
+}
+
+static void register_works(SimNetCtx *snctx)
+{
+    static TqElem dummygen;
+    dummygen.arg = snctx;
+    dummygen.callback = send_dummy_packet;
+    dummygen.use_once = 0;
+    dummygen.interval_us = 1000000;
+
+    register_timerqueue_job(snctx->timerqueue, &dummygen);
+}
+
 int main(int argc, char *argv[])
 {
-    SimNetCtx *snctx = create_simmac_context();
+    SimNetCtx *snctx = create_simnet_context();
     parse_arg(snctx, argc, argv);
+
+    register_works(snctx);
 
     mainloop(snctx);
 
-    delete_simmac_context(snctx);
+    delete_simnet_context(snctx);
     return 0;
 }
