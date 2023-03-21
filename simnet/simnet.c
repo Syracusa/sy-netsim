@@ -114,15 +114,30 @@ static void send_dummy_packet(void *arg)
     fprintf(stderr, "Dummy send test! nid : %u\n", snctx->node_id);
 }
 
+static void send_dummy_log_to_simulator(void *arg)
+{
+    fprintf(stderr, "TODO : Send dummy log to simulator\n");
+}
+
 static void register_works(SimNetCtx *snctx)
 {
-    static TqElem dummygen;
-    dummygen.arg = snctx;
-    dummygen.callback = send_dummy_packet;
-    dummygen.use_once = 0;
-    dummygen.interval_us = 1000000;
+    static TqElem dummy_pkt_gen;
+    dummy_pkt_gen.arg = snctx;
+    dummy_pkt_gen.callback = send_dummy_packet;
+    dummy_pkt_gen.use_once = 0;
+    dummy_pkt_gen.interval_us = 1000000;
 
-    timerqueue_register_job(snctx->timerqueue, &dummygen);
+    timerqueue_register_job(snctx->timerqueue, &dummy_pkt_gen);
+
+
+    static TqElem dummy_log_gen;
+    dummy_log_gen.arg = snctx;
+    dummy_log_gen.callback = send_dummy_log_to_simulator;
+    dummy_log_gen.use_once = 0;
+    dummy_log_gen.interval_us = 1000000;
+
+    timerqueue_register_job(snctx->timerqueue, &dummy_log_gen);
+
 }
 
 int main(int argc, char *argv[])
