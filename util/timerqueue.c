@@ -29,7 +29,7 @@ static int compare_elem(const void *k1, const void *k2)
     }
 }
 
-void register_timerqueue_job(TqCtx *tq, TqElem *elem)
+void timerqueue_register_job(TqCtx *tq, TqElem *elem)
 {
     clock_gettime(CLOCK_REALTIME, &elem->priv_rbk.expire);
     timespec_add_usec(&elem->priv_rbk.expire, elem->interval_us);

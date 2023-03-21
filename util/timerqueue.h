@@ -85,7 +85,7 @@ static inline int check_expire(struct timespec *expiretime,
 }
 
 
-void register_timerqueue_job(TqCtx *tq, TqElem *elem);
+void timerqueue_register_job(TqCtx *tq, TqElem *elem);
 TqCtx *create_timerqueue();
 void timerqueue_work(TqCtx *tq);
 

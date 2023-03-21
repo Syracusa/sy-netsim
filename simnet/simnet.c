@@ -122,7 +122,7 @@ static void register_works(SimNetCtx *snctx)
     dummygen.use_once = 0;
     dummygen.interval_us = 1000000;
 
-    register_timerqueue_job(snctx->timerqueue, &dummygen);
+    timerqueue_register_job(snctx->timerqueue, &dummygen);
 }
 
 int main(int argc, char *argv[])
