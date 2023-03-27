@@ -12,7 +12,7 @@ typedef struct
 
 typedef struct 
 {
-    uint16_t node_id;
+    int node_id;
     MacConnCtx macconn;
 } NodeCtx;
 

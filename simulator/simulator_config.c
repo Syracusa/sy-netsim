@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "cJSON.h"
 
@@ -26,6 +27,15 @@ static char *read_file(const char *filename)
     string[fsize] = 0;
 
     return string;
+}
+
+static void activate_node(SimulatorCtx* sctx, int node_id)
+{
+    if (node_id < 0 && node_id >= MAX_NODE_ID) {
+        fprintf(stderr, "Unavailable node id : %d\n", node_id);
+        exit(2);
+    }
+    sctx->nodes[node_id].active = 1;
 }
 
 void parse_config(SimulatorCtx *sctx)

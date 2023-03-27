@@ -1,6 +1,8 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
+#include <stdint.h>
+
 #define MAX_NODE_ID 128
 
 #define MQ_KEY_MAC_TO_NET   0x0100

@@ -8,6 +8,7 @@
         "buffer": "c",
         "internet": "c",
         "socket": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "params.h": "c"
     }
 }

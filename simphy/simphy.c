@@ -3,11 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include "simphy.h"
 
 #include "log.h"
-#include "config.h"
+#include "params.h"
 
 
 static void send_to_remote_mac(SimPhyCtx *spctx,
