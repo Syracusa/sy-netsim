@@ -60,6 +60,7 @@ void parse_config(SimulatorCtx *sctx)
         {
             if (cJSON_IsNumber(node_id_json)) {
                 LOGD("Node ID : %d\n", node_id_json->valueint);
+                activate_node(sctx, node_id_json->valueint);
             } else {
                 fprintf(stderr, "Node id is not a number!\n");
                 exit(2);

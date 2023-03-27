@@ -37,29 +37,26 @@ static void recv_from_local_mac(SimPhyCtx *spctx,
                                 void *data,
                                 size_t len)
 {
-    for (int i = 0; i < MAX_NODE_ID; i++)
-    {
+    for (int i = 0; i < MAX_NODE_ID; i++) {
         MacConnCtx *mac_conn = &(spctx->node[i].macconn);
-        if (mac_conn->alive)
-        {
+        if (mac_conn->alive) {
             send_to_local_mac(spctx, i, data, len);
         }
     }
 }
 
-
 static SimPhyCtx *create_context()
 {
-    SimPhyCtx* spctx = malloc(sizeof(SimPhyCtx));
+    SimPhyCtx *spctx = malloc(sizeof(SimPhyCtx));
     memset(spctx, 0x00, sizeof(SimPhyCtx));
 
-    for (int i = 0; i < MAX_NODE_ID; i++){
+    for (int i = 0; i < MAX_NODE_ID; i++) {
         spctx->node[i].node_id = i;
     }
     return spctx;
 }
 
-static void delete_context(SimPhyCtx* spctx)
+static void delete_context(SimPhyCtx *spctx)
 {
     free(spctx);
 }
@@ -69,8 +66,6 @@ int main()
     printf("SIMPHY STARTED\n");
     SimPhyCtx *spctx = create_context();
 
-    /* TODO : Read config from file */
-    parse_config(spctx);
 
     delete_context(spctx);
 }

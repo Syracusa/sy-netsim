@@ -130,7 +130,7 @@ static void parse_arg(SimNetCtx *snctx, int argc, char *argv[])
         fprintf(stderr, "Can't parse nodeID from [%s]\n", argv[1]);
         exit(2);
     }
-    printf("SIMMAC NODE ID : %u\n", snctx->node_id);
+    printf("SIMNET NODE ID : %u\n", snctx->node_id);
 }
 
 static void send_dummy_packet(void *arg)
