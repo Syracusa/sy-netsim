@@ -12,8 +12,6 @@
 #include "log.h"
 #include "params.h"
 
-
-
 typedef struct
 {
     TqCtx *timerqueue;
@@ -54,9 +52,25 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
     }
 }
 
+void process_mac_msg(SimNetCtx* snctx, void* data, int len)
+{
+    /* TODO */
+    printf("Packet received. len : %d\n", len);
+}
+
 void recvfrom_mac(SimNetCtx *snctx)
 {
-
+    MqMsgbuf msg;
+    while (1) {
+        ssize_t res = msgrcv(snctx->mqid_recv_mac, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
+        if (res < 0) {
+            if (errno != ENOMSG) {
+                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+            }
+            break;
+        }
+        process_mac_msg(snctx, msg.text, res);
+    }
 }
 
 void mainloop(SimNetCtx *snctx)
@@ -112,6 +126,7 @@ static void send_dummy_packet(void *arg)
 {
     SimNetCtx *snctx = arg;
     fprintf(stderr, "Dummy send test! nid : %u\n", snctx->node_id);
+    /* TODO */
 }
 
 static void send_dummy_log_to_simulator(void *arg)

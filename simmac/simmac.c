@@ -41,6 +41,25 @@ void init_mq(SimMacCtx *smctx)
     mq_flush(smctx->mqid_recv_phy);
 }
 
+void sendto_net(SimMacCtx *smctx, void* data, size_t len, long type)
+{
+    MqMsgbuf msg;
+    msg.type = type;
+
+    if (len > MQ_MAX_DATA_LEN){
+        fprintf(stderr, "Can't send data with length %lu\n", len);
+    }
+    memcpy(msg.text, data, len);
+    int ret = msgsnd(smctx->mqid_send_net, &msg, len, IPC_NOWAIT);
+    if (ret < 0){
+        if (errno == EAGAIN){
+            fprintf(stderr, "Message queue full!\n");
+        } else {
+            fprintf(stderr, "Can't send to net(%s)\n", strerror(errno));
+        }
+    }
+}
+
 void sendto_phy(SimMacCtx *smctx, void* data, size_t len, long type)
 {
     MqMsgbuf msg;
@@ -60,9 +79,45 @@ void sendto_phy(SimMacCtx *smctx, void* data, size_t len, long type)
     }
 }
 
+void process_net_msg(SimMacCtx* smctx, void* data, int len)
+{
+    /* TODO */
+    printf("Packet received from net. len : %d\n", len);
+}
+
+void process_phy_msg(SimMacCtx* smctx, void* data, int len)
+{
+    /* TODO */
+    printf("Packet received from phy. len : %d\n", len);
+}
+
 void recv_mq(SimMacCtx *smctx)
 {
+    MqMsgbuf msg;
+    
+    /* Receive from net */
+    while (1) {
+        ssize_t res = msgrcv(smctx->mqid_recv_net, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
+        if (res < 0) {
+            if (errno != ENOMSG) {
+                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+            }
+            break;
+        }
+        process_net_msg(smctx, msg.text, res);
+    }
 
+    /* Receive from phy */
+    while (1) {
+        ssize_t res = msgrcv(smctx->mqid_recv_phy, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
+        if (res < 0) {
+            if (errno != ENOMSG) {
+                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+            }
+            break;
+        }
+        process_phy_msg(smctx, msg.text, res);
+    }
 }
 
 void mainloop(SimMacCtx *smctx)
@@ -72,8 +127,7 @@ void mainloop(SimMacCtx *smctx)
     while (1) {
         clock_gettime(CLOCK_REALTIME, &before);
 
-        // send_mq(smctx);
-        // recv_mq(smctx);
+        recv_mq(smctx);
 
         clock_gettime(CLOCK_REALTIME, &after);
         timespec_sub(&after, &before, &diff);
