@@ -108,16 +108,16 @@ void recv_mq(SimMacCtx *smctx)
     }
 
     /* Receive from phy */
-    while (1) {
-        ssize_t res = msgrcv(smctx->mqid_recv_phy, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
-        if (res < 0) {
-            if (errno != ENOMSG) {
-                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
-            }
-            break;
-        }
-        process_phy_msg(smctx, msg.text, res);
-    }
+    // while (1) {
+    //     ssize_t res = msgrcv(smctx->mqid_recv_phy, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
+    //     if (res < 0) {
+    //         if (errno != ENOMSG) {
+    //             fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+    //         }
+    //         break;
+    //     }
+    //     process_phy_msg(smctx, msg.text, res);
+    // }
 }
 
 void mainloop(SimMacCtx *smctx)
@@ -170,7 +170,9 @@ static void parse_arg(SimMacCtx *smctx, int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     SimMacCtx *smctx = create_simmac_context();
+    
     parse_arg(smctx, argc, argv);
+    init_mq(smctx);
 
     mainloop(smctx);
 

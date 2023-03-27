@@ -8,6 +8,7 @@
 #include "mq.h"
 #include "util.h"
 #include "timerqueue.h"
+#include "netutil.h"
 
 #include "log.h"
 #include "params.h"
@@ -25,6 +26,10 @@ void init_mq(SimNetCtx *snctx)
 {
     int mqkey_send_mac = MQ_KEY_NET_TO_MAC + snctx->node_id;
     snctx->mqid_send_mac = msgget(mqkey_send_mac, IPC_CREAT | 0666);
+    if (snctx->mqid_send_mac < 0) {
+        fprintf(stderr, "msgget() failed!\n");
+        exit(2);
+    }
 
     int mqkey_recv_mac = MQ_KEY_MAC_TO_NET + snctx->node_id;
     snctx->mqid_recv_mac = msgget(mqkey_recv_mac, IPC_CREAT | 0666);
@@ -35,6 +40,12 @@ void init_mq(SimNetCtx *snctx)
 
 void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
 {
+    /* The mtype field must have a strictly positive integer value. */
+    if (type < 1){
+        fprintf(stderr, "Can't send meg with type %ld\n", type);
+        return;
+    }
+
     MqMsgbuf msg;
     msg.type = type;
 
@@ -47,15 +58,15 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
         if (errno == EAGAIN) {
             fprintf(stderr, "Message queue full!\n");
         } else {
-            fprintf(stderr, "Can't send to phy(%s)\n", strerror(errno));
+            fprintf(stderr, "Can't send to mac. mqid: %d len: %lu(%s)\n",
+                    snctx->mqid_send_mac, len, strerror(errno));
         }
     }
 }
 
-void process_mac_msg(SimNetCtx* snctx, void* data, int len)
+void process_mac_msg(SimNetCtx *snctx, void *data, int len)
 {
-    /* TODO */
-    printf("Packet received. len : %d\n", len);
+    printf("Msg from mac received. len : %d\n", len);
 }
 
 void recvfrom_mac(SimNetCtx *snctx)
@@ -126,12 +137,16 @@ static void send_dummy_packet(void *arg)
 {
     SimNetCtx *snctx = arg;
     fprintf(stderr, "Dummy send test! nid : %u\n", snctx->node_id);
-    /* TODO */
+
+    PktBuf pkb;
+    memset(&pkb, 0x00, sizeof(PktBuf));
+
+    sendto_mac(snctx, &pkb.iph, 100, 1);
 }
 
 static void send_dummy_log_to_simulator(void *arg)
 {
-    fprintf(stderr, "TODO : Send dummy log to simulator\n");
+    // fprintf(stderr, "TODO : Send dummy log to simulator\n");
 }
 
 static void register_works(SimNetCtx *snctx)
@@ -158,7 +173,9 @@ static void register_works(SimNetCtx *snctx)
 int main(int argc, char *argv[])
 {
     SimNetCtx *snctx = create_simnet_context();
+
     parse_arg(snctx, argc, argv);
+    init_mq(snctx);
 
     register_works(snctx);
 
