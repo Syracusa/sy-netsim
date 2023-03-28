@@ -26,10 +26,6 @@ void init_mq(SimNetCtx *snctx)
 {
     int mqkey_send_mac = MQ_KEY_NET_TO_MAC + snctx->node_id;
     snctx->mqid_send_mac = msgget(mqkey_send_mac, IPC_CREAT | 0666);
-    if (snctx->mqid_send_mac < 0) {
-        fprintf(stderr, "msgget() failed!\n");
-        exit(2);
-    }
 
     int mqkey_recv_mac = MQ_KEY_MAC_TO_NET + snctx->node_id;
     snctx->mqid_recv_mac = msgget(mqkey_recv_mac, IPC_CREAT | 0666);
@@ -66,7 +62,15 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
 
 void process_mac_msg(SimNetCtx *snctx, void *data, int len)
 {
-    TLOGI("Msg from mac received. len : %d\n", len);
+    PktBuf pkb;
+    memcpy(&pkb.iph, data, len);
+    pkb.payload_len = len - IPUDP_HDRLEN;
+
+    if (PKT_HEXDUMP)
+        hexdump(data, len, stdout);
+    
+    TLOGD("Recv pkt. %s <- %s(Payloadsz: %ld)\n",
+          ip2str(pkb.iph.daddr), ip2str(pkb.iph.saddr), pkb.payload_len);
 }
 
 void recvfrom_mac(SimNetCtx *snctx)
@@ -92,6 +96,7 @@ void mainloop(SimNetCtx *snctx)
         clock_gettime(CLOCK_REALTIME, &before);
 
         timerqueue_work(snctx->timerqueue);
+        recvfrom_mac(snctx);
 
         clock_gettime(CLOCK_REALTIME, &after);
         timespec_sub(&after, &before, &diff);
@@ -149,10 +154,13 @@ static void send_dummy_packet(void *arg)
                  sender_ip, receiver_ip, IPPROTO_UDP);
     build_udp_hdr_no_checksum(&(pkb.udph), 29111, 29112, pkb.payload_len);
 
-    TLOGD("Send dummy pkt. %s->%s payload len %ld\n",
+    TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %ld)\n",
           ip2str(pkb.iph.saddr), ip2str(pkb.iph.daddr), pkb.payload_len);
 
-    sendto_mac(snctx, &(pkb.iph), 100, 1);
+    if (PKT_HEXDUMP)
+        hexdump(&pkb.iph, pkb.payload_len + IPUDP_HDRLEN, stdout);
+    
+    sendto_mac(snctx, &(pkb.iph), 100 + IPUDP_HDRLEN, 1);
 }
 
 static void send_dummy_log_to_simulator(void *arg)
@@ -182,9 +190,7 @@ static void register_works(SimNetCtx *snctx)
 int main(int argc, char *argv[])
 {
     SimNetCtx *snctx = create_simnet_context();
-
     parse_arg(snctx, argc, argv);
-
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
 
     init_mq(snctx);

@@ -15,7 +15,7 @@
 
 typedef struct PktBuf
 {
-    /* Packet itself*/
+    /* Packet itself */
     unsigned char ether_margin[MAX_ETHER_HEADER_MARGIN];
     struct iphdr iph;
     struct udphdr udph;

@@ -1,9 +1,12 @@
-#include <sys/prctl.h>
+
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <sys/types.h> 
+#include <sys/prctl.h>
 
 #include "log.h"
 
@@ -71,8 +74,8 @@ static void start_phy()
         if (r == -1)
             fprintf(stderr, "prctl() failed!\n");
         printf("Simphy start with PID%d\n", (int)getpid());
-        const char *file = "./bin/simphy";  
-        execl(file, file, NULL);   
+        const char *file = "./bin/simphy";
+        execl(file, file, NULL);
     }
 }
 

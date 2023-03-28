@@ -23,18 +23,23 @@ void init_mq(SimPhyCtx *spctx)
         int mqkey_recv_mac = MQ_KEY_MAC_TO_PHY + nid;
         spctx->nodes[nid].mqid_recv_mac = msgget(mqkey_recv_mac, IPC_CREAT | 0666);
         mq_flush(spctx->nodes[nid].mqid_recv_mac);
+
+        if (DEBUG_MQ)
+            TLOGI("Message Queue ID(Node %d) : MAC->PHY %d(%d)   PHY->MAC %d(%d)\n", nid,
+                spctx->nodes[nid].mqid_recv_mac, mqkey_recv_mac,
+                spctx->nodes[nid].mqid_send_mac, mqkey_send_mac);
     }
 }
 
 static void send_to_remote_mac(SimPhyCtx *spctx,
-                               uint8_t id,
+                               int id,
                                void *data, size_t len)
 {
     /* TODO : Multicast */
 }
 
 static void recv_from_remote_mac(SimPhyCtx *spctx,
-                                 uint8_t id,
+                                 int id,
                                  void *data,
                                  size_t len)
 {
@@ -42,7 +47,7 @@ static void recv_from_remote_mac(SimPhyCtx *spctx,
 }
 
 static void send_to_local_mac(SimPhyCtx *spctx,
-                              uint8_t receiver_nid,
+                              int receiver_nid,
                               void *data,
                               size_t len,
                               long type)
@@ -66,13 +71,13 @@ static void send_to_local_mac(SimPhyCtx *spctx,
             TLOGE("Message queue full!\n");
         } else {
             TLOGE("Can't send to mac. mqid: %d len: %lu(%s)\n",
-                    spctx->nodes[receiver_nid].mqid_send_mac, len, strerror(errno));
+                  spctx->nodes[receiver_nid].mqid_send_mac, len, strerror(errno));
         }
     }
 }
 
 static void process_mac_msg(SimPhyCtx *spctx,
-                            uint8_t sender_nid,
+                            int sender_nid,
                             void *data,
                             size_t len)
 {

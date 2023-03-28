@@ -37,24 +37,33 @@ void init_mq(SimMacCtx *smctx)
     int mqkey_recv_phy = MQ_KEY_PHY_TO_MAC + smctx->node_id;
     smctx->mqid_recv_phy = msgget(mqkey_recv_phy, IPC_CREAT | 0666);
 
+    if (DEBUG_MQ) {
+        TLOGI("Message Queue ID : NET -> %d(%d) MAC %d(%d) -> PHY\n",
+              smctx->mqid_recv_net, mqkey_recv_net,
+              smctx->mqid_send_phy, mqkey_send_phy);
+        TLOGI("Message Queue ID : NET <- %d(%d) MAC %d(%d) <- PHY\n",
+              smctx->mqid_send_net, mqkey_send_net,
+              smctx->mqid_recv_phy, mqkey_recv_phy);
+    }
+
     mq_flush(smctx->mqid_send_net);
     mq_flush(smctx->mqid_recv_net);
     mq_flush(smctx->mqid_send_phy);
     mq_flush(smctx->mqid_recv_phy);
 }
 
-void sendto_net(SimMacCtx *smctx, void* data, size_t len, long type)
+void sendto_net(SimMacCtx *smctx, void *data, size_t len, long type)
 {
     MqMsgbuf msg;
     msg.type = type;
 
-    if (len > MQ_MAX_DATA_LEN){
+    if (len > MQ_MAX_DATA_LEN) {
         TLOGE("Can't send data with length %lu\n", len);
     }
     memcpy(msg.text, data, len);
     int ret = msgsnd(smctx->mqid_send_net, &msg, len, IPC_NOWAIT);
-    if (ret < 0){
-        if (errno == EAGAIN){
+    if (ret < 0) {
+        if (errno == EAGAIN) {
             TLOGE("Message queue full!\n");
         } else {
             TLOGE("Can't send to net(%s)\n", strerror(errno));
@@ -62,18 +71,18 @@ void sendto_net(SimMacCtx *smctx, void* data, size_t len, long type)
     }
 }
 
-void sendto_phy(SimMacCtx *smctx, void* data, size_t len, long type)
+void sendto_phy(SimMacCtx *smctx, void *data, size_t len, long type)
 {
     MqMsgbuf msg;
     msg.type = type;
 
-    if (len > MQ_MAX_DATA_LEN){
+    if (len > MQ_MAX_DATA_LEN) {
         TLOGE("Can't send data with length %lu\n", len);
     }
     memcpy(msg.text, data, len);
     int ret = msgsnd(smctx->mqid_send_phy, &msg, len, IPC_NOWAIT);
-    if (ret < 0){
-        if (errno == EAGAIN){
+    if (ret < 0) {
+        if (errno == EAGAIN) {
             TLOGE("Message queue full!\n");
         } else {
             TLOGE("Can't send to phy(%s)\n", strerror(errno));
@@ -81,13 +90,13 @@ void sendto_phy(SimMacCtx *smctx, void* data, size_t len, long type)
     }
 }
 
-void process_net_msg(SimMacCtx* smctx, void* data, int len)
+void process_net_msg(SimMacCtx *smctx, void *data, int len)
 {
     TLOGI("Packet received from net. len : %d\n", len);
     sendto_phy(smctx, data, len, 1);
 }
 
-void process_phy_msg(SimMacCtx* smctx, void* data, int len)
+void process_phy_msg(SimMacCtx *smctx, void *data, int len)
 {
     TLOGI("Packet received from phy. len : %d\n", len);
     sendto_net(smctx, data, len, 1);
@@ -96,7 +105,7 @@ void process_phy_msg(SimMacCtx* smctx, void* data, int len)
 void recv_mq(SimMacCtx *smctx)
 {
     MqMsgbuf msg;
-    
+
     /* Receive from net */
     while (1) {
         ssize_t res = msgrcv(smctx->mqid_recv_net, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
