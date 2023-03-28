@@ -8,6 +8,8 @@
 #include <string.h>
 #include <time.h>
 
+static char dbgname[10] = "";
+
 #ifndef LOG_LEVEL
 #define LOG_LEVEL (7)
 #endif
@@ -32,7 +34,10 @@
 
 /* Modify this macro to specify scope */
 #define DEFAULT_LOG_HDR " "
+
+#ifndef LOG_HDR
 #define LOG_HDR DEFAULT_LOG_HDR
+#endif
 
 /* Color list */
 #define COLOR_NONE                 "\e[0m"
@@ -78,7 +83,7 @@
 #define WLOGD(M, ...) _WLOGPRT(DEBUG_LOGCOLOR, "D", M,  ##__VA_ARGS__)
 
 /* Log macro with Time */
-#define _TLOGPRT(_color, _loglv, M, ...) do { char _tbuf[20]; _GET_CURRTIME(_tbuf); fprintf(stderr, _color _loglv COLOR_NONE " " LOG_HDR  "%s "  M, _tbuf, ##__VA_ARGS__); } while(0)
+#define _TLOGPRT(_color, _loglv, M, ...) do { char _tbuf[20]; _GET_CURRTIME(_tbuf); fprintf(stderr, _color _loglv COLOR_NONE " "  "%s %-7s"  M, _tbuf, dbgname, ##__VA_ARGS__); } while(0)
 #define TLOGF(M, ...) _TLOGPRT(FATAL_LOGCOLOR, "F", M,  ##__VA_ARGS__)
 #define TLOGC(M, ...) _TLOGPRT(CRITICAL_LOGCOLOR, "C", M,  ##__VA_ARGS__)
 #define TLOGE(M, ...) _TLOGPRT(ERROR_LOGCOLOR, "E", M,  ##__VA_ARGS__)

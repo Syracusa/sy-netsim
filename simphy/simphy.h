@@ -4,21 +4,18 @@
 #include <stdint.h>
 #include "params.h"
 
-
-typedef struct
-{
-    uint8_t alive;
-} MacConnCtx;
-
 typedef struct 
 {
-    int node_id;
-    MacConnCtx macconn;
+    int alive;
+
+    int mqid_send_mac;
+    int mqid_recv_mac;
 } NodeCtx;
 
 typedef struct
 {
-    NodeCtx node[MAX_NODE_ID];
+    NodeCtx nodes[MAX_NODE_ID];
+    
 } SimPhyCtx;
 
 #endif

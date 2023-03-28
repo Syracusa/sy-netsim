@@ -9,6 +9,7 @@
         "internet": "c",
         "socket": "c",
         "string_view": "c",
-        "params.h": "c"
+        "params.h": "c",
+        "stdint.h": "c"
     }
 }

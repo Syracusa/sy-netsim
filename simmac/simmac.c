@@ -11,6 +11,8 @@
 #include "log.h"
 #include "params.h"
 
+extern char dbgname[10];
+
 typedef struct
 {
     int node_id;
@@ -47,15 +49,15 @@ void sendto_net(SimMacCtx *smctx, void* data, size_t len, long type)
     msg.type = type;
 
     if (len > MQ_MAX_DATA_LEN){
-        fprintf(stderr, "Can't send data with length %lu\n", len);
+        TLOGE("Can't send data with length %lu\n", len);
     }
     memcpy(msg.text, data, len);
     int ret = msgsnd(smctx->mqid_send_net, &msg, len, IPC_NOWAIT);
     if (ret < 0){
         if (errno == EAGAIN){
-            fprintf(stderr, "Message queue full!\n");
+            TLOGE("Message queue full!\n");
         } else {
-            fprintf(stderr, "Can't send to net(%s)\n", strerror(errno));
+            TLOGE("Can't send to net(%s)\n", strerror(errno));
         }
     }
 }
@@ -66,28 +68,28 @@ void sendto_phy(SimMacCtx *smctx, void* data, size_t len, long type)
     msg.type = type;
 
     if (len > MQ_MAX_DATA_LEN){
-        fprintf(stderr, "Can't send data with length %lu\n", len);
+        TLOGE("Can't send data with length %lu\n", len);
     }
     memcpy(msg.text, data, len);
     int ret = msgsnd(smctx->mqid_send_phy, &msg, len, IPC_NOWAIT);
     if (ret < 0){
         if (errno == EAGAIN){
-            fprintf(stderr, "Message queue full!\n");
+            TLOGE("Message queue full!\n");
         } else {
-            fprintf(stderr, "Can't send to phy(%s)\n", strerror(errno));
+            TLOGE("Can't send to phy(%s)\n", strerror(errno));
         }
     }
 }
 
 void process_net_msg(SimMacCtx* smctx, void* data, int len)
 {
-    printf("Packet received from net. len : %d\n", len);
+    TLOGI("Packet received from net. len : %d\n", len);
     sendto_phy(smctx, data, len, 1);
 }
 
 void process_phy_msg(SimMacCtx* smctx, void* data, int len)
 {
-    printf("Packet received from phy. len : %d\n", len);
+    TLOGI("Packet received from phy. len : %d\n", len);
     sendto_net(smctx, data, len, 1);
 }
 
@@ -100,7 +102,7 @@ void recv_mq(SimMacCtx *smctx)
         ssize_t res = msgrcv(smctx->mqid_recv_net, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
         if (res < 0) {
             if (errno != ENOMSG) {
-                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+                TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
             }
             break;
         }
@@ -112,7 +114,7 @@ void recv_mq(SimMacCtx *smctx)
         ssize_t res = msgrcv(smctx->mqid_recv_phy, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
         if (res < 0) {
             if (errno != ENOMSG) {
-                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+                TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
             }
             break;
         }
@@ -172,6 +174,8 @@ int main(int argc, char *argv[])
     SimMacCtx *smctx = create_simmac_context();
 
     parse_arg(smctx, argc, argv);
+
+    sprintf(dbgname, "MAC-%-2d", smctx->node_id);
     init_mq(smctx);
 
     mainloop(smctx);

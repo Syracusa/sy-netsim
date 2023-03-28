@@ -42,7 +42,7 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
 {
     /* The mtype field must have a strictly positive integer value. */
     if (type < 1){
-        fprintf(stderr, "Can't send meg with type %ld\n", type);
+        TLOGE("Can't send meg with type %ld\n", type);
         return;
     }
 
@@ -50,15 +50,15 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
     msg.type = type;
 
     if (len > MQ_MAX_DATA_LEN) {
-        fprintf(stderr, "Can't send data with length %lu\n", len);
+        TLOGE("Can't send data with length %lu\n", len);
     }
     memcpy(msg.text, data, len);
     int ret = msgsnd(snctx->mqid_send_mac, &msg, len, IPC_NOWAIT);
     if (ret < 0) {
         if (errno == EAGAIN) {
-            fprintf(stderr, "Message queue full!\n");
+            TLOGE("Message queue full!\n");
         } else {
-            fprintf(stderr, "Can't send to mac. mqid: %d len: %lu(%s)\n",
+            TLOGE("Can't send to mac. mqid: %d len: %lu(%s)\n",
                     snctx->mqid_send_mac, len, strerror(errno));
         }
     }
@@ -66,7 +66,7 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
 
 void process_mac_msg(SimNetCtx *snctx, void *data, int len)
 {
-    printf("Msg from mac received. len : %d\n", len);
+    TLOGI("Msg from mac received. len : %d\n", len);
 }
 
 void recvfrom_mac(SimNetCtx *snctx)
@@ -76,7 +76,7 @@ void recvfrom_mac(SimNetCtx *snctx)
         ssize_t res = msgrcv(snctx->mqid_recv_mac, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
         if (res < 0) {
             if (errno != ENOMSG) {
-                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+                TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
             }
             break;
         }
@@ -136,7 +136,7 @@ static void parse_arg(SimNetCtx *snctx, int argc, char *argv[])
 static void send_dummy_packet(void *arg)
 {
     SimNetCtx *snctx = arg;
-    fprintf(stderr, "Dummy send test! nid : %u\n", snctx->node_id);
+    TLOGD("Dummy send test! nid : %u\n", snctx->node_id);
 
     PktBuf pkb;
     memset(&pkb, 0x00, sizeof(PktBuf));
@@ -167,7 +167,6 @@ static void register_works(SimNetCtx *snctx)
     dummy_log_gen.interval_us = 1000000;
 
     timerqueue_register_job(snctx->timerqueue, &dummy_log_gen);
-
 }
 
 int main(int argc, char *argv[])
@@ -175,10 +174,12 @@ int main(int argc, char *argv[])
     SimNetCtx *snctx = create_simnet_context();
 
     parse_arg(snctx, argc, argv);
+
+    sprintf(dbgname, "NET-%-2d", snctx->node_id);
+
     init_mq(snctx);
 
     register_works(snctx);
-
     mainloop(snctx);
 
     delete_simnet_context(snctx);
