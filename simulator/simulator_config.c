@@ -53,13 +53,15 @@ void parse_config(SimulatorCtx *sctx)
     char *pretty_string = cJSON_Print(json);
     printf("%s\n", pretty_string);
 
+
+    /* Node ID List */
     cJSON *node_list_json = cJSON_GetObjectItemCaseSensitive(json, "nodes");
     if (cJSON_IsArray(node_list_json)) {
         cJSON *node_id_json = NULL;
         cJSON_ArrayForEach(node_id_json, node_list_json)
         {
             if (cJSON_IsNumber(node_id_json)) {
-                LOGD("Node ID : %d\n", node_id_json->valueint);
+                TLOGD("Node ID : %d\n", node_id_json->valueint);
                 activate_node(sctx, node_id_json->valueint);
             } else {
                 fprintf(stderr, "Node id is not a number!\n");
@@ -69,6 +71,22 @@ void parse_config(SimulatorCtx *sctx)
     } else {
         fprintf(stderr, "Can't get nodelist!");
         exit(2);
+    }
+
+    /* Dummy Traffic Config */
+    cJSON *dummy_traffic_json = cJSON_GetObjectItemCaseSensitive(json, "dummy_traffic");
+    if (cJSON_IsArray(dummy_traffic_json)) {
+        cJSON *dummy_traffic_conf = NULL;
+        cJSON_ArrayForEach(dummy_traffic_conf, dummy_traffic_json)
+        {
+            int srcid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "src_id")->valueint;
+            int dstid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "dst_id")->valueint;
+            int payload_size = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "payload_size")->valueint;
+            int interval_ms = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "interval_ms")->valueint;
+
+            TLOGI("Dummy traffic %d -> %d  payload %dbyte  interval %dms\n", 
+                    srcid, dstid, payload_size, interval_ms);
+        }
     }
 
     free(pretty_string);

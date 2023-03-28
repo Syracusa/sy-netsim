@@ -135,7 +135,6 @@ static void parse_arg(SimNetCtx *snctx, int argc, char *argv[])
         fprintf(stderr, "Can't parse nodeID from [%s]\n", argv[1]);
         exit(2);
     }
-    printf("SIMNET NODE ID : %u\n", snctx->node_id);
 }
 
 static void send_dummy_packet(void *arg)
@@ -191,6 +190,7 @@ int main(int argc, char *argv[])
 {
     SimNetCtx *snctx = create_simnet_context();
     parse_arg(snctx, argc, argv);
+    printf("Simnet start with nodeid %d\n", snctx->node_id);
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
 
     init_mq(snctx);

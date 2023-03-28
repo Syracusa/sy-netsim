@@ -92,13 +92,15 @@ void sendto_phy(SimMacCtx *smctx, void *data, size_t len, long type)
 
 void process_net_msg(SimMacCtx *smctx, void *data, int len)
 {
-    TLOGI("Packet received from net. len : %d\n", len);
+    if (DEBUG_MAC_TRX)
+        TLOGI("Packet received from net. len : %d\n", len);
     sendto_phy(smctx, data, len, 1);
 }
 
 void process_phy_msg(SimMacCtx *smctx, void *data, int len)
 {
-    TLOGI("Packet received from phy. len : %d\n", len);
+    if (DEBUG_MAC_TRX)
+        TLOGI("Packet received from phy. len : %d\n", len);
     sendto_net(smctx, data, len, 1);
 }
 
@@ -175,7 +177,6 @@ static void parse_arg(SimMacCtx *smctx, int argc, char *argv[])
         fprintf(stderr, "Can't parse nodeID from [%s]\n", argv[1]);
         exit(2);
     }
-    printf("SIMMAC NODE ID : %u\n", smctx->node_id);
 }
 
 int main(int argc, char *argv[])
@@ -183,6 +184,7 @@ int main(int argc, char *argv[])
     SimMacCtx *smctx = create_simmac_context();
 
     parse_arg(smctx, argc, argv);
+    printf("Simnet start with nodeid %d\n", smctx->node_id);
 
     sprintf(dbgname, "MAC-%-2d", smctx->node_id);
     init_mq(smctx);
