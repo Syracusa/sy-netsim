@@ -10,6 +10,8 @@
         "socket": "c",
         "string_view": "c",
         "params.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "inet.h": "c",
+        "sstream": "c"
     }
 }

@@ -1,16 +1,19 @@
 #ifndef NETUTIL_H
 #define NETUTIL_H
 
+#include <stdint.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <linux/ip.h>
 #include <linux/udp.h>
-#include <netinet/in.h>
 #include <linux/if_vlan.h>
 #include <linux/if_ether.h>
 
 #define MAX_PKT_PAYLOAD 1500
 #define MAX_ETHER_HEADER_MARGIN 50
 
-typedef struct
+typedef struct PktBuf
 {
     /* Packet itself*/
     unsigned char ether_margin[MAX_ETHER_HEADER_MARGIN];
@@ -21,6 +24,15 @@ typedef struct
     /* Additional information */
     ssize_t payload_len;
 }__attribute__((packed)) PktBuf;
+
+#define IPUDP_HDRLEN (sizeof(struct iphdr) + sizeof(struct udphdr))
+
+#define MAKE_BE32_IP(ipb, o1, o2, o3, o4) in_addr_t ipb; do {\
+    uint8_t* _pt = (uint8_t *)(&ipb);\
+    _pt[0] = (o1); _pt[1] = (o2); _pt[2] = (o3); _pt[3] = (o4);\
+} while (0); 
+
+char *ip2str(in_addr_t addr);
 
 void build_udp_hdr_no_checksum(struct udphdr *hdr_buf,
                                uint16_t src_port,

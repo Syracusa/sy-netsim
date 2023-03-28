@@ -41,7 +41,7 @@ void init_mq(SimNetCtx *snctx)
 void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
 {
     /* The mtype field must have a strictly positive integer value. */
-    if (type < 1){
+    if (type < 1) {
         TLOGE("Can't send meg with type %ld\n", type);
         return;
     }
@@ -59,7 +59,7 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
             TLOGE("Message queue full!\n");
         } else {
             TLOGE("Can't send to mac. mqid: %d len: %lu(%s)\n",
-                    snctx->mqid_send_mac, len, strerror(errno));
+                  snctx->mqid_send_mac, len, strerror(errno));
         }
     }
 }
@@ -136,12 +136,23 @@ static void parse_arg(SimNetCtx *snctx, int argc, char *argv[])
 static void send_dummy_packet(void *arg)
 {
     SimNetCtx *snctx = arg;
-    TLOGD("Dummy send test! nid : %u\n", snctx->node_id);
 
     PktBuf pkb;
     memset(&pkb, 0x00, sizeof(PktBuf));
 
-    sendto_mac(snctx, &pkb.iph, 100, 1);
+    pkb.payload_len = 100;
+
+    MAKE_BE32_IP(sender_ip, 192, 168, snctx->node_id, 1);
+    MAKE_BE32_IP(receiver_ip, 192, 168, snctx->node_id + 1, 1);
+
+    build_ip_hdr(&(pkb.iph), pkb.payload_len + IPUDP_HDRLEN, 64,
+                 sender_ip, receiver_ip, IPPROTO_UDP);
+    build_udp_hdr_no_checksum(&(pkb.udph), 29111, 29112, pkb.payload_len);
+
+    TLOGD("Send dummy pkt. %s->%s payload len %ld\n",
+          ip2str(pkb.iph.saddr), ip2str(pkb.iph.daddr), pkb.payload_len);
+
+    sendto_mac(snctx, &(pkb.iph), 100, 1);
 }
 
 static void send_dummy_log_to_simulator(void *arg)
@@ -158,7 +169,6 @@ static void register_works(SimNetCtx *snctx)
     dummy_pkt_gen.interval_us = 1000000;
 
     timerqueue_register_job(snctx->timerqueue, &dummy_pkt_gen);
-
 
     static TqElem dummy_log_gen;
     dummy_log_gen.arg = snctx;

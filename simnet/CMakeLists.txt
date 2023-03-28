@@ -4,6 +4,7 @@ add_executable(simnet
                 "../util/mq.c"
                 "../util/rbtree.c"
                 "../util/timerqueue.c"
+                "../util/netutil.c"
                 )
 
 target_link_libraries(simnet PUBLIC cjson)
