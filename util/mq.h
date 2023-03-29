@@ -1,5 +1,6 @@
 #ifndef MQ_H
 #define MQ_H
+#include <sys/msg.h>
 
 #define MQ_MAX_DATA_LEN 2000
 

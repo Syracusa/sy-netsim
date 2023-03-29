@@ -14,6 +14,36 @@
 #include "simulator_config.h"
 
 #include "params.h"
+#include "mq.h"
+
+void init_mq(SimulatorCtx *sctx)
+{
+    for (int nid = 0; nid < MAX_NODE_ID; nid++) {
+        int mqkey_net_command = MQ_KEY_NET_COMMAND + nid;
+        sctx->nodes[nid].mqid_net_command = msgget(mqkey_net_command, IPC_CREAT | 0666);
+        mq_flush(sctx->nodes[nid].mqid_net_command);
+
+        int mqkey_net_report = MQ_KEY_NET_REPORT + nid;
+        sctx->nodes[nid].mqid_net_report = msgget(mqkey_net_report, IPC_CREAT | 0666);
+        mq_flush(sctx->nodes[nid].mqid_net_report);
+
+        int mqkey_mac_command = MQ_KEY_MAC_COMMAND + nid;
+        sctx->nodes[nid].mqid_mac_command = msgget(mqkey_mac_command, IPC_CREAT | 0666);
+        mq_flush(sctx->nodes[nid].mqid_mac_command);
+
+        int mqkey_mac_report = MQ_KEY_MAC_REPORT + nid;
+        sctx->nodes[nid].mqid_mac_report = msgget(mqkey_mac_report, IPC_CREAT | 0666);
+        mq_flush(sctx->nodes[nid].mqid_mac_report);
+    }
+
+    int mqkey_phy_command = MQ_KEY_PHY_COMMAND;
+    sctx->mqid_phy_command = msgget(mqkey_phy_command, IPC_CREAT | 0666);
+    mq_flush(sctx->mqid_phy_command);
+
+    int mqkey_phy_report = MQ_KEY_PHY_REPORT;
+    sctx->mqid_phy_report = msgget(mqkey_phy_report, IPC_CREAT | 0666);
+    mq_flush(sctx->mqid_phy_report);
+}
 
 static SimulatorCtx *create_simulator_context()
 {
@@ -103,6 +133,7 @@ int main()
     SimulatorCtx *sctx = create_simulator_context();
 
     parse_config(sctx);
+    init_mq(sctx);
 
     start_simulate(sctx);
     sleep(10);

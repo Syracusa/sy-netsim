@@ -1,4 +1,3 @@
-#include <sys/msg.h>
 
 #include "mq.h"
 
