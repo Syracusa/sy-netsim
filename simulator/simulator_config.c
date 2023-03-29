@@ -11,7 +11,7 @@ static char *read_file(const char *filename)
 {
     FILE *f = fopen(filename, "r");
 
-    if (!f){
+    if (!f) {
         fprintf(stderr, "Can't open file %s\n", filename);
         exit(2);
     }
@@ -29,7 +29,7 @@ static char *read_file(const char *filename)
     return string;
 }
 
-static void activate_node(SimulatorCtx* sctx, int node_id)
+static void activate_node(SimulatorCtx *sctx, int node_id)
 {
     if (node_id < 0 && node_id >= MAX_NODE_ID) {
         fprintf(stderr, "Unavailable node id : %d\n", node_id);
@@ -79,13 +79,34 @@ void parse_config(SimulatorCtx *sctx)
         cJSON *dummy_traffic_conf = NULL;
         cJSON_ArrayForEach(dummy_traffic_conf, dummy_traffic_json)
         {
-            int srcid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "src_id")->valueint;
-            int dstid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "dst_id")->valueint;
+            if (MAX_DUMMYSTREAM_NUM <= sctx->conf.dummy_stream_num) {
+                fprintf(stderr, "Dummystream number overflow! max : \n",
+                        MAX_DUMMYSTREAM_NUM);
+                exit(2);
+            }
+
+            int src_nid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "src_id")->valueint;
+            int dst_nid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "dst_id")->valueint;
             int payload_size = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "payload_size")->valueint;
             int interval_ms = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "interval_ms")->valueint;
 
-            TLOGI("Dummy traffic %d -> %d  payload %dbyte  interval %dms\n", 
-                    srcid, dstid, payload_size, interval_ms);
+            TLOGI("Dummy traffic %d -> %d  payload %dbyte  interval %dms\n",
+                  src_nid, dst_nid, payload_size, interval_ms);
+
+            /*
+            At this point, No netproto apps are excuted.
+            So we can't send config message right now.
+            */
+
+            DummyStreamInfo *stream_info =
+                &(sctx->conf.dummy_stream_info[sctx->conf.dummy_stream_num]);
+            
+            stream_info->src_nid = src_nid;
+            stream_info->dst_nid = dst_nid;
+            stream_info->payload_size = payload_size;
+            stream_info->interval_ms = interval_ms;
+            
+            sctx->conf.dummy_stream_num++;
         }
     }
 

@@ -12,6 +12,14 @@
         "params.h": "c",
         "stdint.h": "c",
         "inet.h": "c",
-        "sstream": "c"
+        "sstream": "c",
+        "chrono": "c",
+        "functional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "ratio": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     }
 }

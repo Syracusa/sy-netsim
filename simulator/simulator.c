@@ -16,6 +16,8 @@
 #include "params.h"
 #include "mq.h"
 
+#include "config_msg.h"
+
 void init_mq(SimulatorCtx *sctx)
 {
     for (int nid = 0; nid < MAX_NODE_ID; nid++) {
@@ -60,7 +62,7 @@ static void delete_simulator_context(SimulatorCtx *sctx)
 static void start_net(int node_id)
 {
     pid_t pid = fork();
-    if (pid == -1){
+    if (pid == -1) {
         fprintf(stderr, "Fork failed!\n");
     }
     if (pid == 0) {
@@ -72,13 +74,13 @@ static void start_net(int node_id)
         char nid_str[10];
         sprintf(nid_str, "%d", node_id);
         execl(file, file, nid_str, NULL);
-    } 
+    }
 }
 
 static void start_mac(int node_id)
 {
     pid_t pid = fork();
-    if (pid == -1){
+    if (pid == -1) {
         fprintf(stderr, "Fork failed!\n");
     }
     if (pid == 0) {
@@ -90,13 +92,13 @@ static void start_mac(int node_id)
         char nid_str[10];
         sprintf(nid_str, "%d", node_id);
         execl(file, file, nid_str, NULL);
-    } 
+    }
 }
 
 static void start_phy()
 {
     pid_t pid = fork();
-    if (pid == -1){
+    if (pid == -1) {
         fprintf(stderr, "Fork failed!\n");
     }
     if (pid == 0) {
@@ -127,6 +129,45 @@ static void start_simulate(SimulatorCtx *sctx)
     }
 }
 
+void send_config(SimulatorCtx *sctx, int mqid, void *data, size_t len)
+{
+    MqMsgbuf msg;
+    msg.type = 1;
+
+    if (len > MQ_MAX_DATA_LEN) {
+        TLOGE("Can't send data with length %lu\n", len);
+    }
+    memcpy(msg.text, data, len);
+    int ret = msgsnd(mqid, &msg, len, IPC_NOWAIT);
+    if (ret < 0) {
+        if (errno == EAGAIN) {
+            TLOGE("Message queue full!\n");
+        } else {
+            TLOGE("Can't send config. mqid: %d len: %lu(%s)\n",
+                  mqid, len, strerror(errno));
+        }
+    }
+}
+
+static void send_config_msgs(SimulatorCtx *sctx)
+{
+    MqMsgbuf mbuf;
+    SimulatorConfig *conf = &(sctx->conf);
+
+    /* Dummy stream config */
+    for (int i = 0; i < conf->dummy_stream_num; i++) {
+        DummyStreamInfo *info = &(conf->dummy_stream_info[i]);
+        NetDummyTrafficConfig *msg = &(mbuf.text);
+        msg->src_id = info->src_nid;
+        msg->dst_id = info->dst_nid;
+        msg->payload_size = info->payload_size;
+        msg->interval_ms = info->interval_ms;
+
+        send_config(sctx, sctx->nodes[msg->src_id].mqid_net_command,
+                    &(mbuf.text), sizeof(NetDummyTrafficConfig));
+    }
+}
+
 int main()
 {
     TLOGI("Start simulator...\n");
@@ -136,6 +177,9 @@ int main()
     init_mq(sctx);
 
     start_simulate(sctx);
+    sleep(1); /* Wait until apps are initiated... */
+    send_config_msgs(sctx);
+
     sleep(10);
 
     delete_simulator_context(sctx);
