@@ -20,6 +20,9 @@ typedef struct
 
     int mqid_recv_mac;
     int mqid_send_mac;
+
+    int mqid_recv_command;
+    int mqid_send_report;
 } SimNetCtx;
 
 void init_mq(SimNetCtx *snctx)
@@ -30,8 +33,17 @@ void init_mq(SimNetCtx *snctx)
     int mqkey_recv_mac = MQ_KEY_MAC_TO_NET + snctx->node_id;
     snctx->mqid_recv_mac = msgget(mqkey_recv_mac, IPC_CREAT | 0666);
 
+    int mqkey_send_report = MQ_KEY_NET_REPORT + snctx->node_id;
+    snctx->mqid_send_report = msgget(mqkey_send_report, IPC_CREAT | 0666);
+
+    int mqkey_recv_command = MQ_KEY_NET_COMMAND + snctx->node_id;
+    snctx->mqid_recv_command = msgget(mqkey_recv_command, IPC_CREAT | 0666);
+
     mq_flush(snctx->mqid_send_mac);
     mq_flush(snctx->mqid_recv_mac);
+
+    mq_flush(snctx->mqid_send_report);
+    mq_flush(snctx->mqid_recv_command);
 }
 
 void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
@@ -68,7 +80,7 @@ void process_mac_msg(SimNetCtx *snctx, void *data, int len)
 
     if (PKT_HEXDUMP)
         hexdump(data, len, stdout);
-    
+
     TLOGD("Recv pkt. %s <- %s(Payloadsz: %ld)\n",
           ip2str(pkb.iph.daddr), ip2str(pkb.iph.saddr), pkb.payload_len);
 }
@@ -88,6 +100,27 @@ void recvfrom_mac(SimNetCtx *snctx)
     }
 }
 
+
+static void process_command(SimNetCtx *snctx, void *data, int len)
+{
+    TLOGI("Unknown command received. Length : %d\n", len);
+}
+
+void recv_command(SimNetCtx *snctx)
+{
+    MqMsgbuf msg;
+    while (1) {
+        ssize_t res = msgrcv(snctx->mqid_recv_command, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
+        if (res < 0) {
+            if (errno != ENOMSG) {
+                TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
+            }
+            break;
+        }
+        process_command(snctx, msg.text, res);
+    }
+}
+
 void mainloop(SimNetCtx *snctx)
 {
     struct timespec before, after, diff, req, rem;
@@ -97,6 +130,7 @@ void mainloop(SimNetCtx *snctx)
 
         timerqueue_work(snctx->timerqueue);
         recvfrom_mac(snctx);
+        recv_command(snctx);
 
         clock_gettime(CLOCK_REALTIME, &after);
         timespec_sub(&after, &before, &diff);
@@ -158,7 +192,7 @@ static void send_dummy_packet(void *arg)
 
     if (PKT_HEXDUMP)
         hexdump(&pkb.iph, pkb.payload_len + IPUDP_HDRLEN, stdout);
-    
+
     sendto_mac(snctx, &(pkb.iph), 100 + IPUDP_HDRLEN, 1);
 }
 

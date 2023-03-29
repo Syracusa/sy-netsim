@@ -10,9 +10,13 @@
 #define MQ_KEY_MAC_TO_PHY   0x0300
 #define MQ_KEY_PHY_TO_MAC   0x0400
 
-#define MQ_KEY_NET_DBG      0x0500
-#define MQ_KEY_MAC_DBG      0x0600
-#define MQ_KEY_PHY_DBG      0x0700
+#define MQ_KEY_NET_COMMAND      0x0500
+#define MQ_KEY_MAC_COMMAND      0x0600
+#define MQ_KEY_PHY_COMMAND      0x0700
+
+#define MQ_KEY_NET_REPORT       0x0800
+#define MQ_KEY_MAC_REPORT       0x0900
+#define MQ_KEY_PHY_REPORT       0x0a00
 
 #define MQ_TYPE_DATA    1
 #define MQ_TYPE_CONFIG  2
