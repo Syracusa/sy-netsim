@@ -13,6 +13,8 @@
 #include "log.h"
 #include "params.h"
 
+#include "config_msg.h"
+
 typedef struct
 {
     TqCtx *timerqueue;
@@ -101,9 +103,20 @@ void recvfrom_mac(SimNetCtx *snctx)
 }
 
 
-static void process_command(SimNetCtx *snctx, void *data, int len)
+static void process_command(SimNetCtx *snctx, void *data, int len, long type)
 {
-    TLOGI("Unknown command received. Length : %d\n", len);
+    switch ( *((long*)data) )
+    {
+    case CONF_MSG_TYPE_NET_DUMMY_TRAFFIC:
+        /* code */
+        break;
+    
+    default:
+        TLOGI("Unknown command received. Length : %d\n", len);
+        break;
+    }
+
+    
 }
 
 void recv_command(SimNetCtx *snctx)
