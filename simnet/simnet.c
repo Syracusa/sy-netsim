@@ -15,6 +15,8 @@
 
 #include "config_msg.h"
 
+SimNetCtx *g_snctx = NULL;
+
 typedef struct
 {
     TqCtx *timerqueue;
@@ -102,21 +104,32 @@ void recvfrom_mac(SimNetCtx *snctx)
     }
 }
 
+static void register_dummypkt_send_job(SimNetCtx *snctx,
+                                       NetDummyTrafficConfig *conf)
+{
+    static TqElem dummy_pkt_gen;
+    dummy_pkt_gen.arg = snctx;
+    dummy_pkt_gen.callback = send_dummy_packet;
+    dummy_pkt_gen.use_once = 0;
+    dummy_pkt_gen.interval_us = 1000000;
+
+    timerqueue_register_job(snctx->timerqueue, &dummy_pkt_gen);
+
+}
 
 static void process_command(SimNetCtx *snctx, void *data, int len, long type)
 {
-    switch ( *((long*)data) )
-    {
-    case CONF_MSG_TYPE_NET_DUMMY_TRAFFIC:
-        /* code */
-        break;
-    
-    default:
-        TLOGI("Unknown command received. Length : %d\n", len);
-        break;
+    switch (*((long *)data)) {
+        case CONF_MSG_TYPE_NET_DUMMY_TRAFFIC:
+            /* code */
+            break;
+
+        default:
+            TLOGI("Unknown command received. Length : %d\n", len);
+            break;
     }
 
-    
+
 }
 
 void recv_command(SimNetCtx *snctx)
@@ -161,7 +174,13 @@ static SimNetCtx *create_simnet_context()
     memset(snctx, 0x00, sizeof(SimNetCtx));
 
     snctx->timerqueue = create_timerqueue();
+
     return snctx;
+}
+
+SimNetCtx *get_simnet_context()
+{
+    return g_snctx;
 }
 
 static void delete_simnet_context(SimNetCtx *snctx)
@@ -236,6 +255,7 @@ static void register_works(SimNetCtx *snctx)
 int main(int argc, char *argv[])
 {
     SimNetCtx *snctx = create_simnet_context();
+    g_snctx = snctx;
     parse_arg(snctx, argc, argv);
     printf("Simnet start with nodeid %d\n", snctx->node_id);
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
