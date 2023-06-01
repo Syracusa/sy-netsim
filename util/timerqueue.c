@@ -47,6 +47,9 @@ void timerqueue_work(TqCtx *tq)
     clock_gettime(CLOCK_REALTIME, &currtime);
 
     TqElem *first = (TqElem *)rbtree_first(tq->rbt);
+    if (first == (TqElem *)RBTREE_NULL){
+        return;
+    }
 
     while (check_expire(&(first->priv_rbk.expire), &currtime)) {
         rbtree_delete(tq->rbt, first->priv_rbn.key);
