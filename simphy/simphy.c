@@ -11,7 +11,7 @@
 #include "mq.h"
 #include "util.h"
 
-extern char dbgname[10];
+char dbgname[10];
 
 void init_mq(SimPhyCtx *spctx)
 {

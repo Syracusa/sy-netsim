@@ -3,6 +3,7 @@
 #include "mac_connection.h"
 
 SimNetCtx *g_snctx = NULL;
+char dbgname[10];
 
 void init_mq(SimNetCtx *snctx)
 {

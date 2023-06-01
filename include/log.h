@@ -8,7 +8,7 @@
 #include <string.h>
 #include <time.h>
 
-static char dbgname[10] = "";
+extern char dbgname[10];
 
 #ifndef LOG_LEVEL
 #define LOG_LEVEL (7)

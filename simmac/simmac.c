@@ -11,7 +11,7 @@
 #include "log.h"
 #include "params.h"
 
-extern char dbgname[10];
+char dbgname[10];
 
 typedef struct
 {

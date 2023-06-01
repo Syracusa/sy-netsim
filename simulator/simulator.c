@@ -18,6 +18,8 @@
 
 #include "config_msg.h"
 
+char dbgname[10];
+
 void init_mq(SimulatorCtx *sctx)
 {
     for (int nid = 0; nid < MAX_NODE_ID; nid++) {
@@ -66,6 +68,7 @@ static void start_net(int node_id)
         fprintf(stderr, "Fork failed!\n");
     }
     if (pid == 0) {
+        /* Kill child process when simulator die */
         int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
         if (r == -1)
             fprintf(stderr, "prctl() failed!\n");
@@ -84,6 +87,7 @@ static void start_mac(int node_id)
         fprintf(stderr, "Fork failed!\n");
     }
     if (pid == 0) {
+        /* Kill child process when simulator die */
         int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
         if (r == -1)
             fprintf(stderr, "prctl() failed!\n");
@@ -102,6 +106,7 @@ static void start_phy()
         fprintf(stderr, "Fork failed!\n");
     }
     if (pid == 0) {
+        /* Kill child process when simulator die */
         int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
         if (r == -1)
             fprintf(stderr, "prctl() failed!\n");
