@@ -88,7 +88,7 @@ static void process_mac_msg(SimPhyCtx *spctx,
         if (spctx->nodes[nid].alive == 1) {
             if (DEBUG_MAC_TRX)
                 TLOGI("PHY msg forwarding... %d -> %d\n", sender_nid, nid);
-            send_to_local_mac(spctx, nid, data, len, 1);
+            send_to_local_mac(spctx, nid, data, len, MESSAGE_TYPE_DATA);
         }
     }
 }

@@ -94,14 +94,14 @@ void process_net_msg(SimMacCtx *smctx, void *data, int len)
 {
     if (DEBUG_MAC_TRX)
         TLOGI("Packet received from net. len : %d\n", len);
-    sendto_phy(smctx, data, len, 1);
+    sendto_phy(smctx, data, len, MESSAGE_TYPE_DATA);
 }
 
 void process_phy_msg(SimMacCtx *smctx, void *data, int len)
 {
     if (DEBUG_MAC_TRX)
         TLOGI("Packet received from phy. len : %d\n", len);
-    sendto_net(smctx, data, len, 1);
+    sendto_net(smctx, data, len, MESSAGE_TYPE_DATA);
 }
 
 void recv_mq(SimMacCtx *smctx)
@@ -189,6 +189,7 @@ int main(int argc, char *argv[])
     sprintf(dbgname, "MAC-%-2d", smctx->node_id);
     init_mq(smctx);
 
+    sendto_phy(smctx, NULL, 0, MESSAGE_TYPE_HEARTBEAT);
     mainloop(smctx);
 
     delete_simmac_context(smctx);

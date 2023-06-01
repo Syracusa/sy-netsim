@@ -18,8 +18,9 @@
 #define MQ_KEY_MAC_REPORT       0x0900
 #define MQ_KEY_PHY_REPORT       0x0a00
 
-#define MQ_TYPE_DATA    1
-#define MQ_TYPE_CONFIG  2
+#define MESSAGE_TYPE_DATA       1
+#define MESSAGE_TYPE_CONFIG     2
+#define MESSAGE_TYPE_HEARTBEAT  3
 
 /* Debug */
 #define PKT_HEXDUMP 0
