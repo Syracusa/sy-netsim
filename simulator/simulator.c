@@ -132,10 +132,11 @@ static void start_simulate(SimulatorCtx *sctx)
 void send_config(SimulatorCtx *sctx,
                  int mqid,
                  void *data,
-                 size_t len)
+                 size_t len,
+                 long type)
 {
     MqMsgbuf msg;
-    msg.type = 1;
+    msg.type = type;
 
     if (len > MQ_MAX_DATA_LEN) {
         TLOGE("Can't send data with length %lu\n", len);
@@ -160,15 +161,16 @@ static void send_config_msgs(SimulatorCtx *sctx)
     /* Dummy stream config */
     for (int i = 0; i < conf->dummy_stream_num; i++) {
         DummyStreamInfo *info = &(conf->dummy_stream_info[i]);
-        NetDummyTrafficConfig *msg = &(mbuf.text);
-        msg->conf_id = CONF_MSG_TYPE_NET_DUMMY_TRAFFIC;
+        NetDummyTrafficConfig *msg = (NetDummyTrafficConfig *)&(mbuf.text);
+
         msg->src_id = info->src_nid;
         msg->dst_id = info->dst_nid;
         msg->payload_size = info->payload_size;
         msg->interval_ms = info->interval_ms;
 
         send_config(sctx, sctx->nodes[msg->src_id].mqid_net_command,
-                    &(mbuf.text), sizeof(NetDummyTrafficConfig));
+                    &(mbuf.text), sizeof(NetDummyTrafficConfig),
+                    CONF_MSG_TYPE_NET_DUMMY_TRAFFIC);
     }
 }
 
