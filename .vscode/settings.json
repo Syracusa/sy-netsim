@@ -20,6 +20,7 @@
         "ratio": "c",
         "tuple": "c",
         "type_traits": "c",
-        "utility": "c"
+        "utility": "c",
+        "mac_connection.h": "c"
     }
 }

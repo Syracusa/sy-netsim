@@ -1,33 +1,8 @@
-#include <stdio.h>
-#include <time.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/msg.h>
-#include <errno.h>
-
-#include "mq.h"
-#include "util.h"
-#include "timerqueue.h"
-#include "netutil.h"
-
-#include "log.h"
-#include "params.h"
-
-#include "config_msg.h"
+#include "simnet.h"
+#include "dummy.h"
+#include "mac_connection.h"
 
 SimNetCtx *g_snctx = NULL;
-
-typedef struct
-{
-    TqCtx *timerqueue;
-    int node_id;
-
-    int mqid_recv_mac;
-    int mqid_send_mac;
-
-    int mqid_recv_command;
-    int mqid_send_report;
-} SimNetCtx;
 
 void init_mq(SimNetCtx *snctx)
 {
@@ -50,86 +25,17 @@ void init_mq(SimNetCtx *snctx)
     mq_flush(snctx->mqid_recv_command);
 }
 
-void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
-{
-    /* The mtype field must have a strictly positive integer value. */
-    if (type < 1) {
-        TLOGE("Can't send meg with type %ld\n", type);
-        return;
-    }
-
-    MqMsgbuf msg;
-    msg.type = type;
-
-    if (len > MQ_MAX_DATA_LEN) {
-        TLOGE("Can't send data with length %lu\n", len);
-    }
-    memcpy(msg.text, data, len);
-    int ret = msgsnd(snctx->mqid_send_mac, &msg, len, IPC_NOWAIT);
-    if (ret < 0) {
-        if (errno == EAGAIN) {
-            TLOGE("Message queue full!\n");
-        } else {
-            TLOGE("Can't send to mac. mqid: %d len: %lu(%s)\n",
-                  snctx->mqid_send_mac, len, strerror(errno));
-        }
-    }
-}
-
-void process_mac_msg(SimNetCtx *snctx, void *data, int len)
-{
-    PktBuf pkb;
-    memcpy(&pkb.iph, data, len);
-    pkb.payload_len = len - IPUDP_HDRLEN;
-
-    if (PKT_HEXDUMP)
-        hexdump(data, len, stdout);
-
-    TLOGD("Recv pkt. %s <- %s(Payloadsz: %ld)\n",
-          ip2str(pkb.iph.daddr), ip2str(pkb.iph.saddr), pkb.payload_len);
-}
-
-void recvfrom_mac(SimNetCtx *snctx)
-{
-    MqMsgbuf msg;
-    while (1) {
-        ssize_t res = msgrcv(snctx->mqid_recv_mac, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
-        if (res < 0) {
-            if (errno != ENOMSG) {
-                TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
-            }
-            break;
-        }
-        process_mac_msg(snctx, msg.text, res);
-    }
-}
-
-static void register_dummypkt_send_job(SimNetCtx *snctx,
-                                       NetDummyTrafficConfig *conf)
-{
-    static TqElem dummy_pkt_gen;
-    dummy_pkt_gen.arg = snctx;
-    dummy_pkt_gen.callback = send_dummy_packet;
-    dummy_pkt_gen.use_once = 0;
-    dummy_pkt_gen.interval_us = 1000000;
-
-    timerqueue_register_job(snctx->timerqueue, &dummy_pkt_gen);
-
-}
-
 static void process_command(SimNetCtx *snctx, void *data, int len, long type)
 {
-    switch (*((long *)data)) {
+    switch (type) {
         case CONF_MSG_TYPE_NET_DUMMY_TRAFFIC:
-            /* code */
+            TLOGI("CONF_MSG_TYPE_NET_DUMMY_TRAFFIC Length : %d\n", len);
+            register_dummypkt_send_job(snctx, data);
             break;
-
         default:
-            TLOGI("Unknown command received. Length : %d\n", len);
+            TLOGI("Unknown command %ld received. Length : %d\n", type, len);
             break;
     }
-
-
 }
 
 void recv_command(SimNetCtx *snctx)
@@ -143,7 +49,7 @@ void recv_command(SimNetCtx *snctx)
             }
             break;
         }
-        process_command(snctx, msg.text, res);
+        process_command(snctx, msg.text, res, msg.type);
     }
 }
 
@@ -203,53 +109,9 @@ static void parse_arg(SimNetCtx *snctx, int argc, char *argv[])
     }
 }
 
-static void send_dummy_packet(void *arg)
-{
-    SimNetCtx *snctx = arg;
-
-    PktBuf pkb;
-    memset(&pkb, 0x00, sizeof(PktBuf));
-
-    pkb.payload_len = 100;
-
-    MAKE_BE32_IP(sender_ip, 192, 168, snctx->node_id, 1);
-    MAKE_BE32_IP(receiver_ip, 192, 168, snctx->node_id + 1, 1);
-
-    build_ip_hdr(&(pkb.iph), pkb.payload_len + IPUDP_HDRLEN, 64,
-                 sender_ip, receiver_ip, IPPROTO_UDP);
-    build_udp_hdr_no_checksum(&(pkb.udph), 29111, 29112, pkb.payload_len);
-
-    TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %ld)\n",
-          ip2str(pkb.iph.saddr), ip2str(pkb.iph.daddr), pkb.payload_len);
-
-    if (PKT_HEXDUMP)
-        hexdump(&pkb.iph, pkb.payload_len + IPUDP_HDRLEN, stdout);
-
-    sendto_mac(snctx, &(pkb.iph), 100 + IPUDP_HDRLEN, 1);
-}
-
 static void send_dummy_log_to_simulator(void *arg)
 {
     // fprintf(stderr, "TODO : Send dummy log to simulator\n");
-}
-
-static void register_works(SimNetCtx *snctx)
-{
-    static TqElem dummy_pkt_gen;
-    dummy_pkt_gen.arg = snctx;
-    dummy_pkt_gen.callback = send_dummy_packet;
-    dummy_pkt_gen.use_once = 0;
-    dummy_pkt_gen.interval_us = 1000000;
-
-    timerqueue_register_job(snctx->timerqueue, &dummy_pkt_gen);
-
-    static TqElem dummy_log_gen;
-    dummy_log_gen.arg = snctx;
-    dummy_log_gen.callback = send_dummy_log_to_simulator;
-    dummy_log_gen.use_once = 0;
-    dummy_log_gen.interval_us = 1000000;
-
-    timerqueue_register_job(snctx->timerqueue, &dummy_log_gen);
 }
 
 int main(int argc, char *argv[])
@@ -259,10 +121,8 @@ int main(int argc, char *argv[])
     parse_arg(snctx, argc, argv);
     printf("Simnet start with nodeid %d\n", snctx->node_id);
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
-
     init_mq(snctx);
 
-    register_works(snctx);
     mainloop(snctx);
 
     delete_simnet_context(snctx);

@@ -80,7 +80,7 @@ void parse_config(SimulatorCtx *sctx)
         cJSON_ArrayForEach(dummy_traffic_conf, dummy_traffic_json)
         {
             if (MAX_DUMMYSTREAM_NUM <= sctx->conf.dummy_stream_num) {
-                fprintf(stderr, "Dummystream number overflow! max : \n",
+                fprintf(stderr, "Dummystream number overflow! max : %d\n",
                         MAX_DUMMYSTREAM_NUM);
                 exit(2);
             }

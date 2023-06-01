@@ -1,5 +1,7 @@
 add_executable(simnet  
                 "simnet.c"
+                "dummy.c"
+                "mac_connection.c"
                 "../util/util.c"
                 "../util/mq.c"
                 "../util/rbtree.c"
