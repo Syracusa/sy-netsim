@@ -21,6 +21,7 @@
         "tuple": "c",
         "type_traits": "c",
         "utility": "c",
-        "mac_connection.h": "c"
+        "mac_connection.h": "c",
+        "httpserver.h": "c"
     }
 }

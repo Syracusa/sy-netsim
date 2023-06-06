@@ -18,6 +18,8 @@
 
 #include "config_msg.h"
 
+#include "httpserver.h"
+
 char dbgname[10];
 
 void init_mq(SimulatorCtx *sctx)
@@ -186,6 +188,8 @@ int main()
 
     parse_config(sctx);
     init_mq(sctx);
+
+    init_http_server();
 
     start_simulate(sctx);
     sleep(1); /* Wait until apps are initiated... */
