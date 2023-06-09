@@ -5,6 +5,7 @@ static void send_dummy_packet(void *arg)
 {
     NetDummyTrafficConfig *conf = arg;
     SimNetCtx *snctx = g_snctx;
+    static uint8_t dummybuf[MAX_IPPKT_SIZE];
 
     PktBuf pkb;
     memset(&pkb, 0x00, sizeof(PktBuf));
@@ -16,6 +17,7 @@ static void send_dummy_packet(void *arg)
 
     build_ip_hdr(&(pkb.iph), pkb.payload_len + IPUDP_HDRLEN, 64,
                  sender_ip, receiver_ip, IPPROTO_UDP);
+    pkb.iph_len = sizeof(struct iphdr);
     build_udp_hdr_no_checksum(&(pkb.udph), 29111, 29112, pkb.payload_len);
 
     TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %ld)\n",
@@ -24,7 +26,9 @@ static void send_dummy_packet(void *arg)
     if (PKT_HEXDUMP)
         hexdump(&pkb.iph, pkb.payload_len + IPUDP_HDRLEN, stdout);
 
-    sendto_mac(snctx, &(pkb.iph), 100 + IPUDP_HDRLEN, 1);
+    size_t len = MAX_IPPKT_SIZE;
+    ippkt_pack(&pkb, dummybuf, &len);
+    sendto_mac(snctx, dummybuf, len, MESSAGE_TYPE_DATA);
 }
 
 void register_dummypkt_send_job(SimNetCtx *snctx,

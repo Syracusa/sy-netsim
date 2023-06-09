@@ -10,6 +10,7 @@
 #include <linux/if_vlan.h>
 #include <linux/if_ether.h>
 
+#define MAX_IPPKT_SIZE 2000
 #define MAX_PKT_PAYLOAD 1500
 #define MAX_ETHER_HEADER_MARGIN 50
 
@@ -18,10 +19,12 @@ typedef struct PktBuf
     /* Packet itself */
     unsigned char ether_margin[MAX_ETHER_HEADER_MARGIN];
     struct iphdr iph;
+    uint8_t ip_margin[50];
     struct udphdr udph;
     unsigned char payload[MAX_PKT_PAYLOAD];
 
     /* Additional information */
+    ssize_t iph_len;
     ssize_t payload_len;
 }__attribute__((packed)) PktBuf;
 
@@ -46,5 +49,7 @@ void build_ip_hdr(struct iphdr *hdr_buf,
                   unsigned char ipproto /* IPPROTO_UDP, IPPROTO_ICMP */
 );
 
+void ippkt_pack(PktBuf* pktbuf, void* buf, size_t* len);
+void ippkt_unpack(PktBuf* pktbuf, void* buf, size_t len);
 
 #endif

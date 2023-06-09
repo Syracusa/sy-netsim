@@ -78,3 +78,39 @@ void build_ip_hdr(struct iphdr *hdr_buf,
     hdr->daddr = dstaddr;
     hdr->check = calc_ip_checksum(hdr, sizeof(struct iphdr));
 }
+
+void ippkt_pack(PktBuf *pktbuf, void *buf, size_t *len)
+{
+    uint8_t *orig = buf;
+    uint8_t *ptr = buf;
+
+    memcpy(ptr, &pktbuf->iph, pktbuf->iph_len);
+    ptr += pktbuf->iph_len;
+
+    memcpy(ptr, &pktbuf->udph, sizeof(struct udphdr));
+    ptr += sizeof(struct udphdr);
+
+    memcpy(ptr, &pktbuf->payload, pktbuf->payload_len);
+    ptr += pktbuf->payload_len;
+
+    *len = ptr - orig;
+}
+
+void ippkt_unpack(PktBuf *pktbuf, void *buf, size_t len)
+{
+    uint8_t *ptr = buf;
+
+    struct iphdr* ipp;
+    ipp = (struct iphdr*)buf;
+
+    pktbuf->iph_len = ipp->ihl * 4;
+    memcpy(&pktbuf->iph, ptr, pktbuf->iph_len);
+    ptr += pktbuf->iph_len;
+
+    memcpy(&pktbuf->udph, ptr, sizeof(struct udphdr));
+    ptr += sizeof(struct udphdr);
+    
+    pktbuf->payload_len = len - (pktbuf->iph_len + sizeof(struct udphdr));
+    memcpy(&pktbuf->payload, ptr, pktbuf->payload_len);
+    ptr += pktbuf->payload_len;
+}
