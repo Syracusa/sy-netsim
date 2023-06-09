@@ -5,7 +5,7 @@
 
 #include "../route_iface.h"
 
-void olsr_route_set_proto_sendfn(route_proto_packet_send sendfn);
+void olsr_route_set_config(RouteConfig *config);
 
 void olsr_route_proto_packet_process(void *data, size_t len);
 
@@ -13,12 +13,15 @@ void olsr_route_update_datapkt(void *pkt, size_t *len);
 
 void olsr_start();
 
+void olsr_work();
+
 static RouteContext olsr_iface = {
     .route_port = OLSR_PROTO_PORT,
-    .set_sendfn = olsr_route_set_proto_sendfn,
+    .set_config = olsr_route_set_config,
     .process_route = olsr_route_proto_packet_process,
     .update_pkt = olsr_route_update_datapkt,
-    .start = olsr_start
+    .start = olsr_start,
+    .work = olsr_work
 };
 
 #endif

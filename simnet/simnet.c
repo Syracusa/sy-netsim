@@ -67,6 +67,8 @@ void mainloop(SimNetCtx *snctx)
         recvfrom_mac(snctx);
         recv_command(snctx);
 
+        snctx->route->work();
+
         clock_gettime(CLOCK_REALTIME, &after);
         timespec_sub(&after, &before, &diff);
         if (diff.tv_nsec < 1000 * 1000) {
@@ -125,11 +127,17 @@ int main(int argc, char *argv[])
     printf("Simnet start with nodeid %d\n", snctx->node_id);
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
 
-    /* Initiate message queue*/
+    /* Initiate message queue */
     init_mq(snctx);
 
     /* Set routing context */
+    RouteConfig rconf = {
+        .own_ip = 0x00000000,
+        .sendfn = NULL
+    };
     snctx->route = &olsr_iface;
+    snctx->route->set_config(&rconf);
+    snctx->route->start();
 
     mainloop(snctx);
 
