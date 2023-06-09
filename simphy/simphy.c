@@ -76,7 +76,7 @@ static void send_to_local_mac(SimPhyCtx *spctx,
     }
 }
 
-static void process_mac_msg(SimPhyCtx *spctx,
+static void process_mac_frame(SimPhyCtx *spctx,
                             int sender_nid,
                             void *data,
                             size_t len)
@@ -108,7 +108,20 @@ static void recv_from_local_mac(SimPhyCtx *spctx)
                 break;
             }
             spctx->nodes[nid].alive = 1;
-            process_mac_msg(spctx, nid, msg.text, res);
+
+            switch (msg.type)
+            {
+            case MESSAGE_TYPE_DATA:
+                process_mac_frame(spctx, nid, msg.text, res);
+                break;
+            case MESSAGE_TYPE_HEARTBEAT:
+                TLOGE("Heartbeat recvd from MAC %d\n", nid);
+                break;
+            default:
+                TLOGE("Unknown msgtype %ld\n", msg.type);
+                break;
+            }
+            
         }
     }
 }

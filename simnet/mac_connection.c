@@ -50,6 +50,16 @@ void recvfrom_mac(SimNetCtx *snctx)
             }
             break;
         }
-        process_mac_msg(snctx, msg.text, res);
+
+        switch (msg.type)
+        {
+        case MESSAGE_TYPE_DATA:
+            process_mac_msg(snctx, msg.text, res);
+            break;
+        default:
+            TLOGE("Unknown msgtype %ld\n", msg.type);
+            break;
+        }
+            
     }
 }
