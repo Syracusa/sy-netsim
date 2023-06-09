@@ -119,6 +119,11 @@ static void send_dummy_log_to_simulator(void *arg)
     // fprintf(stderr, "TODO : Send dummy log to simulator\n");
 }
 
+static void route_send(void *data, size_t len)
+{
+    sendto_mac(g_snctx, data, len, 1);
+}
+
 int main(int argc, char *argv[])
 {
     SimNetCtx *snctx = create_simnet_context();
@@ -131,9 +136,10 @@ int main(int argc, char *argv[])
     init_mq(snctx);
 
     /* Set routing context */
+    MAKE_BE32_IP(myip, 192, 168, snctx->node_id, 1);
     RouteConfig rconf = {
-        .own_ip = 0x00000000,
-        .sendfn = NULL
+        .own_ip = myip,
+        .sendfn = route_send
     };
     snctx->route = &olsr_iface;
     snctx->route->set_config(&rconf);
