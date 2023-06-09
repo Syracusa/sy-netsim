@@ -1,3 +1,5 @@
+add_subdirectory(olsr)
+
 add_executable(simnet  
                 "simnet.c"
                 "dummy.c"
@@ -10,3 +12,4 @@ add_executable(simnet
                 )
 
 target_link_libraries(simnet PUBLIC cjson)
+target_link_libraries(simnet PUBLIC sy-olsr)

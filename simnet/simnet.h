@@ -18,6 +18,7 @@
 #include "config_msg.h"
 
 #include "log.h"
+#include "route_iface.h"
 
 typedef struct
 {
@@ -29,6 +30,8 @@ typedef struct
 
     int mqid_recv_command;
     int mqid_send_report;
+
+    RouteContext *route;
 } SimNetCtx;
 
 

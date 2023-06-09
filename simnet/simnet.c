@@ -2,6 +2,8 @@
 #include "dummy.h"
 #include "mac_connection.h"
 
+#include "olsr/olsr_route_iface.h"
+
 SimNetCtx *g_snctx = NULL;
 char dbgname[10];
 
@@ -122,7 +124,12 @@ int main(int argc, char *argv[])
     parse_arg(snctx, argc, argv);
     printf("Simnet start with nodeid %d\n", snctx->node_id);
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
+
+    /* Initiate message queue*/
     init_mq(snctx);
+
+    /* Set routing context */
+    snctx->route = &olsr_iface;
 
     mainloop(snctx);
 
