@@ -80,8 +80,9 @@ void olsr_start(CommonRouteConfig *config)
     queue_hello.arg = NULL;
     queue_hello.callback = olsr_queue_hello;
     queue_hello.use_once = 0;
-    queue_hello.interval_us = 1000 * 1000;
+    queue_hello.interval_us = 2000 * 1000;
     timerqueue_register_job(ctx->timerqueue, &queue_hello);
+    timerqueue_set_jitter(&queue_hello, 2000 * 1000 / 8);
 
     static TqElem job_tx_msg;
     job_tx_msg.arg = NULL;
@@ -96,4 +97,10 @@ void olsr_work()
     OlsrContext *ctx = &g_olsr_ctx;
     timerqueue_work(ctx->timerqueue);
     // printf("olsr_work() called\n");
+}
+
+void olsr_end()
+{
+    printf("olsr_end() called\n");
+    finalize_olsr_context();
 }

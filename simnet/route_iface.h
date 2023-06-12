@@ -19,6 +19,7 @@ typedef void (*route_update_datapkt)(void *pkt, size_t *len);
 
 typedef void (*route_start)(CommonRouteConfig *config);
 typedef void (*route_work)();
+typedef void (*route_end)();
 
 typedef struct RouteContext
 {
@@ -30,6 +31,7 @@ typedef struct RouteContext
     route_update_datapkt update_pkt;
     route_start start;
     route_work work;
+    route_end end;
 } RouteContext;
 
 

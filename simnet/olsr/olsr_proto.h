@@ -29,7 +29,7 @@ typedef struct HelloMsg {
   uint16_t reserved;
   uint8_t htime;
   uint8_t willingness;
-  HelloInfo hell_info[];
+  HelloInfo hello_info[];
 } __attribute__ ((packed)) HelloMsg;
 
 typedef struct TcMsg {

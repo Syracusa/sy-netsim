@@ -13,12 +13,15 @@ void aodv_start(CommonRouteConfig *config);
 
 void aodv_work();
 
+void aodv_end();
+
 static RouteContext aodv_iface = {
     .route_port = AODV_PROTO_PORT,
     .process_route = aodv_route_proto_packet_process,
     .update_pkt = aodv_route_update_datapkt,
     .start = aodv_start,
-    .work = aodv_work
+    .work = aodv_work,
+    .end = aodv_end
 };
 
 #endif

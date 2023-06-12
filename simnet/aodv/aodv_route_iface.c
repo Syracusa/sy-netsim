@@ -19,3 +19,7 @@ void aodv_start(CommonRouteConfig *config){
 void aodv_work(){
     printf("aodv_work() called\n");
 }
+
+void aodv_end(){
+    printf("aodv_end() called\n");
+}

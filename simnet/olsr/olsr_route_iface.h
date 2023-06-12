@@ -12,12 +12,15 @@ void olsr_start(CommonRouteConfig *config);
 
 void olsr_work();
 
+void olsr_end();
+
 static RouteContext olsr_iface = {
     .route_port = OLSR_PROTO_PORT,
     .process_route = olsr_route_proto_packet_process,
     .update_pkt = olsr_route_update_datapkt,
     .start = olsr_start,
-    .work = olsr_work
+    .work = olsr_work,
+    .end = olsr_end
 };
 
 #endif
