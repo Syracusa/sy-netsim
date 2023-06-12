@@ -2,6 +2,7 @@ add_library (sy-olsr
              olsr_route_iface.c
              olsr_context.c
              olsr_hello.c
+             olsr_mantissa.c
              ../../util/netutil.c
              ../../util/ringbuffer.c)
 

@@ -12,7 +12,7 @@ void aodv_route_update_datapkt(void *pkt, size_t *len)
     printf("aodv_route_update_datapkt() called\n");
 }
 
-void aodv_start(RouteConfig *config){
+void aodv_start(CommonRouteConfig *config){
     printf("aodv_start() called\n");
 }
 

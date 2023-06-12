@@ -9,7 +9,7 @@ void aodv_route_proto_packet_process(void *data, size_t len);
 
 void aodv_route_update_datapkt(void *pkt, size_t *len);
 
-void aodv_start(RouteConfig *config);
+void aodv_start(CommonRouteConfig *config);
 
 void aodv_work();
 

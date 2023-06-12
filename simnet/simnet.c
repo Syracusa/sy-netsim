@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 
     /* Set routing context */
     MAKE_BE32_IP(myip, 192, 168, snctx->node_id, 1);
-    RouteConfig rconf = {
+    CommonRouteConfig rconf = {
         .own_ip = myip,
         .sendfn = route_send
     };

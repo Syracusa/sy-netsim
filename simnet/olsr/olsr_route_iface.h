@@ -8,7 +8,7 @@ void olsr_route_proto_packet_process(void *data, size_t len);
 
 void olsr_route_update_datapkt(void *pkt, size_t *len);
 
-void olsr_start(RouteConfig *config);
+void olsr_start(CommonRouteConfig *config);
 
 void olsr_work();
 

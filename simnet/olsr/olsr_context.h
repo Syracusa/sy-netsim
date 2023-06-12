@@ -9,17 +9,25 @@
 
 #define OLSR_TX_MSGBUF_SIZE 2000
 
+typedef struct OlsrParam
+{
+    int hello_interval_ms;
+    int tc_interval_ms;
+    int willingness;
+} OlsrParam;
+
 typedef struct OlsrContext
 {
-    RouteConfig *conf;
+    CommonRouteConfig conf;
+    OlsrParam param;
     
     TqCtx *timerqueue;
     RingBuffer* olsr_tx_msgbuf;
 
-    uint16_t tx_seq;
+    uint16_t pkt_seq;
 } OlsrContext;
 
 extern OlsrContext g_olsr_ctx;
 
-void init_olsr_context();
+void init_olsr_context(CommonRouteConfig *config);
 #endif
