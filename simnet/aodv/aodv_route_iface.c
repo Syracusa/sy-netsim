@@ -2,14 +2,14 @@
 
 #include <stdio.h>
 
-void aodv_route_proto_packet_process(void *data, size_t len)
+void aodv_handle_local_pkt(void *data, size_t len)
 {
-    printf("aodv_route_proto_packet_process() called\n");
+    printf("aodv_handle_local_pkt() called\n");
 }
 
-void aodv_route_update_datapkt(void *pkt, size_t *len)
+void aodv_handle_remote_pkt(void *pkt, size_t len)
 {
-    printf("aodv_route_update_datapkt() called\n");
+    printf("aodv_handle_remote_pkt() called\n");
 }
 
 void aodv_start(CommonRouteConfig *config){

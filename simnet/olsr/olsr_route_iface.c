@@ -4,14 +4,14 @@
 #include "timerqueue.h"
 #include "olsr.h"
 
-void olsr_route_proto_packet_process(void *data, size_t len)
+void olsr_handle_local_pkt(void *data, size_t len)
 {
-    printf("olsr_route_proto_packet_process() called\n");
+    printf("olsr_route_handle_pkt() called\n");
 }
 
-void olsr_route_update_datapkt(void *pkt, size_t *len)
+void olsr_handle_remote_pkt(void *data, size_t len)
 {
-    printf("olsr_route_update_datapkt() called\n");
+    printf("olsr_route_handle_pkt() called\n");
 }
 
 void olsr_queue_hello()
@@ -22,6 +22,8 @@ void olsr_queue_hello()
     unsigned char buf[MAX_IPPKT_SIZE];
     size_t hello_len = MAX_IPPKT_SIZE;
     build_olsr_hello(ctx, buf, &hello_len);
+
+    RingBuffer_push(ctx->olsr_tx_msgbuf, buf, hello_len);
 }
 
 void olsr_send_from_queue()
@@ -65,7 +67,7 @@ void olsr_send_from_queue()
     size_t sendlen = MAX_IPPKT_SIZE;
     ippkt_pack(&pkt, buf, &sendlen);
 
-    ctx->conf.sendfn(buf, sendlen);
+    ctx->conf.send_remote(buf, sendlen);
     ctx->pkt_seq++;
 }
 

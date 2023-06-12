@@ -120,7 +120,12 @@ static void send_dummy_log_to_simulator(void *arg)
     // fprintf(stderr, "TODO : Send dummy log to simulator\n");
 }
 
-static void route_send(void *data, size_t len)
+static void remote_send(void *data, size_t len)
+{
+    sendto_mac(g_snctx, data, len, 1);
+}
+
+static void local_send(void *data, size_t len)
 {
     sendto_mac(g_snctx, data, len, 1);
 }
@@ -140,13 +145,15 @@ int main(int argc, char *argv[])
     MAKE_BE32_IP(myip, 192, 168, snctx->node_id, 1);
     CommonRouteConfig rconf = {
         .own_ip = myip,
-        .sendfn = route_send
+        .send_remote = remote_send,
+        .send_local = local_send
     };
     snctx->route = &olsr_iface;
     snctx->route->start(&rconf);
 
     mainloop(snctx);
 
+    snctx->route->end();
     delete_simnet_context(snctx);
     return 0;
 }
