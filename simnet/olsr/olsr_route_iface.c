@@ -14,10 +14,10 @@ void olsr_handle_remote_pkt(void *data, size_t len)
     printf("olsr_route_handle_pkt() called\n");
 }
 
-void olsr_queue_hello()
+void olsr_queue_hello(void* olsr_ctx)
 {
     printf("olsr_queue_hello() called\n");
-    OlsrContext *ctx = &g_olsr_ctx;
+    OlsrContext *ctx = olsr_ctx;
 
     uint8_t buf[MAX_IPPKT_SIZE];
     uint8_t *offset = buf;
@@ -36,12 +36,15 @@ void olsr_queue_hello()
     build_olsr_hello(ctx, offset, &hello_len);
     offset += hello_len;
 
-    RingBuffer_push(ctx->olsr_tx_msgbuf, buf, offset - buf);
+    uint16_t msglen = offset - buf;
+
+    msghdr->olsr_msgsize = htons(msglen);
+    RingBuffer_push(ctx->olsr_tx_msgbuf, buf, msglen);
 }
 
-void olsr_send_from_queue()
+void olsr_send_from_queue(void* arg)
 {
-    OlsrContext *ctx = &g_olsr_ctx;
+    OlsrContext *ctx = arg;
 
     PktBuf pkt;
     unsigned char buf[MAX_IPPKT_SIZE];
@@ -92,7 +95,7 @@ void olsr_start(CommonRouteConfig *config)
     OlsrContext *ctx = &g_olsr_ctx;
 
     static TqElem queue_hello;
-    queue_hello.arg = NULL;
+    queue_hello.arg = ctx;
     queue_hello.callback = olsr_queue_hello;
     queue_hello.use_once = 0;
     queue_hello.interval_us = ctx->param.hello_interval_ms * 1000;
@@ -100,7 +103,7 @@ void olsr_start(CommonRouteConfig *config)
     timerqueue_set_jitter(&queue_hello, ctx->param.hello_interval_ms * 1000 / 8);
 
     static TqElem job_tx_msg;
-    job_tx_msg.arg = NULL;
+    job_tx_msg.arg = ctx;
     job_tx_msg.callback = olsr_send_from_queue;
     job_tx_msg.use_once = 0;
     job_tx_msg.interval_us = 50 * 1000;

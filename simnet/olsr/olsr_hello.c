@@ -4,7 +4,8 @@
 
 #include <stddef.h>
 
-static uint8_t get_neighbor_status(OlsrContext *ctx, in_addr_t addr)
+static uint8_t get_neighbor_status(OlsrContext *ctx,
+                                   in_addr_t addr)
 {
     NeighborElem *elem;
     elem = (NeighborElem *)rbtree_search(ctx->neighbor_tree, &addr);
@@ -15,7 +16,9 @@ static uint8_t get_neighbor_status(OlsrContext *ctx, in_addr_t addr)
     return STATUS_UNAVAILABLE;
 }
 
-static void write_links_with_code(OlsrContext *ctx, uint8_t **offsetp, uint8_t code)
+static void write_links_with_code(OlsrContext *ctx,
+                                  uint8_t **offsetp,
+                                  uint8_t code)
 {
     NeighborLinkElem *nelem;
     uint16_t write_count = 0;
@@ -51,7 +54,8 @@ static void write_links_with_code(OlsrContext *ctx, uint8_t **offsetp, uint8_t c
     }
 }
 
-static void write_links(OlsrContext *ctx, uint8_t **offset)
+static void write_links(OlsrContext *ctx,
+                        uint8_t **offset)
 {
     for (uint8_t nstat = 0; nstat < NEIGHBOR_STATUS_END; nstat++) {
         for (uint8_t lstat = 0; lstat < LINK_STATUS_END; lstat++) {
@@ -61,31 +65,22 @@ static void write_links(OlsrContext *ctx, uint8_t **offset)
     }
 }
 
-void build_olsr_hello(OlsrContext *ctx, void *buf, size_t *len)
+void build_olsr_hello(OlsrContext *ctx,
+                      void *buf,
+                      size_t *len)
 {
     uint8_t *start = buf;
     uint8_t *offset = buf;
-
-    OlsrMsgHeader *msghdr = (OlsrMsgHeader *)offset;
-    msghdr->olsr_msgtype = MSG_TYPE_HELLO;
-    msghdr->olsr_vtime = 0; /* TODO */
-    msghdr->originator = ctx->conf.own_ip;
-    msghdr->ttl = 1;
-    msghdr->hopcnt = 1;
-    msghdr->seqno = htons(ctx->pkt_seq);
-
-    offset += sizeof(OlsrMsgHeader);
 
     HelloMsg *hello_msg = (HelloMsg *)offset;
     hello_msg->reserved = 0;
     hello_msg->htime = 0; /* TODO */
     hello_msg->willingness = ctx->param.willingness;
 
-    offset += sizeof(OlsrMsgHeader);
+    offset += sizeof(HelloMsg);
 
     write_links(ctx, &offset);
-
-    msghdr->olsr_msgsize = htons(offset - start);
+    *len = offset - start;
 }
 
 
