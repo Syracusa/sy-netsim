@@ -142,8 +142,7 @@ int main(int argc, char *argv[])
         .sendfn = route_send
     };
     snctx->route = &olsr_iface;
-    snctx->route->set_config(&rconf);
-    snctx->route->start();
+    snctx->route->start(&rconf);
 
     mainloop(snctx);
 

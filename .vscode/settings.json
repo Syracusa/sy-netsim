@@ -22,6 +22,10 @@
         "type_traits": "c",
         "utility": "c",
         "mac_connection.h": "c",
-        "httpserver.h": "c"
+        "httpserver.h": "c",
+        "netutil.h": "c",
+        "olsr.h": "c",
+        "olsr_context.h": "c",
+        "olsr_route_iface.h": "c"
     }
 }

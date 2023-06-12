@@ -2,11 +2,6 @@
 
 #include <stdio.h>
 
-void aodv_route_set_config(RouteConfig *config)
-{
-    printf("aodv_route_set_config() called\n");
-}
-
 void aodv_route_proto_packet_process(void *data, size_t len)
 {
     printf("aodv_route_proto_packet_process() called\n");
@@ -17,7 +12,7 @@ void aodv_route_update_datapkt(void *pkt, size_t *len)
     printf("aodv_route_update_datapkt() called\n");
 }
 
-void aodv_start(){
+void aodv_start(RouteConfig *config){
     printf("aodv_start() called\n");
 }
 
