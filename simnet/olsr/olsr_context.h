@@ -101,4 +101,5 @@ typedef struct OlsrContext
 extern OlsrContext g_olsr_ctx;
 
 void init_olsr_context(CommonRouteConfig *config);
+void finalize_olsr_context();
 #endif
