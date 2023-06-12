@@ -9,7 +9,7 @@ static void handle_olsr_msg(OlsrMsgHeader* msg, in_addr_t src)
     /* Process OLSR Routing Messages */
     switch (msg->olsr_msgtype) {
         case MSG_TYPE_HELLO:
-            process_olsr_hello(ctx, msg->msg_payload, src);
+            process_olsr_hello(ctx, src, msg->msg_payload);
             break;
         case MSG_TYPE_TC:
             /* TODO */

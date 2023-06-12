@@ -26,7 +26,7 @@ static void write_links_with_code(OlsrContext *ctx,
     RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->neighbor_tree)
     {
         LinkElem *lelem;
-        RBTREE_FOR(lelem, LinkElem *, ielem->iface_link_tree)
+        RBTREE_FOR(lelem, LinkElem *, ielem->local_iface_tree)
         {
             uint8_t neighbor_status =
                 get_neighbor_status(ctx, lelem->neighbor_iface_addr);
@@ -85,18 +85,21 @@ void process_olsr_hello(OlsrContext *ctx,
 {
     HelloMsg *hello_msg = hello;
 
-    LocalNetIfaceElem *iface = rbtree_search(ctx->iface_link_tree,
-                                             &ctx->conf.own_ip);
-    if (iface == (LocalNetIfaceElem *)RBTREE_NULL){
+    LocalNetIfaceElem *iface =
+        (LocalNetIfaceElem *)rbtree_search(ctx->local_iface_tree,
+                                           &ctx->conf.own_ip);
+                                           
+    if (iface == (LocalNetIfaceElem *)RBTREE_NULL) {
         iface = malloc(sizeof(LocalNetIfaceElem));
         memset(iface, 0x00, sizeof(LocalNetIfaceElem));
         iface->priv_rbn.key = &(iface->local_iface_addr);
         iface->local_iface_addr = ctx->conf.own_ip;
-        iface->iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
+        iface->local_iface_tree = rbtree_create(rbtree_compare_by_inetaddr);
+        rbtree_insert(ctx->local_iface_tree, (rbnode_type *)iface);
     }
 
-    LinkElem* link = rbtree_search(iface->iface_link_tree, &src);
-    if (link == (LinkElem *)RBTREE_NULL){
+    LinkElem *link = (LinkElem *)rbtree_search(iface->local_iface_tree, &src);
+    if (link == (LinkElem *)RBTREE_NULL) {
         link = malloc(sizeof(LinkElem));
         memset(link, 0x00, sizeof(LinkElem));
 
