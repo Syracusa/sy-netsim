@@ -6,7 +6,7 @@
 
 #include "olsr_proto.h"
 #include "olsr_context.h"
-#include "olsr.h"
 #include "olsr_hello.h"
+#include "olsr_route.h"
 
 #endif

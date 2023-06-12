@@ -14,7 +14,7 @@ void init_olsr_param()
     param->willingness = WILL_DEFAULT;
 }
 
-static int rbtree_compare_by_inetaddr(const void *k1, const void *k2)
+int rbtree_compare_by_inetaddr(const void *k1, const void *k2)
 {
     in_addr_t *n1 = (in_addr_t *)k1;
     in_addr_t *n2 = (in_addr_t *)k2;
@@ -33,7 +33,7 @@ void init_olsr_context(CommonRouteConfig *config)
     g_olsr_ctx.timerqueue = create_timerqueue();
     g_olsr_ctx.olsr_tx_msgbuf = RingBuffer_new(OLSR_TX_MSGBUF_SIZE);
 
-    g_olsr_ctx.neighbor_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
+    g_olsr_ctx.iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.neighbor_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.mpr_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.selector_tree = rbtree_create(rbtree_compare_by_inetaddr);
@@ -48,8 +48,8 @@ static void free_arg(rbnode_type *rbn, void *dummy)
 
 void finalize_olsr_context()
 {
-    traverse_postorder(g_olsr_ctx.neighbor_link_tree, free_arg, NULL);
-    free(g_olsr_ctx.neighbor_link_tree);
+    traverse_postorder(g_olsr_ctx.iface_link_tree, free_arg, NULL);
+    free(g_olsr_ctx.iface_link_tree);
     traverse_postorder(g_olsr_ctx.neighbor_tree, free_arg, NULL);
     free(g_olsr_ctx.neighbor_tree);
     traverse_postorder(g_olsr_ctx.mpr_tree, free_arg, NULL);

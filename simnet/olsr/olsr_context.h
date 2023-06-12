@@ -22,13 +22,13 @@ typedef struct LinkElem
     TqElem expire_timer;
 } LinkElem;
 
-typedef struct NeighborLinkElem
+typedef struct LocalNetIfaceElem
 {
     rbnode_type priv_rbn;
     in_addr_t local_iface_addr; /* Rbtree Key */
 
-    rbtree_type *neighbor_link_tree; /* Tree of LinkElem */
-} NeighborLinkElem;
+    rbtree_type *iface_link_tree; /* Tree of LinkElem */
+} LocalNetIfaceElem;
 
 typedef struct Neighbor2Elem
 {
@@ -93,7 +93,7 @@ typedef struct OlsrContext
 
     uint16_t pkt_seq;
 
-    rbtree_type *neighbor_link_tree; /* Tree of NeighborLinkElem */
+    rbtree_type *iface_link_tree; /* Tree of LocalNetIfaceElem */
     rbtree_type *neighbor_tree; /* Tree of NeighborElem */
     rbtree_type *mpr_tree; /* Tree of MprElem */
     rbtree_type *selector_tree; /* Tree of MprSelecorElem */
@@ -104,4 +104,6 @@ extern OlsrContext g_olsr_ctx;
 
 void init_olsr_context(CommonRouteConfig *config);
 void finalize_olsr_context();
+
+int rbtree_compare_by_inetaddr(const void *k1, const void *k2);
 #endif

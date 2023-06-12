@@ -91,5 +91,5 @@ TqCtx *create_timerqueue()
 
 void delete_timerqueue(TqCtx *tq)
 {
-    /*  TODO  */
+
 }

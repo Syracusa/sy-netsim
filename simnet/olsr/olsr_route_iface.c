@@ -12,6 +12,14 @@ void olsr_handle_local_pkt(void *data, size_t len)
 void olsr_handle_remote_pkt(void *data, size_t len)
 {
     printf("olsr_route_handle_pkt() called\n");
+    PktBuf buf;
+    ippkt_unpack(&buf, data, len);
+
+    if (buf.udph.dest == ntohs(OLSR_PROTO_PORT)){
+        handle_route_pkt(&buf);
+    } else {
+        handle_data_pkt(&buf);
+    }
 }
 
 void olsr_queue_hello(void* olsr_ctx)

@@ -1,8 +1,5 @@
 #include "olsr_hello.h"
-
 #include "olsr.h"
-
-#include <stddef.h>
 
 static uint8_t get_neighbor_status(OlsrContext *ctx,
                                    in_addr_t addr)
@@ -20,16 +17,16 @@ static void write_links_with_code(OlsrContext *ctx,
                                   uint8_t **offsetp,
                                   uint8_t code)
 {
-    NeighborLinkElem *nelem;
+    LocalNetIfaceElem *ielem;
     uint16_t write_count = 0;
 
     HelloInfo *hello_info = (HelloInfo *)*offsetp;
     *offsetp += sizeof(HelloInfo);
 
-    RBTREE_FOR(nelem, NeighborLinkElem *, ctx->neighbor_tree)
+    RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->neighbor_tree)
     {
         LinkElem *lelem;
-        RBTREE_FOR(lelem, LinkElem *, nelem->neighbor_link_tree)
+        RBTREE_FOR(lelem, LinkElem *, ielem->iface_link_tree)
         {
             uint8_t neighbor_status =
                 get_neighbor_status(ctx, lelem->neighbor_iface_addr);
@@ -83,8 +80,34 @@ void build_olsr_hello(OlsrContext *ctx,
     *len = offset - start;
 }
 
-
-void process_olsr_hello()
+void process_olsr_hello(OlsrContext *ctx,
+                        in_addr_t src, void *hello)
 {
+    HelloMsg *hello_msg = hello;
+
+    LocalNetIfaceElem *iface = rbtree_search(ctx->iface_link_tree,
+                                             &ctx->conf.own_ip);
+    if (iface == (LocalNetIfaceElem *)RBTREE_NULL){
+        iface = malloc(sizeof(LocalNetIfaceElem));
+        memset(iface, 0x00, sizeof(LocalNetIfaceElem));
+        iface->priv_rbn.key = &(iface->local_iface_addr);
+        iface->local_iface_addr = ctx->conf.own_ip;
+        iface->iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
+    }
+
+    LinkElem* link = rbtree_search(iface->iface_link_tree, &src);
+    if (link == (LinkElem *)RBTREE_NULL){
+        link = malloc(sizeof(LinkElem));
+        memset(link, 0x00, sizeof(LinkElem));
+
+        /* TODO (7.1.1.  HELLO Message Processing) */
+    }
+
+    /*
+    TODO
+    Upon receiving a HELLO message, the "validity time" MUST be computed
+    from the Vtime field of the message header (see section 3.3.2).
+    */
+
 
 }
