@@ -27,6 +27,9 @@ void init_olsr_context(CommonRouteConfig *config)
     memset(&g_olsr_ctx, 0x00, sizeof(g_olsr_ctx));
 
     memcpy(&g_olsr_ctx.conf, config, sizeof(CommonRouteConfig));
+
+    init_olsr_param();
+    
     g_olsr_ctx.timerqueue = create_timerqueue();
     g_olsr_ctx.olsr_tx_msgbuf = RingBuffer_new(OLSR_TX_MSGBUF_SIZE);
 

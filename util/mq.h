@@ -2,7 +2,7 @@
 #define MQ_H
 #include <sys/msg.h>
 
-#define MQ_MAX_DATA_LEN 2000
+#define MQ_MAX_DATA_LEN 5000
 
 typedef struct  {
     long type;       /* message type, must be > 0 */

@@ -21,6 +21,7 @@
 #include "httpserver.h"
 
 char dbgname[10];
+SimulatorCtx *g_sctx = NULL;
 
 void init_mq(SimulatorCtx *sctx)
 {
@@ -181,10 +182,17 @@ static void send_config_msgs(SimulatorCtx *sctx)
     }
 }
 
+static void exit(int signo)
+{
+    if (g_sctx)
+        delete_simulator_context(g_sctx);
+}
+
 int main()
 {
     TLOGI("Start simulator...\n");
     SimulatorCtx *sctx = create_simulator_context();
+    signal(SIGINT, &exit);
 
     parse_config(sctx);
     init_mq(sctx);

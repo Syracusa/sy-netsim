@@ -45,7 +45,8 @@ void recv_command(SimNetCtx *snctx)
 {
     MqMsgbuf msg;
     while (1) {
-        ssize_t res = msgrcv(snctx->mqid_recv_command, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
+        ssize_t res = msgrcv(snctx->mqid_recv_command,
+                             &msg, sizeof(msg.text), 0, IPC_NOWAIT);
         if (res < 0) {
             if (errno != ENOMSG) {
                 TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
