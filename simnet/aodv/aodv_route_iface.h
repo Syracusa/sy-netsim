@@ -15,8 +15,7 @@ void aodv_work();
 
 void aodv_end();
 
-static RouteContext aodv_iface = {
-    .route_port = AODV_PROTO_PORT,
+static RouteFunctions aodv_iface = {
     .handle_local_pkt = aodv_handle_local_pkt,
     .handle_remote_pkt = aodv_handle_remote_pkt,
     .start = aodv_start,

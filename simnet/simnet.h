@@ -31,7 +31,7 @@ typedef struct
     int mqid_recv_command;
     int mqid_send_report;
 
-    RouteContext *route;
+    RouteFunctions *route;
 } SimNetCtx;
 
 

@@ -21,18 +21,14 @@ typedef void (*route_start)(CommonRouteConfig *config);
 typedef void (*route_work)();
 typedef void (*route_end)();
 
-typedef struct RouteContext
+typedef struct RouteFunctions
 {
-    /* Context variable */
-    uint16_t route_port;
-
-    /* Functions */
     route_handle_pkt handle_remote_pkt;
     route_handle_pkt handle_local_pkt;
     route_start start;
     route_work work;
     route_end end;
-} RouteContext;
+} RouteFunctions;
 
 
 #endif

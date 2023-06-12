@@ -14,8 +14,7 @@ void olsr_work();
 
 void olsr_end();
 
-static RouteContext olsr_iface = {
-    .route_port = OLSR_PROTO_PORT,
+static RouteFunctions olsr_iface = {
     .handle_local_pkt = olsr_handle_local_pkt,
     .handle_remote_pkt = olsr_handle_remote_pkt,
     .start = olsr_start,
