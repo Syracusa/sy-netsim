@@ -26,6 +26,7 @@ typedef struct
     /* Privates */
     rbnode_type priv_rbn;
     TqKey priv_rbk;
+    int priv_max_jitter;
 
     /* if 0 then timerqueue will detatch this node */
     int active;
@@ -84,9 +85,13 @@ static inline int check_expire(struct timespec *expiretime,
     return res;
 }
 
-
 void timerqueue_register_job(TqCtx *tq, TqElem *elem);
+
 TqCtx *create_timerqueue();
+
 void timerqueue_work(TqCtx *tq);
+
+/* Should called after register */
+void timerqueue_set_jitter(TqElem *elem, int jitter);
 
 #endif

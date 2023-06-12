@@ -36,9 +36,16 @@ void timerqueue_register_job(TqCtx *tq, TqElem *elem)
 
     elem->priv_rbk.ptr = elem;
     elem->priv_rbn.key = &elem->priv_rbk;
+    elem->priv_max_jitter = 0;
     elem->attached = 1;
     elem->active = 1;
     rbtree_insert(tq->rbt, (rbnode_type *)elem);
+}
+
+/* Should called after register */
+void timerqueue_set_jitter(TqElem *elem, int jitter)
+{
+    elem->priv_max_jitter = jitter;
 }
 
 void timerqueue_work(TqCtx *tq)
@@ -47,7 +54,7 @@ void timerqueue_work(TqCtx *tq)
     clock_gettime(CLOCK_REALTIME, &currtime);
 
     TqElem *first = (TqElem *)rbtree_first(tq->rbt);
-    if (first == (TqElem *)RBTREE_NULL){
+    if (first == (TqElem *)RBTREE_NULL) {
         return;
     }
 
@@ -59,7 +66,12 @@ void timerqueue_work(TqCtx *tq)
                 first->active = 0;
                 first->attached = 0;
             } else {
-                timespec_add_usec(&first->priv_rbk.expire, first->interval_us);
+                int new_interval = first->interval_us;
+                if (first->priv_max_jitter) {
+                    new_interval += rand() % (first->priv_max_jitter * 2);
+                    new_interval -= first->priv_max_jitter;
+                }
+                timespec_add_usec(&first->priv_rbk.expire, new_interval);
                 rbtree_insert(tq->rbt, (rbnode_type *)first);
             }
         } else {
