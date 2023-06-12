@@ -14,10 +14,12 @@ typedef struct LinkElem
 {
     rbnode_type priv_rbn;
     in_addr_t neighbor_iface_addr; /* Rbtree Key */
+    
+    uint8_t status;
 
-    uint32_t sym_time;
-    uint32_t asym_time;
-    uint32_t expire_time;
+    TqElem sym_timer;
+    TqElem asym_timer;
+    TqElem expire_timer;
 } LinkElem;
 
 typedef struct NeighborLinkElem

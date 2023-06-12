@@ -15,30 +15,49 @@
 #define WILL_HIGH             6
 #define WILL_ALWAYS           7
 
+#define NOT_NEIGH             0
+#define SYM_NEIGH             1
+#define MPR_NEIGH             2
+#define NEIGHBOR_STATUS_END   3
+
+#define UNSPEC_LINK           0
+#define ASYM_LINK             1
+#define SYM_LINK              2
+#define LOST_LINK             3
+#define LINK_STATUS_END       4
+
+#define STATUS_UNAVAILABLE 255
+
 #define DEF_HELLO_INTERVAL_MS 2000
 #define DEF_TC_INTERVAL_MS    5000
 
-typedef struct HelloInfo {
+#define CREATE_LINK_CODE(status, link) (link | (status<<2))
+
+typedef struct HelloInfo
+{
   uint8_t link_code;
   uint8_t reserved;
   uint16_t size;
   in_addr_t neigh_addr[];
-} __attribute__ ((packed)) HelloInfo;
+} __attribute__((packed)) HelloInfo;
 
-typedef struct HelloMsg {
+typedef struct HelloMsg
+{
   uint16_t reserved;
   uint8_t htime;
   uint8_t willingness;
   HelloInfo hello_info[];
-} __attribute__ ((packed)) HelloMsg;
+} __attribute__((packed)) HelloMsg;
 
-typedef struct TcMsg {
+typedef struct TcMsg
+{
   uint16_t ansn;
   uint16_t reserved;
   in_addr_t neigh[];
-} __attribute__ ((packed)) TcMsg;
+} __attribute__((packed)) TcMsg;
 
-typedef struct OlsrMsgHeader {
+typedef struct OlsrMsgHeader
+{
   uint8_t olsr_msgtype;
   uint8_t olsr_vtime;
   uint16_t olsr_msgsize;
@@ -46,8 +65,8 @@ typedef struct OlsrMsgHeader {
   uint8_t ttl;
   uint8_t hopcnt;
   uint16_t seqno;
-  
+
   uint8_t msg_payload[];
-} __attribute__ ((packed)) OlsrMsgHeader;
+} __attribute__((packed)) OlsrMsgHeader;
 
 #endif

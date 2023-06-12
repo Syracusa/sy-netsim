@@ -19,11 +19,24 @@ void olsr_queue_hello()
     printf("olsr_queue_hello() called\n");
     OlsrContext *ctx = &g_olsr_ctx;
 
-    unsigned char buf[MAX_IPPKT_SIZE];
-    size_t hello_len = MAX_IPPKT_SIZE;
-    build_olsr_hello(ctx, buf, &hello_len);
+    uint8_t buf[MAX_IPPKT_SIZE];
+    uint8_t *offset = buf;
 
-    RingBuffer_push(ctx->olsr_tx_msgbuf, buf, hello_len);
+    OlsrMsgHeader *msghdr = (OlsrMsgHeader *)buf;
+    msghdr->olsr_msgtype = MSG_TYPE_HELLO;
+    msghdr->olsr_vtime = 0; /* TODO */
+    msghdr->originator = ctx->conf.own_ip;
+    msghdr->ttl = 1;
+    msghdr->hopcnt = 1;
+    msghdr->seqno = htons(ctx->pkt_seq);
+
+    offset += sizeof(OlsrMsgHeader);
+
+    size_t hello_len = MAX_IPPKT_SIZE;
+    build_olsr_hello(ctx, offset, &hello_len);
+    offset += hello_len;
+
+    RingBuffer_push(ctx->olsr_tx_msgbuf, buf, offset - buf);
 }
 
 void olsr_send_from_queue()

@@ -26,6 +26,7 @@
         "netutil.h": "c",
         "olsr.h": "c",
         "olsr_context.h": "c",
-        "olsr_route_iface.h": "c"
+        "olsr_route_iface.h": "c",
+        "olsr_hello.h": "c"
     }
 }
