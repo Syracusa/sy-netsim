@@ -127,7 +127,7 @@ static void remote_send(void *data, size_t len)
 
 static void local_send(void *data, size_t len)
 {
-    sendto_mac(g_snctx, data, len, 1);
+    /* TODO */
 }
 
 int main(int argc, char *argv[])
