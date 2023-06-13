@@ -29,23 +29,32 @@ static int compare_elem(const void *k1, const void *k2)
     }
 }
 
-void timerqueue_register_job(TqCtx *tq, TqElem *elem)
+TqElem* timerqueue_new_timer()
+{
+    TqElem* elem = malloc(sizeof(TqElem));
+    memset(elem, 0x00, sizeof(TqElem));
+
+    elem->priv_rbk.ptr = elem;
+    elem->priv_rbn.key = &elem->priv_rbk;
+}
+
+void timerqueue_register_timer(TqCtx *tq, TqElem *elem)
 {
     clock_gettime(CLOCK_REALTIME, &elem->priv_rbk.expire);
     timespec_add_usec(&elem->priv_rbk.expire, elem->interval_us);
 
-    elem->priv_rbk.ptr = elem;
-    elem->priv_rbn.key = &elem->priv_rbk;
-    elem->priv_max_jitter = 0;
+    rbtree_insert(tq->rbt, (rbnode_type *)elem);
     elem->attached = 1;
     elem->active = 1;
-    rbtree_insert(tq->rbt, (rbnode_type *)elem);
 }
 
-/* Should called after register */
-void timerqueue_set_jitter(TqElem *elem, int jitter)
+void timerqueue_reactivate_timer(TqCtx *tq, TqElem *elem)
 {
-    elem->priv_max_jitter = jitter;
+    if (elem->attached == 1){
+        rbtree_delete(tq->rbt, elem->priv_rbn.key);
+        elem->attached = 0;
+    } 
+    timerqueue_register_timer(tq, elem);
 }
 
 void timerqueue_work(TqCtx *tq)
@@ -61,21 +70,28 @@ void timerqueue_work(TqCtx *tq)
     while (check_expire(&(first->priv_rbk.expire), &currtime)) {
         rbtree_delete(tq->rbt, first->priv_rbn.key);
         if (first->active) {
-            first->callback(first->arg);
             if (first->use_once) {
                 first->active = 0;
                 first->attached = 0;
             } else {
                 int new_interval = first->interval_us;
-                if (first->priv_max_jitter) {
-                    new_interval += rand() % (first->priv_max_jitter * 2);
-                    new_interval -= first->priv_max_jitter;
+                if (first->max_jitter) {
+                    new_interval += rand() % (first->max_jitter * 2);
+                    new_interval -= first->max_jitter;
                 }
                 timespec_add_usec(&first->priv_rbk.expire, new_interval);
                 rbtree_insert(tq->rbt, (rbnode_type *)first);
             }
+            first->callback(first->arg);
         } else {
             first->attached = 0;
+        }
+
+        if (first->attached == 0){
+            if (first->detached_callback)
+                first->detached_callback(first->arg);
+            if (first->free_on_detach)
+                free(first);
         }
 
         first = (TqElem *)rbtree_first(tq->rbt);
@@ -91,5 +107,5 @@ TqCtx *create_timerqueue()
 
 void delete_timerqueue(TqCtx *tq)
 {
-
+    free(tq);
 }

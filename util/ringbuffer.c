@@ -50,7 +50,7 @@ size_t RingBuffer_get_remain_bufsize(RingBuffer* ringbuf)
     }
 }
 
-static inline size_t get_readable_bufsize(RingBuffer* ringbuf)
+size_t RingBuffer_get_readable_bufsize(RingBuffer* ringbuf)
 {
     size_t remain = RingBuffer_get_remain_bufsize(ringbuf);
     return ringbuf->size - remain;
@@ -97,7 +97,7 @@ static ssize_t RingBuffer_read_internal(RingBuffer* ringbuf,
                                            int do_pop)
 {
     RB_VERBOSE("Try read(pop).. len : %d\n", readlen);
-    int readable = get_readable_bufsize(ringbuf);
+    int readable = RingBuffer_get_readable_bufsize(ringbuf);
 
     if (readlen > readable)
     {

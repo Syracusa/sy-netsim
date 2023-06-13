@@ -26,7 +26,7 @@ typedef struct
     /* Privates */
     rbnode_type priv_rbn;
     TqKey priv_rbk;
-    int priv_max_jitter;
+    int max_jitter;
 
     /* if 0 then timerqueue will detatch this node */
     int active;
@@ -34,14 +34,15 @@ typedef struct
     /* If 0 then safely free this elem */
     int attached;
 
+    int free_on_detach;
+
     /* User should write these field */
     int interval_us;
     int use_once;
     void *arg;
     void (*callback)(void *arg);
+    void (*detached_callback)(void *arg);
 } TqElem;
-
-
 
 #define timespec_sub(after, before, result)                         \
   do {                                                              \
@@ -85,13 +86,16 @@ static inline int check_expire(struct timespec *expiretime,
     return res;
 }
 
-void timerqueue_register_job(TqCtx *tq, TqElem *elem);
+TqElem* timerqueue_new_timer();
+
+void timerqueue_reset_expire_time(TqElem *elem);
+
+void timerqueue_register_timer(TqCtx *tq, TqElem *elem);
+
+void timerqueue_reactivate_timer(TqCtx *tq, TqElem *elem);
 
 TqCtx *create_timerqueue();
 
 void timerqueue_work(TqCtx *tq);
-
-/* Should called after register */
-void timerqueue_set_jitter(TqElem *elem, int jitter);
 
 #endif

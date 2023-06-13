@@ -39,4 +39,7 @@ ssize_t RingBuffer_read(RingBuffer* ringbuf, void* buf, int readlen);
 ssize_t RingBuffer_pop(RingBuffer* ringbuf, void* buf, int readlen);
 
 size_t RingBuffer_get_remain_bufsize(RingBuffer* ringbuf);
+
+size_t RingBuffer_get_readable_bufsize(RingBuffer* ringbuf);
+
 #endif

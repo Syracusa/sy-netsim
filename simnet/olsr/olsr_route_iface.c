@@ -15,16 +15,15 @@ void olsr_handle_remote_pkt(void *data, size_t len)
     PktBuf buf;
     ippkt_unpack(&buf, data, len);
 
-    if (buf.udph.dest == ntohs(OLSR_PROTO_PORT)){
+    if (buf.udph.dest == ntohs(OLSR_PROTO_PORT)) {
         handle_route_pkt(&buf);
     } else {
         handle_data_pkt(&buf);
     }
 }
 
-void olsr_queue_hello(void* olsr_ctx)
+void olsr_queue_hello(void *olsr_ctx)
 {
-    printf("olsr_queue_hello() called\n");
     OlsrContext *ctx = olsr_ctx;
 
     uint8_t buf[MAX_IPPKT_SIZE];
@@ -50,17 +49,17 @@ void olsr_queue_hello(void* olsr_ctx)
     RingBuffer_push(ctx->olsr_tx_msgbuf, buf, msglen);
 }
 
-void olsr_send_from_queue(void* arg)
+void olsr_send_from_queue(void *arg)
 {
     OlsrContext *ctx = arg;
 
     PktBuf pkt;
-    unsigned char buf[MAX_IPPKT_SIZE];
-    ssize_t read = RingBuffer_get_remain_bufsize(ctx->olsr_tx_msgbuf);
+
+    ssize_t read = RingBuffer_get_readable_bufsize(ctx->olsr_tx_msgbuf);
 
     if (read <= 0)
         return;
-
+        
     /* Payload */
     uint8_t *offset = pkt.payload;
 
@@ -88,6 +87,7 @@ void olsr_send_from_queue(void* arg)
                  ctx->conf.own_ip, broadcast_ip, IPPROTO_UDP);
     pkt.iph_len = sizeof(struct iphdr);
 
+    unsigned char buf[MAX_IPPKT_SIZE];
     size_t sendlen = MAX_IPPKT_SIZE;
     ippkt_pack(&pkt, buf, &sendlen);
 
@@ -102,20 +102,26 @@ void olsr_start(CommonRouteConfig *config)
     init_olsr_context(config);
     OlsrContext *ctx = &g_olsr_ctx;
 
-    static TqElem queue_hello;
-    queue_hello.arg = ctx;
-    queue_hello.callback = olsr_queue_hello;
-    queue_hello.use_once = 0;
-    queue_hello.interval_us = ctx->param.hello_interval_ms * 1000;
-    timerqueue_register_job(ctx->timerqueue, &queue_hello);
-    timerqueue_set_jitter(&queue_hello, ctx->param.hello_interval_ms * 1000 / 8);
+    static TqElem *queue_hello = NULL;
+    if (queue_hello == NULL)
+        queue_hello = timerqueue_new_timer();
 
-    static TqElem job_tx_msg;
-    job_tx_msg.arg = ctx;
-    job_tx_msg.callback = olsr_send_from_queue;
-    job_tx_msg.use_once = 0;
-    job_tx_msg.interval_us = 50 * 1000;
-    timerqueue_register_job(ctx->timerqueue, &job_tx_msg);
+    queue_hello->arg = ctx;
+    queue_hello->callback = olsr_queue_hello;
+    queue_hello->use_once = 0;
+    queue_hello->interval_us = ctx->param.hello_interval_ms * 1000;
+    queue_hello->max_jitter = ctx->param.hello_interval_ms * 1000 / 8;
+    timerqueue_register_timer(ctx->timerqueue, queue_hello);
+
+    static TqElem *job_tx_msg = NULL;
+    if (job_tx_msg == NULL)
+        job_tx_msg = timerqueue_new_timer();
+
+    job_tx_msg->arg = ctx;
+    job_tx_msg->callback = olsr_send_from_queue;
+    job_tx_msg->use_once = 0;
+    job_tx_msg->interval_us = 50 * 1000;
+    timerqueue_register_timer(ctx->timerqueue, job_tx_msg);
 }
 
 void olsr_work()

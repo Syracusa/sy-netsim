@@ -13,9 +13,9 @@ static uint8_t get_neighbor_status(OlsrContext *ctx,
     return STATUS_UNAVAILABLE;
 }
 
-static void write_links_with_code(OlsrContext *ctx,
-                                  uint8_t **offsetp,
-                                  uint8_t code)
+static void hello_write_links_with_code(OlsrContext *ctx,
+                                        uint8_t **offsetp,
+                                        uint8_t code)
 {
     LocalNetIfaceElem *ielem;
     uint16_t write_count = 0;
@@ -26,7 +26,7 @@ static void write_links_with_code(OlsrContext *ctx,
     RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->neighbor_tree)
     {
         LinkElem *lelem;
-        RBTREE_FOR(lelem, LinkElem *, ielem->local_iface_tree)
+        RBTREE_FOR(lelem, LinkElem *, ielem->iface_link_tree)
         {
             uint8_t neighbor_status =
                 get_neighbor_status(ctx, lelem->neighbor_iface_addr);
@@ -51,13 +51,13 @@ static void write_links_with_code(OlsrContext *ctx,
     }
 }
 
-static void write_links(OlsrContext *ctx,
-                        uint8_t **offset)
+static void hello_write_links(OlsrContext *ctx,
+                              uint8_t **offset)
 {
     for (uint8_t nstat = 0; nstat < NEIGHBOR_STATUS_END; nstat++) {
         for (uint8_t lstat = 0; lstat < LINK_STATUS_END; lstat++) {
             uint8_t code = CREATE_LINK_CODE(lstat, nstat);
-            write_links_with_code(ctx, offset, code);
+            hello_write_links_with_code(ctx, offset, code);
         }
     }
 }
@@ -76,8 +76,122 @@ void build_olsr_hello(OlsrContext *ctx,
 
     offset += sizeof(HelloMsg);
 
-    write_links(ctx, &offset);
+    hello_write_links(ctx, &offset);
     *len = offset - start;
+}
+
+static void link_timer_expire(void *arg)
+{
+    LinkElem *link = arg;
+
+    if (link->expire_timer->attached == 1) {
+        link->expire_timer->active = 0;
+        link->expire_timer->free_on_detach = 1;
+    } else {
+        free(link->expire_timer);
+    }
+
+    if (link->asym_timer->attached == 1) {
+        link->asym_timer->active = 0;
+        link->asym_timer->free_on_detach = 1;
+    } else {
+        free(link->asym_timer);
+    }
+
+    if (link->sym_timer->attached == 1) {
+        link->sym_timer->active = 0;
+        link->sym_timer->free_on_detach = 1;
+    } else {
+        free(link->sym_timer);
+    }
+
+    OlsrContext *ctx = &g_olsr_ctx;
+
+    LocalNetIfaceElem *iface;
+    iface = (LocalNetIfaceElem *)rbtree_search(ctx->local_iface_tree,
+                                               &link->local_iface_addr);
+
+    /* Detach & Free itself */
+    rbtree_delete(iface->iface_link_tree, &link->neighbor_iface_addr);
+    free(link);
+}
+
+static void asym_link_timer_expire(void *arg)
+{
+    LinkElem *link = arg;
+    link->status = LOST_LINK;
+}
+
+static void sym_link_timer_expire(void *arg)
+{
+    LinkElem *link = arg;
+    link->status = ASYM_LINK;
+}
+
+static void link_elem_expire_timer_set(OlsrContext *ctx,
+                                       LinkElem *link)
+{
+    if (link->expire_timer == NULL) {
+        link->expire_timer = timerqueue_new_timer();
+
+        link->expire_timer->use_once = 1;
+        link->expire_timer->callback = link_timer_expire;
+        link->expire_timer->arg = link;
+        link->expire_timer->interval_us = 8 * 1000 * 1000; /* TODO */
+        timerqueue_register_timer(ctx->timerqueue, link->expire_timer);
+    } else {
+        timerqueue_reactivate_timer(ctx->timerqueue, link->expire_timer);
+    }
+}
+
+static void link_elem_asym_timer_set(OlsrContext *ctx,
+                                     LinkElem *link)
+{
+    if (link->status != SYM_LINK)
+        link->status = ASYM_LINK;
+
+    if (link->asym_timer == NULL) {
+        link->asym_timer = timerqueue_new_timer();
+
+        link->asym_timer->use_once = 1;
+        link->asym_timer->callback = link_timer_expire;
+        link->asym_timer->arg = link;
+        link->asym_timer->interval_us = 6 * 1000 * 1000; /* TODO */
+        timerqueue_register_timer(ctx->timerqueue, link->asym_timer);
+    } else {
+        timerqueue_reactivate_timer(ctx->timerqueue, link->asym_timer);
+    }
+}
+
+static void link_elem_sym_timer_set(OlsrContext *ctx,
+                                    LinkElem *link)
+{
+    link->status = SYM_LINK;
+    if (link->sym_timer == NULL) {
+        link->sym_timer = timerqueue_new_timer();
+
+        link->sym_timer->use_once = 1;
+        link->sym_timer->callback = link_timer_expire;
+        link->sym_timer->arg = link;
+        link->sym_timer->interval_us = 4 * 1000 * 1000; /* TODO */
+        timerqueue_register_timer(ctx->timerqueue, link->sym_timer);
+    } else {
+        timerqueue_reactivate_timer(ctx->timerqueue, link->sym_timer);
+    }
+}
+
+static LinkElem *make_link_elem(OlsrContext *ctx,
+                                in_addr_t src,
+                                in_addr_t my_addr)
+{
+    LinkElem *link = malloc(sizeof(LinkElem));
+    memset(link, 0x00, sizeof(LinkElem));
+
+    link->neighbor_iface_addr = src;
+    link->local_iface_addr = my_addr;
+    link->status = LOST_LINK;
+
+    link_elem_expire_timer_set(ctx, link);
 }
 
 void process_olsr_hello(OlsrContext *ctx,
@@ -88,29 +202,22 @@ void process_olsr_hello(OlsrContext *ctx,
     LocalNetIfaceElem *iface =
         (LocalNetIfaceElem *)rbtree_search(ctx->local_iface_tree,
                                            &ctx->conf.own_ip);
-                                           
+
     if (iface == (LocalNetIfaceElem *)RBTREE_NULL) {
         iface = malloc(sizeof(LocalNetIfaceElem));
         memset(iface, 0x00, sizeof(LocalNetIfaceElem));
         iface->priv_rbn.key = &(iface->local_iface_addr);
         iface->local_iface_addr = ctx->conf.own_ip;
-        iface->local_iface_tree = rbtree_create(rbtree_compare_by_inetaddr);
+        iface->iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
         rbtree_insert(ctx->local_iface_tree, (rbnode_type *)iface);
     }
 
-    LinkElem *link = (LinkElem *)rbtree_search(iface->local_iface_tree, &src);
+    LinkElem *link = (LinkElem *)rbtree_search(iface->iface_link_tree, &src);
     if (link == (LinkElem *)RBTREE_NULL) {
-        link = malloc(sizeof(LinkElem));
-        memset(link, 0x00, sizeof(LinkElem));
-
-        /* TODO (7.1.1.  HELLO Message Processing) */
+        link = make_link_elem(ctx, src, ctx->conf.own_ip);
     }
+    link_elem_asym_timer_set(ctx, link);
 
-    /*
-    TODO
-    Upon receiving a HELLO message, the "validity time" MUST be computed
-    from the Vtime field of the message header (see section 3.3.2).
-    */
-
+    /* Parse Hello */
 
 }

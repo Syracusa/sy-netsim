@@ -20,32 +20,41 @@ static void send_dummy_packet(void *arg)
     pkb.iph_len = sizeof(struct iphdr);
     build_udp_hdr_no_checksum(&(pkb.udph), 29111, 29112, pkb.payload_len);
 
-    TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %ld)\n",
-          ip2str(pkb.iph.saddr), ip2str(pkb.iph.daddr), pkb.payload_len);
+    if (DEBUG_NET_TRX) {
+        TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %ld)\n",
+              ip2str(pkb.iph.saddr), ip2str(pkb.iph.daddr), pkb.payload_len);
 
-    if (PKT_HEXDUMP)
-        hexdump(&pkb.iph, pkb.payload_len + IPUDP_HDRLEN, stdout);
-
+        if (PKT_HEXDUMP)
+            hexdump(&pkb.iph, pkb.payload_len + IPUDP_HDRLEN, stdout);
+    }
     size_t len = MAX_IPPKT_SIZE;
     ippkt_pack(&pkb, dummybuf, &len);
     sendto_mac(snctx, dummybuf, len, MESSAGE_TYPE_DATA);
 }
 
+static void dummypkt_send_job_detach_cb(void *arg)
+{
+    NetDummyTrafficConfig *conf = arg;
+    free(conf);
+}
+
 void register_dummypkt_send_job(SimNetCtx *snctx,
                                 NetDummyTrafficConfig *conf)
 {
-    /* Notice : This malloc will never freed */
     NetDummyTrafficConfig *copy_conf = malloc(sizeof(NetDummyTrafficConfig));
     memcpy(copy_conf, conf, sizeof(NetDummyTrafficConfig));
 
     TLOGI("DUMMY STREAM Dst:%u, Src: %u, Interval: %u, Payload size: %u\n",
           conf->dst_id, conf->src_id, conf->interval_ms, conf->payload_size);
 
-    static TqElem dummy_pkt_gen;
-    dummy_pkt_gen.arg = copy_conf;
-    dummy_pkt_gen.callback = send_dummy_packet;
-    dummy_pkt_gen.use_once = 0;
-    dummy_pkt_gen.interval_us = conf->interval_ms * 1000;
+    TqElem *dummy_pkt_gen = timerqueue_new_timer();
 
-    timerqueue_register_job(snctx->timerqueue, &dummy_pkt_gen);
+    dummy_pkt_gen->arg = copy_conf;
+    dummy_pkt_gen->callback = send_dummy_packet;
+    dummy_pkt_gen->use_once = 0;
+    dummy_pkt_gen->interval_us = conf->interval_ms * 1000;
+    dummy_pkt_gen->detached_callback = dummypkt_send_job_detach_cb;
+    dummy_pkt_gen->free_on_detach = 1;
+
+    timerqueue_register_timer(snctx->timerqueue, dummy_pkt_gen);
 }

@@ -25,7 +25,7 @@
 /* Debug */
 #define PKT_HEXDUMP 0
 #define DEBUG_MQ 0
-#define DEBUG_NET_TRX 1
+#define DEBUG_NET_TRX 0
 #define DEBUG_MAC_TRX 0
 #define DEBUG_PHY_TRX 0
 

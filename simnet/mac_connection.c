@@ -31,12 +31,15 @@ void process_mac_msg(SimNetCtx *snctx, void *data, int len)
     PktBuf pkb;
 
     ippkt_unpack(&pkb, data, len);
-    
-    if (PKT_HEXDUMP)
-        hexdump(data, len, stdout);
 
-    TLOGD("Recv pkt. %s <- %s(Payloadsz: %ld)\n",
-          ip2str(pkb.iph.daddr), ip2str(pkb.iph.saddr), pkb.payload_len);
+
+    if (DEBUG_NET_TRX) {
+        if (PKT_HEXDUMP)
+            hexdump(data, len, stdout);
+
+        TLOGD("Recv pkt. %s <- %s(Payloadsz: %ld)\n",
+              ip2str(pkb.iph.daddr), ip2str(pkb.iph.saddr), pkb.payload_len);
+    }
 }
 
 void recvfrom_mac(SimNetCtx *snctx)
@@ -51,15 +54,14 @@ void recvfrom_mac(SimNetCtx *snctx)
             break;
         }
 
-        switch (msg.type)
-        {
-        case MESSAGE_TYPE_DATA:
-            process_mac_msg(snctx, msg.text, res);
-            break;
-        default:
-            TLOGE("Unknown msgtype %ld\n", msg.type);
-            break;
+        switch (msg.type) {
+            case MESSAGE_TYPE_DATA:
+                process_mac_msg(snctx, msg.text, res);
+                break;
+            default:
+                TLOGE("Unknown msgtype %ld\n", msg.type);
+                break;
         }
-            
+
     }
 }

@@ -14,12 +14,13 @@ typedef struct LinkElem
 {
     rbnode_type priv_rbn;
     in_addr_t neighbor_iface_addr; /* Rbtree Key */
+    in_addr_t local_iface_addr;
     
     uint8_t status;
 
-    TqElem sym_timer;
-    TqElem asym_timer;
-    TqElem expire_timer;
+    TqElem *sym_timer;
+    TqElem *asym_timer;
+    TqElem *expire_timer;
 } LinkElem;
 
 typedef struct LocalNetIfaceElem
@@ -27,7 +28,7 @@ typedef struct LocalNetIfaceElem
     rbnode_type priv_rbn;
     in_addr_t local_iface_addr; /* Rbtree Key */
 
-    rbtree_type *local_iface_tree; /* Tree of LinkElem */
+    rbtree_type *iface_link_tree; /* Tree of LinkElem */
 } LocalNetIfaceElem;
 
 typedef struct Neighbor2Elem
