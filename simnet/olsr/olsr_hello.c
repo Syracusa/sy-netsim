@@ -204,13 +204,28 @@ static void link_elem_sym_timer_set(OlsrContext *ctx,
     }
 }
 
+static NeighborElem *make_neighbor_elem(OlsrContext *ctx,
+                                        in_addr_t neigh_addr,
+                                        uint8_t willingness)
+{
+    NeighborElem *neigh = malloc(sizeof(NeighborElem));
+
+    neigh->priv_rbn.key = &neigh->neighbor_main_addr;
+    neigh->neighbor_main_addr = neigh_addr;
+    neigh->status = STATUS_UNAVAILABLE;
+    neigh->willingness = willingness;
+    neigh->neighbor2_tree = rbtree_create(rbtree_compare_by_inetaddr);
+
+    return neigh;
+}
+
 static LinkElem *make_link_elem(OlsrContext *ctx,
                                 in_addr_t src,
                                 in_addr_t my_addr,
                                 olsr_reltime vtime)
 {
-
-    TLOGI("Make new link elem. SRC : %s, My : %s\n", ip2str(src), ip2str(my_addr));
+    TLOGI("Make new link elem. SRC : %s, My : %s\n",
+          ip2str(src), ip2str(my_addr));
     LinkElem *link = malloc(sizeof(LinkElem));
     memset(link, 0x00, sizeof(LinkElem));
 
@@ -223,25 +238,18 @@ static LinkElem *make_link_elem(OlsrContext *ctx,
     return link;
 }
 
-static void process_olsr_hello_payload(OlsrContext *ctx,
-                                       LinkElem *link,
-                                       void *hello,
-                                       size_t len,
-                                       olsr_reltime vtime)
+static void populate_linkset(OlsrContext *ctx,
+                             LinkElem *link,
+                             void *hello_info,
+                             size_t len,
+                             olsr_reltime vtime)
 {
-    uint8_t *start = hello;
-    uint8_t *offset = hello;
+    uint8_t *start = hello_info;
+    uint8_t *offset = hello_info;
 
     uint8_t linkcode_to_me = STATUS_UNAVAILABLE;
 
     while (len >= offset - start) {
-
-        HelloMsg *hello_msg = (HelloMsg *)offset;
-        offset += sizeof(HelloMsg);
-
-        // hello_msg->htime
-        // hello_msg->willingness
-
         HelloInfo *hello_info = (HelloInfo *)offset;
         offset += sizeof(HelloInfo);
 
@@ -251,15 +259,15 @@ static void process_olsr_hello_payload(OlsrContext *ctx,
             in_addr_t neigh_addr = hello_info->neigh_addr[i];
             if (neigh_addr == ctx->conf.own_ip) {
                 linkcode_to_me = hello_info->link_code;
-                // break;
+                break;
             }
-            TLOGD("Hello link to %s state %u\n", ip2str(neigh_addr), EXTRACT_LINK(hello_info->link_code));
+            TLOGD("Hello link to %s state %u\n", ip2str(neigh_addr),
+                  EXTRACT_LINK(hello_info->link_code));
         }
-        // if (linkcode_to_me != STATUS_UNAVAILABLE)
-        //     break;
+        if (linkcode_to_me != STATUS_UNAVAILABLE)
+            break;
         offset += sizeof(in_addr_t) * entrynum;
     }
-
 
     if (linkcode_to_me != STATUS_UNAVAILABLE) {
         uint8_t linkstat = EXTRACT_LINK(linkcode_to_me);
@@ -281,7 +289,61 @@ static void process_olsr_hello_payload(OlsrContext *ctx,
     } else {
         TLOGI("Neighbor doesn't have my information!\n");
     }
+}
 
+static void populate_neigh2set(OlsrContext *ctx,
+                               void *hello_info,
+                               size_t len)
+{
+    uint8_t *start = hello_info;
+    uint8_t *offset = hello_info;
+
+    while (len >= offset - start) {
+        HelloInfo *hello_info = (HelloInfo *)offset;
+        offset += sizeof(HelloInfo);
+
+        int entrynum = ntohs(hello_info->size);
+        for (int i = 0; i < entrynum; i++) {
+            in_addr_t neigh_addr = hello_info->neigh_addr[i];
+            if (neigh_addr == ctx->conf.own_ip)
+                continue;
+            uint8_t neigh_status = EXTRACT_STATUS(hello_info->link_code);
+
+            /* TODO */
+
+            /* check the 2-hop addr != my addr */
+
+            /* Add 2-hop tuple */
+        }
+        offset += sizeof(in_addr_t) * entrynum;
+    }
+}
+
+void update_neighbor_status(OlsrContext *ctx,
+                            NeighborElem *neigh)
+{
+    int neighbor_is_sym = 0;
+    LocalNetIfaceElem *ielem;
+    RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->local_iface_tree)
+    {
+        LinkElem *lelem;
+        RBTREE_FOR(lelem, LinkElem *, ielem->iface_link_tree)
+        {
+            if (lelem->neighbor_iface_addr == neigh->neighbor_main_addr) {
+                if (lelem->status == SYM_LINK) {
+                    neighbor_is_sym = 1;
+                }
+            }
+        }
+    }
+
+    if (neighbor_is_sym) {
+        TLOGD("Neighbor %s is now Symmetric neighbor\n",
+              ip2str(neigh->neighbor_main_addr));
+        neigh->status = SYM_NEIGH;
+    } else {
+        neigh->status = NOT_NEIGH;
+    }
 }
 
 void process_olsr_hello(OlsrContext *ctx,
@@ -294,6 +356,9 @@ void process_olsr_hello(OlsrContext *ctx,
         (LocalNetIfaceElem *)rbtree_search(ctx->local_iface_tree,
                                            &ctx->conf.own_ip);
 
+    HelloMsg *hello_msg = (HelloMsg *)hello;
+    uint8_t willingness = hello_msg->willingness;
+
     if (iface == NULL) {
         iface = malloc(sizeof(LocalNetIfaceElem));
         memset(iface, 0x00, sizeof(LocalNetIfaceElem));
@@ -301,7 +366,15 @@ void process_olsr_hello(OlsrContext *ctx,
         iface->local_iface_addr = ctx->conf.own_ip;
         iface->iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
         rbtree_insert(ctx->local_iface_tree, (rbnode_type *)iface);
-        TLOGD("New local interface %s registered\n", ip2str(iface->local_iface_addr));
+        TLOGD("New local interface %s registered\n",
+              ip2str(iface->local_iface_addr));
+    }
+
+    NeighborElem *neigh =
+        (NeighborElem *)rbtree_search(ctx->neighbor_tree, &src);
+    if (neigh == NULL) {
+        neigh = make_neighbor_elem(ctx, src, hello_msg->willingness);
+        rbtree_insert(ctx->neighbor_tree, (rbnode_type *)neigh);
     }
 
     LinkElem *link = (LinkElem *)rbtree_search(iface->iface_link_tree, &src);
@@ -312,5 +385,12 @@ void process_olsr_hello(OlsrContext *ctx,
         rbtree_insert(iface->iface_link_tree, (rbnode_type *)link);
     }
     link_elem_asym_timer_set(ctx, link, vtime);
-    process_olsr_hello_payload(ctx, link, hello, msgsize, vtime);
+    populate_linkset(ctx, link, hello_msg->hello_info,
+                     msgsize, vtime);
+
+    update_neighbor_status(ctx, neigh);
+
+    if (neigh->status == SYM_NEIGH) {
+        populate_neigh2set(ctx, hello_msg->hello_info, msgsize);
+    }
 }
