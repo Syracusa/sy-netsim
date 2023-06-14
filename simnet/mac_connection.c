@@ -32,7 +32,6 @@ void process_mac_msg(SimNetCtx *snctx, void *data, int len)
 
     ippkt_unpack(&pkb, data, len);
 
-
     if (DEBUG_NET_TRX) {
         if (PKT_HEXDUMP)
             hexdump(data, len, stdout);
@@ -40,6 +39,8 @@ void process_mac_msg(SimNetCtx *snctx, void *data, int len)
         TLOGD("Recv pkt. %s <- %s(Payloadsz: %ld)\n",
               ip2str(pkb.iph.daddr), ip2str(pkb.iph.saddr), pkb.payload_len);
     }
+
+    snctx->route->handle_remote_pkt(data, len);
 }
 
 void recvfrom_mac(SimNetCtx *snctx)

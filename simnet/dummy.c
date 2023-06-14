@@ -47,7 +47,7 @@ void register_dummypkt_send_job(SimNetCtx *snctx,
     TLOGI("DUMMY STREAM Dst:%u, Src: %u, Interval: %u, Payload size: %u\n",
           conf->dst_id, conf->src_id, conf->interval_ms, conf->payload_size);
 
-    TqElem *dummy_pkt_gen = timerqueue_new_timer();
+    TimerqueueElem *dummy_pkt_gen = timerqueue_new_timer();
 
     dummy_pkt_gen->arg = copy_conf;
     dummy_pkt_gen->callback = send_dummy_packet;

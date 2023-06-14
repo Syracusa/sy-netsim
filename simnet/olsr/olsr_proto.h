@@ -28,10 +28,22 @@
 
 #define STATUS_UNAVAILABLE 255
 
-#define DEF_HELLO_INTERVAL_MS 2000
-#define DEF_TC_INTERVAL_MS    5000
+#define DEF_HELLO_INTERVAL_MS   2000
+#define DEF_REFRESH_INTERVAL_MS 2000
+#define DEF_TC_INTERVAL_MS      5000
+
+#define DEF_NEIGHB_HOLD_TIME    3 * DEF_REFRESH_INTERVAL_MS
+#define DEF_TOP_HOLD_TIME       3 * DEF_TC_INTERVAL_MS
+#define DEF_DUP_HOLD_TIME       30 * 1000
+
+#define DEF_HELLO_VTIME         DEF_NEIGHB_HOLD_TIME
+
 
 #define CREATE_LINK_CODE(status, link) (link | (status<<2))
+
+#define EXTRACT_STATUS(link_code) ((link_code & 0xC)>>2)
+
+#define EXTRACT_LINK(link_code) (link_code & 0x3)
 
 typedef struct HelloInfo
 {

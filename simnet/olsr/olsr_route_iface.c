@@ -6,20 +6,26 @@
 
 void olsr_handle_local_pkt(void *data, size_t len)
 {
-    printf("olsr_route_handle_pkt() called\n");
+    printf("olsr_handle_local_pkt() called\n");
 }
 
 void olsr_handle_remote_pkt(void *data, size_t len)
 {
-    printf("olsr_route_handle_pkt() called\n");
     PktBuf buf;
     ippkt_unpack(&buf, data, len);
 
-    if (buf.udph.dest == ntohs(OLSR_PROTO_PORT)) {
-        handle_route_pkt(&buf);
-    } else {
-        handle_data_pkt(&buf);
+    if (buf.iph.protocol == IPPROTO_UDP) {
+        uint16_t port = ntohs(buf.udph.dest);
+
+        if (port == OLSR_PROTO_PORT) {
+            handle_route_pkt(&buf);
+        } else {
+            // fprintf(stderr, "Data pkt with port %u\n", port);
+            handle_data_pkt(&buf);
+        }
     }
+
+
 }
 
 void olsr_queue_hello(void *olsr_ctx)
@@ -31,7 +37,7 @@ void olsr_queue_hello(void *olsr_ctx)
 
     OlsrMsgHeader *msghdr = (OlsrMsgHeader *)buf;
     msghdr->olsr_msgtype = MSG_TYPE_HELLO;
-    msghdr->olsr_vtime = 0; /* TODO */
+    msghdr->olsr_vtime = reltime_to_me(DEF_HELLO_VTIME);
     msghdr->originator = ctx->conf.own_ip;
     msghdr->ttl = 1;
     msghdr->hopcnt = 1;
@@ -45,6 +51,7 @@ void olsr_queue_hello(void *olsr_ctx)
 
     uint16_t msglen = offset - buf;
 
+    // TLOGD("Queue msgsize : %u\n", msglen);
     msghdr->olsr_msgsize = htons(msglen);
     RingBuffer_push(ctx->olsr_tx_msgbuf, buf, msglen);
 }
@@ -59,7 +66,7 @@ void olsr_send_from_queue(void *arg)
 
     if (read <= 0)
         return;
-        
+
     /* Payload */
     uint8_t *offset = pkt.payload;
 
@@ -102,7 +109,7 @@ void olsr_start(CommonRouteConfig *config)
     init_olsr_context(config);
     OlsrContext *ctx = &g_olsr_ctx;
 
-    static TqElem *queue_hello = NULL;
+    static TimerqueueElem *queue_hello = NULL;
     if (queue_hello == NULL)
         queue_hello = timerqueue_new_timer();
 
@@ -113,7 +120,7 @@ void olsr_start(CommonRouteConfig *config)
     queue_hello->max_jitter = ctx->param.hello_interval_ms * 1000 / 8;
     timerqueue_register_timer(ctx->timerqueue, queue_hello);
 
-    static TqElem *job_tx_msg = NULL;
+    static TimerqueueElem *job_tx_msg = NULL;
     if (job_tx_msg == NULL)
         job_tx_msg = timerqueue_new_timer();
 

@@ -1,7 +1,7 @@
 {
     "websocket_port" : 8000,
     "simulator_port" : 3222,
-    "nodes" : [0, 1, 2],
+    "nodes" : [0, 1],
     "dummy_traffic" : [
         {"src_id" : 0, "dst_id" : 1, "payload_size" : 100, "interval_ms" : 500},
         {"src_id" : 1, "dst_id" : 0, "payload_size" : 200, "interval_ms" : 800}

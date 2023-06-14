@@ -4,6 +4,7 @@ add_library (sy-olsr
              olsr_hello.c
              olsr_mantissa.c
              olsr_route.c
+             olsr_mantissa.c
              ../../util/netutil.c
              ../../util/ringbuffer.c)
 

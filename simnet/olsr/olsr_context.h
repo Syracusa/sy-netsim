@@ -18,9 +18,9 @@ typedef struct LinkElem
     
     uint8_t status;
 
-    TqElem *sym_timer;
-    TqElem *asym_timer;
-    TqElem *expire_timer;
+    TimerqueueElem *sym_timer;
+    TimerqueueElem *asym_timer;
+    TimerqueueElem *expire_timer;
 } LinkElem;
 
 typedef struct LocalNetIfaceElem
@@ -89,7 +89,7 @@ typedef struct OlsrContext
     CommonRouteConfig conf;
     OlsrParam param;
 
-    TqCtx *timerqueue;
+    TimerqueueContext *timerqueue;
     RingBuffer *olsr_tx_msgbuf;
 
     uint16_t pkt_seq;

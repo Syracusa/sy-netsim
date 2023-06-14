@@ -29,16 +29,16 @@ static int compare_elem(const void *k1, const void *k2)
     }
 }
 
-TqElem* timerqueue_new_timer()
+TimerqueueElem* timerqueue_new_timer()
 {
-    TqElem* elem = malloc(sizeof(TqElem));
-    memset(elem, 0x00, sizeof(TqElem));
+    TimerqueueElem* elem = malloc(sizeof(TimerqueueElem));
+    memset(elem, 0x00, sizeof(TimerqueueElem));
 
     elem->priv_rbk.ptr = elem;
     elem->priv_rbn.key = &elem->priv_rbk;
 }
 
-void timerqueue_register_timer(TqCtx *tq, TqElem *elem)
+void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 {
     clock_gettime(CLOCK_REALTIME, &elem->priv_rbk.expire);
     timespec_add_usec(&elem->priv_rbk.expire, elem->interval_us);
@@ -48,7 +48,7 @@ void timerqueue_register_timer(TqCtx *tq, TqElem *elem)
     elem->active = 1;
 }
 
-void timerqueue_reactivate_timer(TqCtx *tq, TqElem *elem)
+void timerqueue_reactivate_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 {
     if (elem->attached == 1){
         rbtree_delete(tq->rbt, elem->priv_rbn.key);
@@ -57,19 +57,20 @@ void timerqueue_reactivate_timer(TqCtx *tq, TqElem *elem)
     timerqueue_register_timer(tq, elem);
 }
 
-void timerqueue_work(TqCtx *tq)
+void timerqueue_work(TimerqueueContext *tq)
 {
     struct timespec currtime;
     clock_gettime(CLOCK_REALTIME, &currtime);
 
-    TqElem *first = (TqElem *)rbtree_first(tq->rbt);
-    if (first == (TqElem *)RBTREE_NULL) {
+    TimerqueueElem *first = (TimerqueueElem *)rbtree_first(tq->rbt);
+    if (first == (TimerqueueElem *)RBTREE_NULL) {
         return;
     }
 
     while (check_expire(&(first->priv_rbk.expire), &currtime)) {
         rbtree_delete(tq->rbt, first->priv_rbn.key);
         if (first->active) {
+            first->callback(first->arg);
             if (first->use_once) {
                 first->active = 0;
                 first->attached = 0;
@@ -82,7 +83,6 @@ void timerqueue_work(TqCtx *tq)
                 timespec_add_usec(&first->priv_rbk.expire, new_interval);
                 rbtree_insert(tq->rbt, (rbnode_type *)first);
             }
-            first->callback(first->arg);
         } else {
             first->attached = 0;
         }
@@ -94,18 +94,18 @@ void timerqueue_work(TqCtx *tq)
                 free(first);
         }
 
-        first = (TqElem *)rbtree_first(tq->rbt);
+        first = (TimerqueueElem *)rbtree_first(tq->rbt);
     }
 }
 
-TqCtx *create_timerqueue()
+TimerqueueContext *create_timerqueue()
 {
-    TqCtx *tq = malloc(sizeof(TqCtx));
+    TimerqueueContext *tq = malloc(sizeof(TimerqueueContext));
     tq->rbt = rbtree_create(compare_elem);
     return tq;
 }
 
-void delete_timerqueue(TqCtx *tq)
+void delete_timerqueue(TimerqueueContext *tq)
 {
     free(tq);
 }

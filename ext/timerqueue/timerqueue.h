@@ -13,7 +13,7 @@
 typedef struct
 {
     rbtree_type *rbt;
-} TqCtx;
+} TimerqueueContext;
 
 typedef struct
 {
@@ -42,7 +42,7 @@ typedef struct
     void *arg;
     void (*callback)(void *arg);
     void (*detached_callback)(void *arg);
-} TqElem;
+} TimerqueueElem;
 
 #define timespec_sub(after, before, result)                         \
   do {                                                              \
@@ -86,16 +86,16 @@ static inline int check_expire(struct timespec *expiretime,
     return res;
 }
 
-TqElem* timerqueue_new_timer();
+TimerqueueElem* timerqueue_new_timer();
 
-void timerqueue_reset_expire_time(TqElem *elem);
+void timerqueue_reset_expire_time(TimerqueueElem *elem);
 
-void timerqueue_register_timer(TqCtx *tq, TqElem *elem);
+void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem);
 
-void timerqueue_reactivate_timer(TqCtx *tq, TqElem *elem);
+void timerqueue_reactivate_timer(TimerqueueContext *tq, TimerqueueElem *elem);
 
-TqCtx *create_timerqueue();
+TimerqueueContext *create_timerqueue();
 
-void timerqueue_work(TqCtx *tq);
+void timerqueue_work(TimerqueueContext *tq);
 
 #endif

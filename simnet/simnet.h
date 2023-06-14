@@ -22,7 +22,7 @@
 
 typedef struct
 {
-    TqCtx *timerqueue;
+    TimerqueueContext *timerqueue;
     int node_id;
 
     int mqid_recv_mac;
