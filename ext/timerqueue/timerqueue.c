@@ -4,8 +4,12 @@
 #include <string.h>
 
 #include "rbtree.h"
-
 #include "timerqueue.h"
+
+/* Disable annoying vscode error squiggle */
+#ifndef CLOCK_REALTIME
+#define CLOCK_REALTIME 0
+#endif
 
 static int compare_elem(const void *k1, const void *k2)
 {

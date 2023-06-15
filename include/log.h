@@ -56,6 +56,11 @@ extern char dbgname[10];
 #define INFO_LOGCOLOR COLOR_GREEN
 #define DEBUG_LOGCOLOR COLOR_GRAY
 
+/* Disable annoying vscode error squiggle */
+#ifndef CLOCK_REALTIME
+#define CLOCK_REALTIME 0
+#endif
+
 #define _GET_CURRTIME(_tbuf) do{\
     struct timespec _ts;\
     clock_gettime(CLOCK_REALTIME, &_ts);\
