@@ -11,6 +11,8 @@
 #include "mq.h"
 #include "util.h"
 
+#include "config_msg.h"
+
 char dbgname[10];
 
 void init_mq(SimPhyCtx *spctx)
@@ -29,6 +31,14 @@ void init_mq(SimPhyCtx *spctx)
                 spctx->nodes[nid].mqid_recv_mac, mqkey_recv_mac,
                 spctx->nodes[nid].mqid_send_mac, mqkey_send_mac);
     }
+
+    int mqkey_send_report = MQ_KEY_PHY_REPORT;
+    spctx->mqid_send_report = msgget(mqkey_send_report, IPC_CREAT | 0666);
+    mq_flush(spctx->mqid_send_report);
+
+    int mqkey_recv_command = MQ_KEY_PHY_COMMAND;
+    spctx->mqid_recv_command = msgget(mqkey_recv_command, IPC_CREAT | 0666);
+    mq_flush(spctx->mqid_recv_command);
 }
 
 static void send_to_remote_mac(SimPhyCtx *spctx,
@@ -126,6 +136,33 @@ static void recv_from_local_mac(SimPhyCtx *spctx)
     }
 }
 
+static void recv_command(SimPhyCtx *spctx)
+{
+    MqMsgbuf msg;
+        while (1) {
+            ssize_t res = msgrcv(spctx->mqid_recv_command,
+                                 &msg, sizeof(msg.text),
+                                 0, IPC_NOWAIT);
+            if (res < 0) {
+                if (errno != ENOMSG) {
+                    fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
+                }
+                break;
+            }
+
+            switch (msg.type)
+            {
+            case CONF_MSG_TYPE_PHY_LINK_CONFIG:
+                TLOGI("Recv config function not implemented\n");
+                break;
+            default:
+                TLOGE("PHY Config Unknown msgtype %ld\n", msg.type);
+                break;
+            }
+            
+        }
+}
+
 static SimPhyCtx *create_context()
 {
     SimPhyCtx *spctx = malloc(sizeof(SimPhyCtx));
@@ -147,6 +184,7 @@ static void mainloop(SimPhyCtx *spctx)
         clock_gettime(CLOCK_REALTIME, &before);
 
         recv_from_local_mac(spctx);
+        recv_command(spctx);
 
         clock_gettime(CLOCK_REALTIME, &after);
         timespec_sub(&after, &before, &diff);

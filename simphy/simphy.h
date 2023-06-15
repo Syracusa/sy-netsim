@@ -15,7 +15,8 @@ typedef struct
 typedef struct
 {
     NodeCtx nodes[MAX_NODE_ID];
-    
+    int mqid_recv_command;
+    int mqid_send_report;
 } SimPhyCtx;
 
 #endif
