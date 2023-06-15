@@ -29,7 +29,8 @@ static char *read_file(const char *filename)
     return string;
 }
 
-static void activate_node(SimulatorCtx *sctx, int node_id)
+static void activate_node(SimulatorCtx *sctx, int node_id,
+                          double lat, double lon, double alt)
 {
     if (node_id < 0 && node_id >= MAX_NODE_ID) {
         fprintf(stderr, "Unavailable node id : %d\n", node_id);
@@ -53,20 +54,21 @@ void parse_config(SimulatorCtx *sctx)
     char *pretty_string = cJSON_Print(json);
     printf("%s\n", pretty_string);
 
-
     /* Node ID List */
     cJSON *node_list_json = cJSON_GetObjectItemCaseSensitive(json, "nodes");
     if (cJSON_IsArray(node_list_json)) {
-        cJSON *node_id_json = NULL;
-        cJSON_ArrayForEach(node_id_json, node_list_json)
+        cJSON *node_json = NULL;
+        cJSON_ArrayForEach(node_json, node_list_json)
         {
-            if (cJSON_IsNumber(node_id_json)) {
-                TLOGD("Node ID : %d\n", node_id_json->valueint);
-                activate_node(sctx, node_id_json->valueint);
-            } else {
-                fprintf(stderr, "Node id is not a number!\n");
-                exit(2);
-            }
+            int nid = cJSON_GetObjectItemCaseSensitive(node_json, "id")->valueint;
+            cJSON *nodepos_json = cJSON_GetObjectItemCaseSensitive(node_json, "pos");
+
+            double lat = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lat")->valuedouble;
+            double lon = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lon")->valuedouble;
+            double alt = cJSON_GetObjectItemCaseSensitive(nodepos_json, "alt")->valuedouble;
+            
+            printf("Node ID %d  lat %lf lon %lf alt %lf\n", nid, lat, lon, alt);
+            activate_node(sctx, nid, lat, lon, alt);
         }
     } else {
         fprintf(stderr, "Can't get nodelist!");
@@ -100,12 +102,12 @@ void parse_config(SimulatorCtx *sctx)
 
             DummyStreamInfo *stream_info =
                 &(sctx->conf.dummy_stream_info[sctx->conf.dummy_stream_num]);
-            
+
             stream_info->src_nid = src_nid;
             stream_info->dst_nid = dst_nid;
             stream_info->payload_size = payload_size;
             stream_info->interval_ms = interval_ms;
-            
+
             sctx->conf.dummy_stream_num++;
         }
     }

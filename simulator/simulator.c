@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <math.h>
 
 #include <sys/types.h> 
 #include <sys/prctl.h>
@@ -16,12 +17,31 @@
 #include "params.h"
 #include "mq.h"
 
+
 #include "config_msg.h"
 
 #include "httpserver.h"
 
 char dbgname[10];
 SimulatorCtx *g_sctx = NULL;
+
+double calc_node_distance(NodePositionGps* p1, NodePositionGps* p2)
+{
+    double earth_radius = 6371.0;
+    double x1 = (earth_radius + p1->altitude) * cos(p1->latitude) * cos(p1->longitude);
+    double y1 = (earth_radius + p1->altitude) * cos(p1->latitude) * sin(p1->longitude);
+    double z1 = (earth_radius + p1->altitude) * sin(p1->latitude);
+    
+    double x2 = (earth_radius + p2->altitude) * cos(p2->latitude) * cos(p2->longitude);
+    double y2 = (earth_radius + p2->altitude) * cos(p2->latitude) * sin(p2->longitude);
+    double z2 = (earth_radius + p2->altitude) * sin(p2->latitude);
+    
+    double xdiff = x2 - x1;
+    double ydiff = y2 - y1;
+    double zdiff = z2 - z1;
+
+    return sqrt(xdiff * xdiff + ydiff * ydiff + zdiff * zdiff);
+}
 
 void init_mq(SimulatorCtx *sctx)
 {

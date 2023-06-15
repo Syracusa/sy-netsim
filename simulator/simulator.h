@@ -3,8 +3,16 @@
 
 #include "params.h"
 
+typedef struct NodePositionGps{
+    double latitude;
+    double longitude;
+    double altitude;
+} NodePositionGps;
+
 typedef struct {
     int active;
+
+    NodePositionGps pos;
 
     int mqid_net_command;
     int mqid_mac_command;
@@ -33,7 +41,7 @@ typedef struct {
 
     int mqid_phy_command;
     int mqid_phy_report;
-    
+
     SimulatorConfig conf;
     Simnode nodes[MAX_NODE_ID];
 } SimulatorCtx;

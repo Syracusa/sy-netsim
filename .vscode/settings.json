@@ -30,7 +30,8 @@
         "olsr_hello.h": "c",
         "olsr_proto.h": "c",
         "olsr_route.h": "c",
-        "olsr_mantissa.h": "c"
+        "olsr_mantissa.h": "c",
+        "math.h": "c"
     },
     "cmake.configureOnOpen": true
 }
