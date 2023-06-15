@@ -17,7 +17,6 @@
 #include "params.h"
 #include "mq.h"
 
-
 #include "config_msg.h"
 
 #include "httpserver.h"
@@ -25,17 +24,18 @@
 char dbgname[10];
 SimulatorCtx *g_sctx = NULL;
 
-double calc_node_distance(NodePositionGps* p1, NodePositionGps* p2)
+#define D2R(d) (d / 180.0 * 3.14159)
+
+double calc_node_distance(NodePositionGps *p1, NodePositionGps *p2)
 {
     double earth_radius = 6371.0;
-    double x1 = (earth_radius + p1->altitude) * cos(p1->latitude) * cos(p1->longitude);
-    double y1 = (earth_radius + p1->altitude) * cos(p1->latitude) * sin(p1->longitude);
-    double z1 = (earth_radius + p1->altitude) * sin(p1->latitude);
-    
-    double x2 = (earth_radius + p2->altitude) * cos(p2->latitude) * cos(p2->longitude);
-    double y2 = (earth_radius + p2->altitude) * cos(p2->latitude) * sin(p2->longitude);
-    double z2 = (earth_radius + p2->altitude) * sin(p2->latitude);
-    
+    double x1 = (earth_radius + D2R(p1->altitude)) * cos(D2R(p1->latitude)) * cos(D2R(p1->longitude));
+    double y1 = (earth_radius + D2R(p1->altitude)) * cos(D2R(p1->latitude)) * sin(D2R(p1->longitude));
+    double z1 = (earth_radius + D2R(p1->altitude)) * sin(D2R(p1->latitude));
+    double x2 = (earth_radius + D2R(p2->altitude)) * cos(D2R(p2->latitude)) * cos(D2R(p2->longitude));
+    double y2 = (earth_radius + D2R(p2->altitude)) * cos(D2R(p2->latitude)) * sin(D2R(p2->longitude));
+    double z2 = (earth_radius + D2R(p2->altitude)) * sin(D2R(p2->latitude));
+
     double xdiff = x2 - x1;
     double ydiff = y2 - y1;
     double zdiff = z2 - z1;
@@ -76,6 +76,14 @@ static SimulatorCtx *create_simulator_context()
 {
     SimulatorCtx *sctx = malloc(sizeof(SimulatorCtx));
     memset(sctx, 0x00, sizeof(SimulatorCtx));
+
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        for (int j = 0; j < MAX_NODE_ID; j++) {
+            sctx->links[i][j].los = 1;
+            sctx->links[i][j].pathloss = 0.0;
+        }
+    }
+
     return sctx;
 }
 
@@ -149,6 +157,20 @@ static void start_simnode(int node_id)
 static void start_simulate(SimulatorCtx *sctx)
 {
     start_phy();
+
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        for (int j = i + 1; j < MAX_NODE_ID; j++) {
+            SimNode *n1 = &sctx->nodes[i];
+            SimNode *n2 = &sctx->nodes[j];
+            if (n1->active != 1)
+                continue;
+            if (n2->active != 1)
+                continue;
+
+            double dist = calc_node_distance(&n1->pos, &n2->pos);
+            TLOGD("Dist between %d and %d  ==>  %lf\n", i, j, dist);
+        }
+    }
 
     for (int i = 0; i < MAX_NODE_ID; i++) {
         if (sctx->nodes[i].active == 1) {

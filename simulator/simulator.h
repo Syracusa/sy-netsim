@@ -9,6 +9,11 @@ typedef struct NodePositionGps{
     double altitude;
 } NodePositionGps;
 
+typedef struct SimLink{
+    int los;
+    double pathloss;
+} SimLink;
+
 typedef struct {
     int active;
 
@@ -19,7 +24,7 @@ typedef struct {
 
     int mqid_net_report;
     int mqid_mac_report;
-} Simnode;
+} SimNode;
 
 #define MAX_DUMMYSTREAM_NUM 100
 
@@ -43,7 +48,8 @@ typedef struct {
     int mqid_phy_report;
 
     SimulatorConfig conf;
-    Simnode nodes[MAX_NODE_ID];
+    SimNode nodes[MAX_NODE_ID];
+    SimLink links[MAX_NODE_ID][MAX_NODE_ID];
 } SimulatorCtx;
 
 #endif

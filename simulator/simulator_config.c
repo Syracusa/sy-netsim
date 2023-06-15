@@ -36,7 +36,11 @@ static void activate_node(SimulatorCtx *sctx, int node_id,
         fprintf(stderr, "Unavailable node id : %d\n", node_id);
         exit(2);
     }
-    sctx->nodes[node_id].active = 1;
+    SimNode *node = &sctx->nodes[node_id];
+    node->active = 1;
+    node->pos.altitude = alt;
+    node->pos.latitude = lat;
+    node->pos.longitude = lon;
 }
 
 void parse_config(SimulatorCtx *sctx)
@@ -63,16 +67,47 @@ void parse_config(SimulatorCtx *sctx)
             int nid = cJSON_GetObjectItemCaseSensitive(node_json, "id")->valueint;
             cJSON *nodepos_json = cJSON_GetObjectItemCaseSensitive(node_json, "pos");
 
-            double lat = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lat")->valuedouble;
-            double lon = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lon")->valuedouble;
-            double alt = cJSON_GetObjectItemCaseSensitive(nodepos_json, "alt")->valuedouble;
-            
+            double lat = 0.0;
+            double lon = 0.0;
+            double alt = 0.0;
+
+            if (node_json) {
+                lat = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lat")->valuedouble;
+                lon = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lon")->valuedouble;
+                alt = cJSON_GetObjectItemCaseSensitive(nodepos_json, "alt")->valuedouble;
+            }
+
             printf("Node ID %d  lat %lf lon %lf alt %lf\n", nid, lat, lon, alt);
             activate_node(sctx, nid, lat, lon, alt);
         }
     } else {
         fprintf(stderr, "Can't get nodelist!");
         exit(2);
+    }
+
+    /* Link List */
+    cJSON *link_list_json = cJSON_GetObjectItemCaseSensitive(json, "links");
+    if (cJSON_IsArray(link_list_json)) {
+        cJSON *link_json = NULL;
+        cJSON_ArrayForEach(link_json, link_list_json)
+        {
+
+            int nid1 = cJSON_GetObjectItemCaseSensitive(link_json, "nid1")->valueint;
+            int nid2 = cJSON_GetObjectItemCaseSensitive(link_json, "nid2")->valueint;
+
+            cJSON *los_json = cJSON_GetObjectItemCaseSensitive(link_json, "los");
+            if (cJSON_IsNumber(los_json)) {
+                printf("Node %d <-> Node %d LOS : %d\n", nid1, nid2, los_json->valueint);
+                sctx->links[nid1][nid2].los = los_json->valueint;
+                sctx->links[nid2][nid1].los = los_json->valueint;
+            }
+            cJSON *pl_json = cJSON_GetObjectItemCaseSensitive(link_json, "pathloss");
+            if (cJSON_IsNumber(pl_json)) {
+                printf("Node %d <-> Node %d PATHLOSS : %lf\n", nid1, nid2, pl_json->valuedouble);
+                sctx->links[nid1][nid2].pathloss = pl_json->valuedouble;
+                sctx->links[nid2][nid1].pathloss = pl_json->valuedouble;
+            }
+        }
     }
 
     /* Dummy Traffic Config */
