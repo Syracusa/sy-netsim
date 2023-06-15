@@ -35,7 +35,8 @@ typedef struct Neighbor2Elem
 {
     rbnode_type priv_rbn;
     in_addr_t neighbor2_main_addr; /* Rbtree Key */
-    uint32_t expire_time;
+    in_addr_t bridge_addr;
+    TimerqueueElem *expire_timer;
 } Neighbor2Elem;
 
 typedef struct NeighborElem

@@ -38,6 +38,16 @@ TimerqueueElem* timerqueue_new_timer()
     elem->priv_rbn.key = &elem->priv_rbk;
 }
 
+void timerqueue_free_timer(TimerqueueElem* timer)
+{
+    timer->active = 0;
+    if (timer->attached){
+        timer->free_on_detach = 1;
+    } else {
+        free(timer);
+    }
+}
+
 void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 {
     clock_gettime(CLOCK_REALTIME, &elem->priv_rbk.expire);

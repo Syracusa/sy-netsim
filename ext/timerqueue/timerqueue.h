@@ -88,6 +88,8 @@ static inline int check_expire(struct timespec *expiretime,
 
 TimerqueueElem* timerqueue_new_timer();
 
+void timerqueue_free_timer(TimerqueueElem* timer);
+
 void timerqueue_reset_expire_time(TimerqueueElem *elem);
 
 void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem);

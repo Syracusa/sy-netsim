@@ -291,9 +291,53 @@ static void populate_linkset(OlsrContext *ctx,
     }
 }
 
+static void neigh2_elem_expire(void *arg)
+{
+    OlsrContext *ctx = &g_olsr_ctx;
+    Neighbor2Elem *n2elem = arg;
+    NeighborElem *neigh =
+        (NeighborElem *)rbtree_search(ctx->neighbor_tree, &n2elem->bridge_addr);
+
+    TLOGW("2-hop Neighbor %s bridged by %s Expired\n"
+          , ip2str(n2elem->neighbor2_main_addr)
+          , ip2str(neigh->neighbor_main_addr));
+
+    timerqueue_free_timer(n2elem->expire_timer);
+    rbtree_delete(neigh->neighbor2_tree, &n2elem->neighbor2_main_addr);
+    free(n2elem);
+}
+
+static void update_neigh2_tuple(OlsrContext *ctx,
+                                NeighborElem *neigh,
+                                in_addr_t n2addr,
+                                olsr_reltime vtime)
+{
+    Neighbor2Elem *n2elem =
+        (Neighbor2Elem *)rbtree_search(neigh->neighbor2_tree, &n2addr);
+
+    if (n2elem == NULL) {
+        Neighbor2Elem *n2elem = (Neighbor2Elem *)malloc(sizeof(Neighbor2Elem));
+        n2elem->priv_rbn.key = &n2elem->neighbor2_main_addr;
+        n2elem->neighbor2_main_addr = n2addr;
+        n2elem->bridge_addr = neigh->neighbor_main_addr;
+
+        n2elem->expire_timer = timerqueue_new_timer();
+        n2elem->expire_timer->interval_us = vtime * 1000;
+        n2elem->expire_timer->use_once = 1;
+        n2elem->expire_timer->arg = n2elem;
+        n2elem->expire_timer->callback = neigh2_elem_expire;
+        timerqueue_register_timer(ctx->timerqueue, n2elem->expire_timer);
+    } else {
+        n2elem->expire_timer->interval_us = vtime * 1000;
+        timerqueue_reactivate_timer(ctx->timerqueue, n2elem->expire_timer);
+    }
+}
+
 static void populate_neigh2set(OlsrContext *ctx,
+                               NeighborElem *neigh,
                                void *hello_info,
-                               size_t len)
+                               size_t len,
+                               olsr_reltime vtime)
 {
     uint8_t *start = hello_info;
     uint8_t *offset = hello_info;
@@ -304,16 +348,16 @@ static void populate_neigh2set(OlsrContext *ctx,
 
         int entrynum = ntohs(hello_info->size);
         for (int i = 0; i < entrynum; i++) {
-            in_addr_t neigh_addr = hello_info->neigh_addr[i];
-            if (neigh_addr == ctx->conf.own_ip)
+            in_addr_t neigh2_addr = hello_info->neigh_addr[i];
+            if (neigh2_addr == ctx->conf.own_ip)
                 continue;
             uint8_t neigh_status = EXTRACT_STATUS(hello_info->link_code);
 
-            /* TODO */
 
-            /* check the 2-hop addr != my addr */
-
+            /* Find 2-hop tuple */
             /* Add 2-hop tuple */
+
+
         }
         offset += sizeof(in_addr_t) * entrynum;
     }
@@ -390,7 +434,11 @@ void process_olsr_hello(OlsrContext *ctx,
 
     update_neighbor_status(ctx, neigh);
 
-    if (neigh->status == SYM_NEIGH) {
-        populate_neigh2set(ctx, hello_msg->hello_info, msgsize);
+    if (neigh->status == SYM_NEIGH ||
+        neigh->status == MPR_NEIGH) {
+
+        populate_neigh2set(ctx, neigh, hello_msg->hello_info, msgsize, vtime);
     }
+
+
 }
