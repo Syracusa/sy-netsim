@@ -59,7 +59,7 @@ extern char dbgname[10];
 #define _GET_CURRTIME(_tbuf) do{\
     struct timespec _ts;\
     clock_gettime(CLOCK_REALTIME, &_ts);\
-    sprintf(_tbuf, "[%4lu:%4lu] ", _ts.tv_sec % 1000, _ts.tv_nsec / 1000);\
+    sprintf(_tbuf, "[%-4lu:%-4lu] ", _ts.tv_sec % 1000, _ts.tv_nsec / 1000);\
 }while(0);
 
 /* Log macro */

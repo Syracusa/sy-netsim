@@ -108,4 +108,5 @@ void init_olsr_context(CommonRouteConfig *config);
 void finalize_olsr_context();
 
 int rbtree_compare_by_inetaddr(const void *k1, const void *k2);
+void debug_olsr_context();
 #endif

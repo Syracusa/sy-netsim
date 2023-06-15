@@ -29,7 +29,7 @@ void init_olsr_context(CommonRouteConfig *config)
     memcpy(&g_olsr_ctx.conf, config, sizeof(CommonRouteConfig));
 
     init_olsr_param();
-    
+
     g_olsr_ctx.timerqueue = create_timerqueue();
     g_olsr_ctx.olsr_tx_msgbuf = RingBuffer_new(OLSR_TX_MSGBUF_SIZE);
 
@@ -58,4 +58,39 @@ void finalize_olsr_context()
     free(g_olsr_ctx.selector_tree);
     traverse_postorder(g_olsr_ctx.topology_tree, free_arg, NULL);
     free(g_olsr_ctx.topology_tree);
+}
+
+void debug_olsr_context()
+{
+    OlsrContext *ctx = &g_olsr_ctx;
+    TLOGD("\n");
+    TLOGD("==== Context of %-14s ====\n", ip2str(ctx->conf.own_ip));
+
+    LocalNetIfaceElem *ielem;
+    RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->local_iface_tree)
+    {
+        TLOGD("> Local Iface %s\n", ip2str(ielem->local_iface_addr));
+        LinkElem *lelem;
+        RBTREE_FOR(lelem, LinkElem *, ielem->iface_link_tree)
+        {
+            TLOGD(">     Link to %s Status %s\n",
+                  ip2str(lelem->neighbor_iface_addr),
+                  link_status_str(lelem->status));
+        }
+    }
+
+    NeighborElem *nelem;
+    RBTREE_FOR(nelem, NeighborElem *, ctx->neighbor_tree)
+    {
+        TLOGD("> Neighbor Node %s Status %s\n",
+              ip2str(nelem->neighbor_main_addr),
+              neighbor_status_str(nelem->status));
+
+        Neighbor2Elem *n2elem;
+        RBTREE_FOR(n2elem, Neighbor2Elem *, nelem->neighbor2_tree)
+        {
+            TLOGD(">     2hop neighbor %s\n", ip2str(n2elem->neighbor2_main_addr));
+        }
+    }
+    TLOGD("\n");
 }

@@ -4,6 +4,7 @@
 #include "timerqueue.h"
 #include "olsr.h"
 
+
 void olsr_handle_local_pkt(void *data, size_t len)
 {
     printf("olsr_handle_local_pkt() called\n");
@@ -18,6 +19,10 @@ void olsr_handle_remote_pkt(void *data, size_t len)
         uint16_t port = ntohs(buf.udph.dest);
 
         if (port == OLSR_PROTO_PORT) {
+            if (DUMP_ROUTE_PKT) {
+                TLOGD("Recv Route Pkt\n");
+                hexdump(data, len, stdout);
+            }
             handle_route_pkt(&buf);
         } else {
             // fprintf(stderr, "Data pkt with port %u\n", port);
@@ -100,6 +105,11 @@ void olsr_send_from_queue(void *arg)
 
     ctx->conf.send_remote(buf, sendlen);
     ctx->pkt_seq++;
+
+    if (DUMP_ROUTE_PKT) {
+        TLOGD("Send Route Pkt\n");
+        hexdump(buf, sendlen, stdout);
+    }
 }
 
 void olsr_start(CommonRouteConfig *config)

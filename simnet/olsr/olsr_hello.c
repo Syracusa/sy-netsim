@@ -1,6 +1,64 @@
 #include "olsr_hello.h"
 #include "olsr.h"
 
+void set_link_status(LinkElem *link, uint8_t status)
+{
+    uint8_t old = link->status;
+    if (old != status) {
+        TLOGW("Link to %s  %s -> %s\n",
+              ip2str(link->neighbor_iface_addr),
+              link_status_str(old),
+              link_status_str(status));
+        link->status = status;
+    }
+}
+
+void set_neighbor_status(NeighborElem *neighbor, uint8_t status)
+{
+    uint8_t old = neighbor->status;
+    if (old != status) {
+        TLOGW("Neighbor %s  Status %s -> %s\n",
+              ip2str(neighbor->neighbor_main_addr),
+              neighbor_status_str(old),
+              neighbor_status_str(status));
+        neighbor->status = status;
+    }
+}
+
+static void dump_hello(void *data,
+                       size_t msg_size,
+                       const char *identifier)
+{
+    if (!DUMP_HELLO_MSG)
+        return;
+
+    uint8_t *start = data;
+    uint8_t *offset = data;
+
+    HelloMsg *hello = (HelloMsg *)data;
+    offset += sizeof(HelloMsg);
+    TLOGD("\n");
+    TLOGD(" === Dump Hello(From %s) ===\n", identifier);
+    TLOGD("> Willingness : %u\n", hello->willingness);
+    TLOGD("> HTime : %u\n", me_to_reltime(hello->htime));
+
+    while (msg_size > offset - start) {
+        HelloInfo *info = (HelloInfo *)offset;
+        offset += sizeof(info);
+
+        int entrysz = ntohs(info->size);
+        TLOGD("> Link code %s Neibor status %s EntryNum %d\n",
+              link_status_str(EXTRACT_LINK(info->link_code)),
+              neighbor_status_str(EXTRACT_STATUS(info->link_code)),
+              entrysz);
+        for (int i = 0; i < entrysz; i++) {
+            TLOGD("> > %s\n", ip2str(info->neigh_addr[i]));
+        }
+        offset += sizeof(in_addr_t) * msg_size;
+    }
+    TLOGD("\n");
+}
+
 static uint8_t get_neighbor_status(OlsrContext *ctx,
                                    in_addr_t addr)
 {
@@ -21,9 +79,11 @@ static void hello_write_links_with_code(OlsrContext *ctx,
     uint16_t write_count = 0;
 
     HelloInfo *hello_info = (HelloInfo *)*offsetp;
+    hello_info->link_code = code;
+
     *offsetp += sizeof(HelloInfo);
 
-    RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->neighbor_tree)
+    RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->local_iface_tree)
     {
         LinkElem *lelem;
         RBTREE_FOR(lelem, LinkElem *, ielem->iface_link_tree)
@@ -31,10 +91,12 @@ static void hello_write_links_with_code(OlsrContext *ctx,
             uint8_t neighbor_status =
                 get_neighbor_status(ctx, lelem->neighbor_iface_addr);
 
-            if (neighbor_status == STATUS_UNAVAILABLE)
+            if (neighbor_status == STATUS_UNAVAILABLE) {
+                TLOGD("Neighbor status not available!\n");
                 continue;
+            }
 
-            uint8_t link_code = CREATE_LINK_CODE(lelem->status, neighbor_status);
+            uint8_t link_code = CREATE_LINK_CODE(neighbor_status, lelem->status);
 
             if (link_code == code) {
                 hello_info->neigh_addr[write_count] = lelem->neighbor_iface_addr;
@@ -49,7 +111,6 @@ static void hello_write_links_with_code(OlsrContext *ctx,
     } else {
         hello_info->size = htons(write_count);
     }
-    // TLOGW("Code %u Write count : %d\n", code, write_count);
 }
 
 static void hello_write_links(OlsrContext *ctx,
@@ -57,7 +118,7 @@ static void hello_write_links(OlsrContext *ctx,
 {
     for (uint8_t nstat = 0; nstat < NEIGHBOR_STATUS_END; nstat++) {
         for (uint8_t lstat = 0; lstat < LINK_STATUS_END; lstat++) {
-            uint8_t code = CREATE_LINK_CODE(lstat, nstat);
+            uint8_t code = CREATE_LINK_CODE(nstat, lstat);
             hello_write_links_with_code(ctx, offset, code);
         }
     }
@@ -79,41 +140,26 @@ void build_olsr_hello(OlsrContext *ctx,
 
     hello_write_links(ctx, &offset);
     *len = offset - start;
+    dump_hello(start, *len, "Own transmit");
 }
 
 static void link_timer_expire(void *arg)
 {
-    TLOGD("Link timer expired\n");
     LinkElem *link = arg;
-
-    if (link->expire_timer) {
-        if (link->expire_timer->attached == 1) {
-            link->expire_timer->active = 0;
-            link->expire_timer->free_on_detach = 1;
-        } else {
-            free(link->expire_timer);
-        }
-    }
-
-    if (link->asym_timer) {
-        if (link->asym_timer->attached == 1) {
-            link->asym_timer->active = 0;
-            link->asym_timer->free_on_detach = 1;
-        } else {
-            free(link->asym_timer);
-        }
-    }
-
-    if (link->sym_timer) {
-        if (link->sym_timer->attached == 1) {
-            link->sym_timer->active = 0;
-            link->sym_timer->free_on_detach = 1;
-        } else {
-            free(link->sym_timer);
-        }
-    }
+    if (LOG_LINK_TIMER)
+        TLOGD("ASYM Link timer expired(To %s)\n",
+              ip2str(link->neighbor_iface_addr));
 
     OlsrContext *ctx = &g_olsr_ctx;
+
+    if (link->expire_timer)
+        timerqueue_free_timer(link->expire_timer);
+
+    if (link->asym_timer)
+        timerqueue_free_timer(link->asym_timer);
+
+    if (link->sym_timer)
+        timerqueue_free_timer(link->sym_timer);
 
     LocalNetIfaceElem *iface;
     iface = (LocalNetIfaceElem *)rbtree_search(ctx->local_iface_tree,
@@ -126,19 +172,23 @@ static void link_timer_expire(void *arg)
 
 static void asym_link_timer_expire(void *arg)
 {
-    TLOGD("ASYM Link timer expired\n");
     LinkElem *link = arg;
-    link->status = LOST_LINK;
+    if (LOG_LINK_TIMER)
+        TLOGD("ASYM Link timer expired(To %s)\n",
+              ip2str(link->neighbor_iface_addr));
+    set_link_status(link, LOST_LINK);
 }
 
 static void sym_link_timer_expire(void *arg)
 {
-    TLOGD("SYM Link timer expired\n");
     LinkElem *link = arg;
+    if (LOG_LINK_TIMER)
+        TLOGD("SYM Link timer expired(To %s)\n",
+              ip2str(link->neighbor_iface_addr));
     if (link->asym_timer->active == 1) {
-        link->status = ASYM_LINK;
+        set_link_status(link, ASYM_LINK);
     } else {
-        link->status = LOST_LINK;
+        set_link_status(link, LOST_LINK);
     }
 }
 
@@ -146,9 +196,9 @@ static void link_elem_expire_timer_set(OlsrContext *ctx,
                                        LinkElem *link,
                                        olsr_reltime vtime)
 {
-    TLOGD("Set link timer\n");
+    if (LOG_LINK_TIMER)
+        TLOGD("Link timer set\n");
     if (link->expire_timer == NULL) {
-        TLOGD("Allocate new timer..\n");
         link->expire_timer = timerqueue_new_timer();
 
         link->expire_timer->use_once = 1;
@@ -166,9 +216,11 @@ static void link_elem_asym_timer_set(OlsrContext *ctx,
                                      LinkElem *link,
                                      olsr_reltime vtime)
 {
-    TLOGD("ASYM link timer set\n");
-    if (link->status != SYM_LINK)
-        link->status = ASYM_LINK;
+    if (LOG_LINK_TIMER)
+        TLOGD("ASYM link timer set\n");
+    if (link->status != SYM_LINK){
+        set_link_status(link, ASYM_LINK);
+    }
 
     if (link->asym_timer == NULL) {
         link->asym_timer = timerqueue_new_timer();
@@ -188,8 +240,10 @@ static void link_elem_sym_timer_set(OlsrContext *ctx,
                                     LinkElem *link,
                                     olsr_reltime vtime)
 {
-    TLOGD("SYM link timer set\n");
-    link->status = SYM_LINK;
+    if (LOG_LINK_TIMER)
+        TLOGD("SYM link timer set\n");
+    set_link_status(link, SYM_LINK);
+
     if (link->sym_timer == NULL) {
         link->sym_timer = timerqueue_new_timer();
 
@@ -224,7 +278,7 @@ static LinkElem *make_link_elem(OlsrContext *ctx,
                                 in_addr_t my_addr,
                                 olsr_reltime vtime)
 {
-    TLOGI("Make new link elem. SRC : %s, My : %s\n",
+    TLOGI("Make new link elem. src : %s <=> me : %s\n",
           ip2str(src), ip2str(my_addr));
     LinkElem *link = malloc(sizeof(LinkElem));
     memset(link, 0x00, sizeof(LinkElem));
@@ -232,7 +286,7 @@ static LinkElem *make_link_elem(OlsrContext *ctx,
     link->priv_rbn.key = &link->neighbor_iface_addr;
     link->neighbor_iface_addr = src;
     link->local_iface_addr = my_addr;
-    link->status = LOST_LINK;
+    set_link_status(link, LOST_LINK);
 
     link_elem_expire_timer_set(ctx, link, vtime);
     return link;
@@ -249,20 +303,20 @@ static void populate_linkset(OlsrContext *ctx,
 
     uint8_t linkcode_to_me = STATUS_UNAVAILABLE;
 
-    while (len >= offset - start) {
+    while (len > offset - start) {
         HelloInfo *hello_info = (HelloInfo *)offset;
         offset += sizeof(HelloInfo);
-
 
         int entrynum = ntohs(hello_info->size);
         for (int i = 0; i < entrynum; i++) {
             in_addr_t neigh_addr = hello_info->neigh_addr[i];
+            if (LOG_HELLO_MSG)
+                TLOGD("Hello from %s link state %u\n", ip2str(neigh_addr),
+                      EXTRACT_LINK(hello_info->link_code));
             if (neigh_addr == ctx->conf.own_ip) {
                 linkcode_to_me = hello_info->link_code;
                 break;
             }
-            TLOGD("Hello link to %s state %u\n", ip2str(neigh_addr),
-                  EXTRACT_LINK(hello_info->link_code));
         }
         if (linkcode_to_me != STATUS_UNAVAILABLE)
             break;
@@ -274,8 +328,6 @@ static void populate_linkset(OlsrContext *ctx,
         switch (linkstat) {
             case SYM_LINK: /* Fallthrough */
             case ASYM_LINK:
-                fprintf(stderr, "Now symlink with %s\n",
-                        ip2str(link->neighbor_iface_addr));
                 link_elem_sym_timer_set(ctx, link, vtime);
                 break;
             case LOST_LINK:
@@ -283,7 +335,7 @@ static void populate_linkset(OlsrContext *ctx,
                 sym_link_timer_expire(link);
                 break;
             default:
-                fprintf(stderr, "Unknown linkstat %u\n", linkstat);
+                TLOGD("Unknown linkstat %u\n", linkstat);
                 break;
         }
     } else {
@@ -342,7 +394,7 @@ static void populate_neigh2set(OlsrContext *ctx,
     uint8_t *start = hello_info;
     uint8_t *offset = hello_info;
 
-    while (len >= offset - start) {
+    while (len > offset - start) {
         HelloInfo *hello_info = (HelloInfo *)offset;
         offset += sizeof(HelloInfo);
 
@@ -351,13 +403,7 @@ static void populate_neigh2set(OlsrContext *ctx,
             in_addr_t neigh2_addr = hello_info->neigh_addr[i];
             if (neigh2_addr == ctx->conf.own_ip)
                 continue;
-            uint8_t neigh_status = EXTRACT_STATUS(hello_info->link_code);
-
-
-            /* Find 2-hop tuple */
-            /* Add 2-hop tuple */
-
-
+            update_neigh2_tuple(ctx, neigh, neigh2_addr, vtime);
         }
         offset += sizeof(in_addr_t) * entrynum;
     }
@@ -382,11 +428,9 @@ void update_neighbor_status(OlsrContext *ctx,
     }
 
     if (neighbor_is_sym) {
-        TLOGD("Neighbor %s is now Symmetric neighbor\n",
-              ip2str(neigh->neighbor_main_addr));
-        neigh->status = SYM_NEIGH;
+        set_neighbor_status(neigh, SYM_NEIGH);
     } else {
-        neigh->status = NOT_NEIGH;
+        set_neighbor_status(neigh, NOT_NEIGH);
     }
 }
 
@@ -399,7 +443,7 @@ void process_olsr_hello(OlsrContext *ctx,
     LocalNetIfaceElem *iface =
         (LocalNetIfaceElem *)rbtree_search(ctx->local_iface_tree,
                                            &ctx->conf.own_ip);
-
+    dump_hello(hello, msgsize, ip2str(src));
     HelloMsg *hello_msg = (HelloMsg *)hello;
     uint8_t willingness = hello_msg->willingness;
 
@@ -427,7 +471,10 @@ void process_olsr_hello(OlsrContext *ctx,
               ip2str(iface->local_iface_addr), ip2str(src));
         link = make_link_elem(ctx, src, ctx->conf.own_ip, vtime);
         rbtree_insert(iface->iface_link_tree, (rbnode_type *)link);
+    } else {
+        link_elem_expire_timer_set(ctx, link, vtime);
     }
+
     link_elem_asym_timer_set(ctx, link, vtime);
     populate_linkset(ctx, link, hello_msg->hello_info,
                      msgsize, vtime);
@@ -440,5 +487,5 @@ void process_olsr_hello(OlsrContext *ctx,
         populate_neigh2set(ctx, neigh, hello_msg->hello_info, msgsize, vtime);
     }
 
-
+    debug_olsr_context();
 }
