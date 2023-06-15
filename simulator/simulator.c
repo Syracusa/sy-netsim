@@ -204,7 +204,7 @@ int main()
     sleep(1); /* Wait until apps are initiated... */
     send_config_msgs(sctx);
 
-    sleep(10);
+    sleep(100);
 
     delete_simulator_context(sctx);
     return 0;
