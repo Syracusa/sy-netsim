@@ -5,19 +5,16 @@
 #include <time.h>
 #include "rbtree.h"
 
-typedef struct
-{
+typedef struct {
     rbtree_type *rbt;
 } TimerqueueContext;
 
-typedef struct
-{
+typedef struct {
     struct timespec expire;
     void *ptr;
 } TqKey;
 
-typedef struct
-{
+typedef struct {
     /* Privates */
     rbnode_type priv_rbn;
     TqKey priv_rbk;
@@ -48,7 +45,7 @@ typedef struct
       (result)->tv_nsec += 1000000000;                              \
     }                                                               \
   } while (0)
-  
+
 
 static inline int timespec_add_usec(struct timespec *t,
                                     unsigned long usec)
@@ -56,12 +53,9 @@ static inline int timespec_add_usec(struct timespec *t,
     unsigned long long add;
     int res = 0;
 
-    if (!t)
-    {
+    if (!t) {
         res = -1;
-    }
-    else
-    {
+    } else {
         add = t->tv_nsec + (usec * 1000);
         t->tv_sec += add / 1000000000;
         t->tv_nsec = add % 1000000000;
@@ -81,9 +75,9 @@ static inline int check_expire(struct timespec *expiretime,
     return res;
 }
 
-TimerqueueElem* timerqueue_new_timer();
+TimerqueueElem *timerqueue_new_timer();
 
-void timerqueue_free_timer(TimerqueueElem* timer);
+void timerqueue_free_timer(TimerqueueElem *timer);
 
 void timerqueue_reset_expire_time(TimerqueueElem *elem);
 
