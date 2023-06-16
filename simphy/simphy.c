@@ -28,8 +28,8 @@ void init_mq(SimPhyCtx *spctx)
 
         if (DEBUG_MQ)
             TLOGI("Message Queue ID(Node %d) : MAC->PHY %d(%d)   PHY->MAC %d(%d)\n", nid,
-                spctx->nodes[nid].mqid_recv_mac, mqkey_recv_mac,
-                spctx->nodes[nid].mqid_send_mac, mqkey_send_mac);
+                  spctx->nodes[nid].mqid_recv_mac, mqkey_recv_mac,
+                  spctx->nodes[nid].mqid_send_mac, mqkey_send_mac);
     }
 
     int mqkey_send_report = MQ_KEY_PHY_REPORT;
@@ -87,9 +87,9 @@ static void send_to_local_mac(SimPhyCtx *spctx,
 }
 
 static void process_mac_frame(SimPhyCtx *spctx,
-                            int sender_nid,
-                            void *data,
-                            size_t len)
+                              int sender_nid,
+                              void *data,
+                              size_t len)
 {
     for (int nid = 0; nid < MAX_NODE_ID; nid++) {
         if (sender_nid == nid)
@@ -119,54 +119,67 @@ static void recv_from_local_mac(SimPhyCtx *spctx)
             }
             spctx->nodes[nid].alive = 1;
 
-            switch (msg.type)
-            {
-            case MESSAGE_TYPE_DATA:
-                process_mac_frame(spctx, nid, msg.text, res);
-                break;
-            case MESSAGE_TYPE_HEARTBEAT:
-                TLOGE("Heartbeat recvd from MAC %d\n", nid);
-                break;
-            default:
-                TLOGE("Unknown msgtype %ld\n", msg.type);
-                break;
+            switch (msg.type) {
+                case MESSAGE_TYPE_DATA:
+                    process_mac_frame(spctx, nid, msg.text, res);
+                    break;
+                case MESSAGE_TYPE_HEARTBEAT:
+                    TLOGE("Heartbeat recvd from MAC %d\n", nid);
+                    break;
+                default:
+                    TLOGE("Unknown msgtype %ld\n", msg.type);
+                    break;
             }
-            
+
         }
     }
+}
+
+static void handle_link_config_command(SimPhyCtx *spctx,
+                                       void *msg)
+{
+    PhyLinkConfig* lmsg = msg;
+
+
 }
 
 static void recv_command(SimPhyCtx *spctx)
 {
     MqMsgbuf msg;
-        while (1) {
-            ssize_t res = msgrcv(spctx->mqid_recv_command,
-                                 &msg, sizeof(msg.text),
-                                 0, IPC_NOWAIT);
-            if (res < 0) {
-                if (errno != ENOMSG) {
-                    fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
-                }
-                break;
+    while (1) {
+        ssize_t res = msgrcv(spctx->mqid_recv_command,
+                             &msg, sizeof(msg.text),
+                             0, IPC_NOWAIT);
+        if (res < 0) {
+            if (errno != ENOMSG) {
+                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
             }
+            break;
+        }
 
-            switch (msg.type)
-            {
+        switch (msg.type) {
             case CONF_MSG_TYPE_PHY_LINK_CONFIG:
                 TLOGI("Recv config function not implemented\n");
                 break;
             default:
                 TLOGE("PHY Config Unknown msgtype %ld\n", msg.type);
                 break;
-            }
-            
         }
+
+    }
 }
 
 static SimPhyCtx *create_context()
 {
     SimPhyCtx *spctx = malloc(sizeof(SimPhyCtx));
     memset(spctx, 0x00, sizeof(SimPhyCtx));
+
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        for (int j = 0; j < MAX_NODE_ID; j++) {
+            spctx->links[i][j].los = 1;
+            spctx->links[i][j].pathloss = 0.0;
+        }
+    }
 
     return spctx;
 }

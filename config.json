@@ -3,8 +3,8 @@
     "simulator_port" : 3222,
     "nodes" : [
          {"id" : 0, "pos" : {"lat" : 36.37, "lon" : 127.37, "alt" : 1.2}},
-         {"id" : 1, "pos" : {"lat" : 36.37, "lon" : 127.87, "alt" : 1.2}},
-         {"id" : 2, "pos" : {"lat" : 36.37, "lon" : 128.37, "alt" : 1.2}}
+         {"id" : 1, "pos" : {"lat" : 36.37, "lon" : 127.87, "alt" : 1.2}}
+
      ],
     "links" : [
         {"nid1" : 0, "nid2" : 1, "los" : 0}
@@ -12,5 +12,8 @@
     "dummy_traffic" : [
         {"src_id" : 0, "dst_id" : 1, "payload_size" : 100, "interval_ms" : 500},
         {"src_id" : 1, "dst_id" : 0, "payload_size" : 200, "interval_ms" : 800}
+    ],
+    "memos" : [         
+        {"id" : 2, "pos" : {"lat" : 36.37, "lon" : 128.37, "alt" : 1.2}}
     ]
 }

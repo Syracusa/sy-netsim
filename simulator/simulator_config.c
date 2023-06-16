@@ -91,22 +91,26 @@ void parse_config(SimulatorCtx *sctx)
         cJSON *link_json = NULL;
         cJSON_ArrayForEach(link_json, link_list_json)
         {
-
+            PhyLinkConfig* msg = &sctx->conf.linkconfs[sctx->conf.simlink_conf_num];
             int nid1 = cJSON_GetObjectItemCaseSensitive(link_json, "nid1")->valueint;
             int nid2 = cJSON_GetObjectItemCaseSensitive(link_json, "nid2")->valueint;
 
             cJSON *los_json = cJSON_GetObjectItemCaseSensitive(link_json, "los");
             if (cJSON_IsNumber(los_json)) {
                 printf("Node %d <-> Node %d LOS : %d\n", nid1, nid2, los_json->valueint);
-                sctx->links[nid1][nid2].los = los_json->valueint;
-                sctx->links[nid2][nid1].los = los_json->valueint;
+                msg->los = los_json->valueint;
+            } else {
+                msg->los = 1; /* Default */
             }
+
             cJSON *pl_json = cJSON_GetObjectItemCaseSensitive(link_json, "pathloss");
             if (cJSON_IsNumber(pl_json)) {
                 printf("Node %d <-> Node %d PATHLOSS : %lf\n", nid1, nid2, pl_json->valuedouble);
-                sctx->links[nid1][nid2].pathloss = pl_json->valuedouble;
-                sctx->links[nid2][nid1].pathloss = pl_json->valuedouble;
+                msg->pathloss_x100 = pl_json->valuedouble;
+            } else {
+                msg->pathloss_x100 = 0; /* Default */
             }
+            sctx->conf.simlink_conf_num++;
         }
     }
 
@@ -116,34 +120,34 @@ void parse_config(SimulatorCtx *sctx)
         cJSON *dummy_traffic_conf = NULL;
         cJSON_ArrayForEach(dummy_traffic_conf, dummy_traffic_json)
         {
-            if (MAX_DUMMYSTREAM_NUM <= sctx->conf.dummy_stream_num) {
+            if (MAX_DUMMYSTREAM_CONF_NUM <= sctx->conf.dummystream_conf_num) {
                 fprintf(stderr, "Dummystream number overflow! max : %d\n",
-                        MAX_DUMMYSTREAM_NUM);
+                        MAX_DUMMYSTREAM_CONF_NUM);
                 exit(2);
             }
 
-            int src_nid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "src_id")->valueint;
-            int dst_nid = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "dst_id")->valueint;
+            int src_id = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "src_id")->valueint;
+            int dst_id = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "dst_id")->valueint;
             int payload_size = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "payload_size")->valueint;
             int interval_ms = cJSON_GetObjectItemCaseSensitive(dummy_traffic_conf, "interval_ms")->valueint;
 
             TLOGI("Dummy traffic %d -> %d  payload %dbyte  interval %dms\n",
-                  src_nid, dst_nid, payload_size, interval_ms);
+                  src_id, dst_id, payload_size, interval_ms);
 
             /*
             At this point, No netproto apps are excuted.
             So we can't send config message right now.
             */
 
-            DummyStreamInfo *stream_info =
-                &(sctx->conf.dummy_stream_info[sctx->conf.dummy_stream_num]);
+            NetDummyTrafficConfig *stream_info =
+                &(sctx->conf.dummy_stream_info[sctx->conf.dummystream_conf_num]);
 
-            stream_info->src_nid = src_nid;
-            stream_info->dst_nid = dst_nid;
+            stream_info->src_id = src_id;
+            stream_info->dst_id = dst_id;
             stream_info->payload_size = payload_size;
             stream_info->interval_ms = interval_ms;
 
-            sctx->conf.dummy_stream_num++;
+            sctx->conf.dummystream_conf_num++;
         }
     }
 

@@ -77,13 +77,6 @@ static SimulatorCtx *create_simulator_context()
     SimulatorCtx *sctx = malloc(sizeof(SimulatorCtx));
     memset(sctx, 0x00, sizeof(SimulatorCtx));
 
-    for (int i = 0; i < MAX_NODE_ID; i++) {
-        for (int j = 0; j < MAX_NODE_ID; j++) {
-            sctx->links[i][j].los = 1;
-            sctx->links[i][j].pathloss = 0.0;
-        }
-    }
-
     return sctx;
 }
 
@@ -204,25 +197,35 @@ void send_config(SimulatorCtx *sctx,
     }
 }
 
-static void send_config_msgs(SimulatorCtx *sctx)
+static void send_dummystream_config_msgs(SimulatorCtx *sctx)
 {
     MqMsgbuf mbuf;
     SimulatorConfig *conf = &(sctx->conf);
 
     /* Dummy stream config */
-    for (int i = 0; i < conf->dummy_stream_num; i++) {
-        DummyStreamInfo *info = &(conf->dummy_stream_info[i]);
-        NetDummyTrafficConfig *msg = (NetDummyTrafficConfig *)&(mbuf.text);
+    for (int i = 0; i < conf->dummystream_conf_num; i++) {
+        NetDummyTrafficConfig *info = &(conf->dummy_stream_info[i]);
 
-        msg->src_id = info->src_nid;
-        msg->dst_id = info->dst_nid;
-        msg->payload_size = info->payload_size;
-        msg->interval_ms = info->interval_ms;
-
-        send_config(sctx, sctx->nodes[msg->src_id].mqid_net_command,
-                    &(mbuf.text), sizeof(NetDummyTrafficConfig),
+        send_config(sctx, sctx->nodes[info->src_id].mqid_net_command,
+                    info, sizeof(NetDummyTrafficConfig),
                     CONF_MSG_TYPE_NET_DUMMY_TRAFFIC);
     }
+}
+
+static void send_link_config_msgs(SimulatorCtx *sctx)
+{
+    MqMsgbuf mbuf;
+    for (int i = 0; i < sctx->conf.simlink_conf_num; i++) {
+        send_config(sctx, sctx->mqid_phy_command,
+                    &sctx->conf.linkconfs[i], sizeof(PhyLinkConfig),
+                    CONF_MSG_TYPE_PHY_LINK_CONFIG);
+    }
+}
+
+static void send_config_msgs(SimulatorCtx *sctx)
+{
+    send_dummystream_config_msgs(sctx);
+    send_link_config_msgs(sctx);
 }
 
 static void app_exit(int signo)
