@@ -25,6 +25,21 @@ void set_neighbor_status(NeighborElem *neighbor, uint8_t status)
     }
 }
 
+NeighborElem *make_neighbor_elem(OlsrContext *ctx,
+                                 in_addr_t neigh_addr,
+                                 uint8_t willingness)
+{
+    NeighborElem *neigh = malloc(sizeof(NeighborElem));
+
+    neigh->priv_rbn.key = &neigh->neighbor_main_addr;
+    neigh->neighbor_main_addr = neigh_addr;
+    neigh->status = STATUS_UNAVAILABLE;
+    neigh->willingness = willingness;
+    neigh->neighbor2_tree = rbtree_create(rbtree_compare_by_inetaddr);
+
+    return neigh;
+}
+
 void neigh2_elem_expire(void *arg)
 {
     OlsrContext *ctx = &g_olsr_ctx;
