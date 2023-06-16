@@ -237,4 +237,6 @@ void process_olsr_hello(OlsrContext *ctx,
         populate_neigh2set(ctx, neigh, hello_msg->hello_info,
                            msgsize - sizeof(HelloMsg), vtime);
     }
+
+    populate_mpr_set(ctx);
 }

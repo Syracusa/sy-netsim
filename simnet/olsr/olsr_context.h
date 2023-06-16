@@ -57,12 +57,12 @@ typedef struct MprElem
     in_addr_t mpr_addr; /* Rbtree Key */
 } MprElem;
 
-typedef struct MprSelecorElem
+typedef struct MprSelectorElem
 {
     rbnode_type priv_rbn; 
     in_addr_t selector_addr; /* Rbtree Key */
     uint32_t expire_time;
-} MprSelecorElem;
+} MprSelectorElem;
 
 typedef struct DestTopologyInfoElem
 {
@@ -99,7 +99,7 @@ typedef struct OlsrContext
     rbtree_type *local_iface_tree; /* Tree of LocalNetIfaceElem */
     rbtree_type *neighbor_tree; /* Tree of NeighborElem */
     rbtree_type *mpr_tree; /* Tree of MprElem */
-    rbtree_type *selector_tree; /* Tree of MprSelecorElem */
+    rbtree_type *selector_tree; /* Tree of MprSelectorElem */
     rbtree_type *topology_tree; /* Tree of TopologyInfoElem */
 } OlsrContext;
 

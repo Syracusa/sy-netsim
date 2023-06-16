@@ -7,6 +7,7 @@ add_library (sy-olsr
              olsr_mantissa.c
              olsr_link.c
              olsr_neighbor.c
+             olsr_mpr.c
              ../../util/util.c
              ../../util/netutil.c
              ../../util/ringbuffer.c)

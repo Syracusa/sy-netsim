@@ -63,8 +63,8 @@ void sym_link_timer_expire(void *arg)
 }
 
 void link_elem_expire_timer_set(OlsrContext *ctx,
-                                       LinkElem *link,
-                                       olsr_reltime vtime)
+                                LinkElem *link,
+                                olsr_reltime vtime)
 {
     if (LOG_LINK_TIMER)
         TLOGD("Link timer set\n");
@@ -83,8 +83,8 @@ void link_elem_expire_timer_set(OlsrContext *ctx,
 }
 
 void link_elem_asym_timer_set(OlsrContext *ctx,
-                                     LinkElem *link,
-                                     olsr_reltime vtime)
+                              LinkElem *link,
+                              olsr_reltime vtime)
 {
     if (LOG_LINK_TIMER)
         TLOGD("ASYM link timer set\n");
@@ -107,8 +107,8 @@ void link_elem_asym_timer_set(OlsrContext *ctx,
 }
 
 void link_elem_sym_timer_set(OlsrContext *ctx,
-                                    LinkElem *link,
-                                    olsr_reltime vtime)
+                             LinkElem *link,
+                             olsr_reltime vtime)
 {
     if (LOG_LINK_TIMER)
         TLOGD("SYM link timer set\n");
@@ -129,9 +129,9 @@ void link_elem_sym_timer_set(OlsrContext *ctx,
 }
 
 LinkElem *make_link_elem(OlsrContext *ctx,
-                                in_addr_t src,
-                                in_addr_t my_addr,
-                                olsr_reltime vtime)
+                         in_addr_t src,
+                         in_addr_t my_addr,
+                         olsr_reltime vtime)
 {
     TLOGI("Make new link elem. src : %s <=> me : %s\n",
           ip2str(src), ip2str(my_addr));

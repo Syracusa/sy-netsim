@@ -14,6 +14,7 @@
 #include "olsr_mantissa.h"
 #include "olsr_neighbor.h"
 #include "olsr_link.h"
+#include "olsr_mpr.h"
 
 #define DUMP_ROUTE_PKT 0
 
