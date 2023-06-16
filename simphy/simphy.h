@@ -6,7 +6,7 @@
 
 typedef struct SimLink{
     int los;
-    double pathloss;
+    uint32_t pathloss_x100;
 } SimLink;
 
 typedef struct 

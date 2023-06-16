@@ -91,13 +91,14 @@ void parse_config(SimulatorCtx *sctx)
         cJSON *link_json = NULL;
         cJSON_ArrayForEach(link_json, link_list_json)
         {
-            PhyLinkConfig* msg = &sctx->conf.linkconfs[sctx->conf.simlink_conf_num];
-            int nid1 = cJSON_GetObjectItemCaseSensitive(link_json, "nid1")->valueint;
-            int nid2 = cJSON_GetObjectItemCaseSensitive(link_json, "nid2")->valueint;
+            PhyLinkConfig *msg = &sctx->conf.linkconfs[sctx->conf.simlink_conf_num];
+            msg->node_id_1 = cJSON_GetObjectItemCaseSensitive(link_json, "nid1")->valueint;
+            msg->node_id_2 = cJSON_GetObjectItemCaseSensitive(link_json, "nid2")->valueint;
 
             cJSON *los_json = cJSON_GetObjectItemCaseSensitive(link_json, "los");
             if (cJSON_IsNumber(los_json)) {
-                printf("Node %d <-> Node %d LOS : %d\n", nid1, nid2, los_json->valueint);
+                printf("Node %d <-> Node %d LOS : %d\n",
+                       msg->node_id_1, msg->node_id_2, los_json->valueint);
                 msg->los = los_json->valueint;
             } else {
                 msg->los = 1; /* Default */
@@ -105,7 +106,8 @@ void parse_config(SimulatorCtx *sctx)
 
             cJSON *pl_json = cJSON_GetObjectItemCaseSensitive(link_json, "pathloss");
             if (cJSON_IsNumber(pl_json)) {
-                printf("Node %d <-> Node %d PATHLOSS : %lf\n", nid1, nid2, pl_json->valuedouble);
+                printf("Node %d <-> Node %d PATHLOSS : %lf\n",
+                       msg->node_id_1, msg->node_id_2, pl_json->valuedouble);
                 msg->pathloss_x100 = pl_json->valuedouble;
             } else {
                 msg->pathloss_x100 = 0; /* Default */

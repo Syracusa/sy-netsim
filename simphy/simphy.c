@@ -98,6 +98,12 @@ static void process_mac_frame(SimPhyCtx *spctx,
         if (spctx->nodes[nid].alive == 1) {
             if (DEBUG_MAC_TRX)
                 TLOGI("PHY msg forwarding... %d -> %d\n", sender_nid, nid);
+
+            SimLink *link = &spctx->links[sender_nid][nid];
+            if (link->los != 1) {
+                TLOGW("PHY DROP FRAME %d => %d LOS\n", sender_nid, nid);
+                continue;
+            }
             send_to_local_mac(spctx, nid, data, len, MESSAGE_TYPE_DATA);
         }
     }
@@ -138,9 +144,17 @@ static void recv_from_local_mac(SimPhyCtx *spctx)
 static void handle_link_config_command(SimPhyCtx *spctx,
                                        void *msg)
 {
-    PhyLinkConfig* lmsg = msg;
+    PhyLinkConfig *lmsg = msg;
 
+    SimLink *l1 = &spctx->links[lmsg->node_id_1][lmsg->node_id_2];
+    SimLink *l2 = &spctx->links[lmsg->node_id_2][lmsg->node_id_1];
 
+    l1->los = l2->los = lmsg->los;
+    l1->pathloss_x100 = l2->pathloss_x100 = lmsg->pathloss_x100;
+
+    TLOGI("Link %u <=> %u  LOS %u  PASSLOSS %u\n",
+          lmsg->node_id_1, lmsg->node_id_2,
+          lmsg->los, lmsg->pathloss_x100);
 }
 
 static void recv_command(SimPhyCtx *spctx)
@@ -159,7 +173,7 @@ static void recv_command(SimPhyCtx *spctx)
 
         switch (msg.type) {
             case CONF_MSG_TYPE_PHY_LINK_CONFIG:
-                TLOGI("Recv config function not implemented\n");
+                handle_link_config_command(spctx, msg.text);
                 break;
             default:
                 TLOGE("PHY Config Unknown msgtype %ld\n", msg.type);
@@ -177,7 +191,7 @@ static SimPhyCtx *create_context()
     for (int i = 0; i < MAX_NODE_ID; i++) {
         for (int j = 0; j < MAX_NODE_ID; j++) {
             spctx->links[i][j].los = 1;
-            spctx->links[i][j].pathloss = 0.0;
+            spctx->links[i][j].pathloss_x100 = 0;
         }
     }
 
