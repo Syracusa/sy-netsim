@@ -112,6 +112,12 @@ void olsr_send_from_queue(void *arg)
     }
 }
 
+static void debug_olsr_context_cb(void *arg)
+{
+    (void)arg;
+    debug_olsr_context();
+}
+
 void olsr_start(CommonRouteConfig *config)
 {
     printf("olsr_start() called\n");
@@ -139,6 +145,17 @@ void olsr_start(CommonRouteConfig *config)
     job_tx_msg->use_once = 0;
     job_tx_msg->interval_us = 50 * 1000;
     timerqueue_register_timer(ctx->timerqueue, job_tx_msg);
+
+    static TimerqueueElem *debug_timer = NULL;
+    if (debug_timer == NULL)
+        debug_timer = timerqueue_new_timer();
+
+    debug_timer->arg = NULL;
+    debug_timer->callback = debug_olsr_context_cb;
+    debug_timer->use_once = 0;
+    debug_timer->interval_us = 2000 * 1000;
+    debug_timer->max_jitter = 100 * 1000;
+    timerqueue_register_timer(ctx->timerqueue, debug_timer);
 }
 
 void olsr_work()

@@ -168,7 +168,6 @@ static void start_simulate(SimulatorCtx *sctx)
     for (int i = 0; i < MAX_NODE_ID; i++) {
         if (sctx->nodes[i].active == 1) {
             start_simnode(i);
-            usleep(rand() % 1000000);
         }
     }
 }
