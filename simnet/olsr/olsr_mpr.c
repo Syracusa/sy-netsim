@@ -62,10 +62,11 @@ static rbtree_type *calc_n2_set(OlsrContext *ctx,
                     continue;
 
                 /* Not truly 2-hop(also 1-hop) */
-                if (rbtree_search(n1_set, n2elem->neighbor2_main_addr))
+                if (rbtree_search(n1_set, &n2elem->neighbor2_main_addr))
                     continue;
 
-                n2r_elem = rbtree_search(n2_set, &n2elem->neighbor2_main_addr);
+                n2r_elem = (N2ReachabilityTreeElem *)
+                    rbtree_search(n2_set, &n2elem->neighbor2_main_addr);
                 if (!n2r_elem) {
                     n2r_elem = (N2ReachabilityTreeElem *)
                         malloc(sizeof(N2ReachabilityTreeElem));
@@ -77,7 +78,7 @@ static rbtree_type *calc_n2_set(OlsrContext *ctx,
                 AddrSetElem *addr_elem = malloc(sizeof(AddrSetElem));
                 addr_elem->addr = nelem->neighbor_main_addr;
                 addr_elem->priv_rbn.key = &addr_elem->addr;
-                rbtree_insert(n2r_elem->n1_tree, addr_elem);
+                rbtree_insert(n2r_elem->n1_tree, (rbnode_type *)addr_elem);
 
                 rbtree_insert(n2_set, (rbnode_type *)n2r_elem);
             }
@@ -104,7 +105,7 @@ static void add_unique_bridge_to_mpr(OlsrContext *ctx,
             MprElem *mpr_elem = malloc(sizeof(mpr_elem));
             mpr_elem->mpr_addr = *((in_addr_t *)n2r_elem->n1_tree->root->key);
             mpr_elem->priv_rbn.key = &mpr_elem->mpr_addr;
-            if (!rbtree_insert(selected_mpr_tree, mpr_elem)) {
+            if (!rbtree_insert(selected_mpr_tree, (rbnode_type *)mpr_elem)) {
                 /* Already selected MPR */
                 free(mpr_elem);
             }
@@ -117,13 +118,13 @@ static void add_unique_bridge_to_mpr(OlsrContext *ctx,
         /* Remove from N1 set */
         rbtree_delete(n1_set, &mpr_elem->mpr_addr);
 
-        NeighborElem *mpr_neigh = rbtree_search(ctx->neighbor_tree,
-                                                &mpr_elem->mpr_addr);
+        NeighborElem *mpr_neigh =
+            (NeighborElem *)rbtree_search(ctx->neighbor_tree, &mpr_elem->mpr_addr);
 
         RBTREE_FOR(n2elem, Neighbor2Elem *, mpr_neigh->neighbor2_tree)
         {
             /* Remove from N2 set */
-            n2r_elem = rbtree_search(n2_set, &n2elem->neighbor2_main_addr);
+            n2r_elem = (N2ReachabilityTreeElem*)rbtree_search(n2_set, &n2elem->neighbor2_main_addr);
             if (n2r_elem) {
                 rbtree_delete(n2_set, &n2r_elem->n2_addr);
                 free(n2r_elem);
