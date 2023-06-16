@@ -218,7 +218,7 @@ static void link_elem_asym_timer_set(OlsrContext *ctx,
 {
     if (LOG_LINK_TIMER)
         TLOGD("ASYM link timer set\n");
-    if (link->status != SYM_LINK){
+    if (link->status != SYM_LINK) {
         set_link_status(link, ASYM_LINK);
     }
 
@@ -379,6 +379,8 @@ static void update_neigh2_tuple(OlsrContext *ctx,
         n2elem->expire_timer->arg = n2elem;
         n2elem->expire_timer->callback = neigh2_elem_expire;
         timerqueue_register_timer(ctx->timerqueue, n2elem->expire_timer);
+
+        rbtree_insert(neigh->neighbor2_tree, (rbnode_type *)n2elem);
     } else {
         n2elem->expire_timer->interval_us = vtime * 1000;
         timerqueue_reactivate_timer(ctx->timerqueue, n2elem->expire_timer);
@@ -477,14 +479,15 @@ void process_olsr_hello(OlsrContext *ctx,
 
     link_elem_asym_timer_set(ctx, link, vtime);
     populate_linkset(ctx, link, hello_msg->hello_info,
-                     msgsize, vtime);
+                     msgsize - sizeof(HelloMsg), vtime);
 
     update_neighbor_status(ctx, neigh);
 
     if (neigh->status == SYM_NEIGH ||
         neigh->status == MPR_NEIGH) {
 
-        populate_neigh2set(ctx, neigh, hello_msg->hello_info, msgsize, vtime);
+        populate_neigh2set(ctx, neigh, hello_msg->hello_info,
+                           msgsize - sizeof(HelloMsg), vtime);
     }
 
     debug_olsr_context();
