@@ -7,6 +7,7 @@
 #include "ringbuffer.h"
 #include "olsr_route_iface.h"
 #include "rbtree.h"
+#include "olsr_mantissa.h"
 
 #define OLSR_TX_MSGBUF_SIZE 2000
 
