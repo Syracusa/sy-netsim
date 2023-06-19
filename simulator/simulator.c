@@ -245,7 +245,7 @@ int main()
     init_http_server();
 
     start_simulate(sctx);
-    sleep(1); /* Wait until apps are initiated... */
+    sleep(1); /* Wait until apps are ready... */
     send_config_msgs(sctx);
 
     sleep(100);

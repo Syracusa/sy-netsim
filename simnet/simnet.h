@@ -19,6 +19,7 @@
 
 #include "log.h"
 #include "route_iface.h"
+#include "net_statistics.h"
 
 typedef struct
 {
@@ -32,6 +33,8 @@ typedef struct
     int mqid_send_report;
 
     RouteFunctions *route;
+
+    NetStats stat;
 } SimNetCtx;
 
 
