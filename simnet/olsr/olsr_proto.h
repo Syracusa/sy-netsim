@@ -37,7 +37,7 @@
 #define DEF_DUP_HOLD_TIME       30 * 1000
 
 #define DEF_HELLO_VTIME         DEF_NEIGHB_HOLD_TIME
-
+#define DEF_TC_VTIME            DEF_TOP_HOLD_TIME
 
 #define CREATE_LINK_CODE(status, link) (link | (status<<2))
 

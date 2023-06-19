@@ -108,7 +108,20 @@ void build_olsr_hello(OlsrContext *ctx,
     dump_hello(start, *len, "Own transmit");
 }
 
+static void mpr_selector_expire(void* arg)
+{
+    OlsrContext* ctx = &g_olsr_ctx;
+    MprSelectorElem* exp_elem = arg;
+
+    TLOGD("Mpr selector expire %s\n", ip2str(exp_elem->selector_addr));
+
+    rbtree_delete(ctx->selector_tree, &exp_elem->selector_addr);
+    timerqueue_free_timer(exp_elem->expire_timer);
+    free(exp_elem);
+}
+
 static void populate_linkset(OlsrContext *ctx,
+                             in_addr_t orig,
                              LinkElem *link,
                              void *hello_info,
                              size_t len,
@@ -154,6 +167,25 @@ static void populate_linkset(OlsrContext *ctx,
                 TLOGD("Unknown linkstat %u\n", linkstat);
                 break;
         }
+        uint8_t neighstat = EXTRACT_STATUS(linkcode_to_me);
+
+        MprSelectorElem *mpr_selector = NULL;
+        switch (neighstat) {
+            case MPR_NEIGH:
+                /* Populate MPR Selector Set */
+                mpr_selector = (MprSelectorElem *)
+                    rbtree_search(ctx->selector_tree, &link->neighbor_iface_addr);
+                if (!mpr_selector){
+                    mpr_selector = malloc(sizeof(MprSelectorElem));
+                    mpr_selector->selector_addr = orig;
+                    mpr_selector->expire_timer = timerqueue_new_timer();
+                }
+                mpr_selector->expire_timer->interval_us = vtime * 1000;
+                timerqueue_reactivate_timer(ctx->timerqueue, mpr_selector->expire_timer);
+                break;
+            default:
+                break;
+        }
     } else {
         TLOGI("Neighbor doesn't have my information!\n");
     }
@@ -186,6 +218,7 @@ static void populate_neigh2set(OlsrContext *ctx,
 
 void process_olsr_hello(OlsrContext *ctx,
                         in_addr_t src,
+                        in_addr_t orig,
                         void *hello,
                         olsr_reltime vtime,
                         size_t msgsize)
@@ -226,7 +259,7 @@ void process_olsr_hello(OlsrContext *ctx,
     }
 
     link_elem_asym_timer_set(ctx, link, vtime);
-    populate_linkset(ctx, link, hello_msg->hello_info,
+    populate_linkset(ctx, orig, link, hello_msg->hello_info,
                      msgsize - sizeof(HelloMsg), vtime);
 
     update_neighbor_status(ctx, neigh);

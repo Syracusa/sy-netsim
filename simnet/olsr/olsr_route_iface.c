@@ -1,6 +1,6 @@
-#include "olsr_route_iface.h"
-
 #include <stdio.h>
+
+#include "olsr_route_iface.h"
 #include "timerqueue.h"
 #include "olsr.h"
 
@@ -29,36 +29,6 @@ void olsr_handle_remote_pkt(void *data, size_t len)
             handle_data_pkt(&buf);
         }
     }
-
-
-}
-
-void olsr_queue_hello(void *olsr_ctx)
-{
-    OlsrContext *ctx = olsr_ctx;
-
-    uint8_t buf[MAX_IPPKT_SIZE];
-    uint8_t *offset = buf;
-
-    OlsrMsgHeader *msghdr = (OlsrMsgHeader *)buf;
-    msghdr->olsr_msgtype = MSG_TYPE_HELLO;
-    msghdr->olsr_vtime = reltime_to_me(DEF_HELLO_VTIME);
-    msghdr->originator = ctx->conf.own_ip;
-    msghdr->ttl = 1;
-    msghdr->hopcnt = 1;
-    msghdr->seqno = htons(ctx->pkt_seq);
-
-    offset += sizeof(OlsrMsgHeader);
-
-    size_t hello_len = MAX_IPPKT_SIZE;
-    build_olsr_hello(ctx, offset, &hello_len);
-    offset += hello_len;
-
-    uint16_t msglen = offset - buf;
-
-    // TLOGD("Queue msgsize : %u\n", msglen);
-    msghdr->olsr_msgsize = htons(msglen);
-    RingBuffer_push(ctx->olsr_tx_msgbuf, buf, msglen);
 }
 
 void olsr_send_from_queue(void *arg)

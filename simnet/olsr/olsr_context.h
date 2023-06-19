@@ -61,7 +61,7 @@ typedef struct MprSelectorElem
 {
     rbnode_type priv_rbn; 
     in_addr_t selector_addr; /* Rbtree Key */
-    uint32_t expire_time;
+    TimerqueueElem *expire_timer;
 } MprSelectorElem;
 
 typedef struct DestTopologyInfoElem
@@ -69,7 +69,7 @@ typedef struct DestTopologyInfoElem
     rbnode_type priv_rbn; 
     in_addr_t last_addr; /* Rbtree Key */
     uint16_t seq;
-    uint32_t expire_time;
+    TimerqueueElem *expire_timer;
 } DestTopologyInfoElem;
 
 typedef struct TopologyInfoElem
@@ -95,6 +95,7 @@ typedef struct OlsrContext
     RingBuffer *olsr_tx_msgbuf;
 
     uint16_t pkt_seq;
+    uint16_t ansn; /* Advertised Neighbor Sequence Number */
 
     rbtree_type *local_iface_tree; /* Tree of LocalNetIfaceElem */
     rbtree_type *neighbor_tree; /* Tree of NeighborElem */

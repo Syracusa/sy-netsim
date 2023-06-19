@@ -11,6 +11,7 @@ void build_olsr_hello(OlsrContext *ctx,
 
 void process_olsr_hello(OlsrContext *ctx,
                         in_addr_t src,
+                        in_addr_t orig,
                         void *hello,
                         olsr_reltime vtime,
                         size_t msglen);

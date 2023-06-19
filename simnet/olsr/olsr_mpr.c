@@ -134,7 +134,8 @@ static void add_unique_bridge_to_mpr(OlsrContext *ctx,
         RBTREE_FOR(n2elem, Neighbor2Elem *, mpr_neigh->neighbor2_tree)
         {
             /* Remove from N2 set */
-            n2r_elem = (N2ReachabilityTreeElem *)rbtree_search(n2_set, &n2elem->neighbor2_main_addr);
+            n2r_elem = (N2ReachabilityTreeElem *)
+                rbtree_search(n2_set, &n2elem->neighbor2_main_addr);
             if (n2r_elem) {
                 rbtree_delete(n2_set, &n2r_elem->n2_addr);
                 free(n2r_elem);
@@ -248,9 +249,26 @@ void print_n2_set(rbtree_type *n2_set)
     }
 }
 
+int check_mpr_set_change(rbtree_type *old, rbtree_type *new)
+{
+    if (old->count != new->count)
+        return 1;
+
+    MprElem *old_elem;
+    MprElem *new_elem;
+    RBTREE_FOR(old_elem, MprElem *, old)
+    {
+        new_elem = (MprElem *)rbtree_search(new, &old_elem->mpr_addr);
+        if (!new_elem)
+            return 1;
+    }
+
+    return 0;
+}
+
 void populate_mpr_set(OlsrContext *ctx)
 {
-    clean_mpr_set(ctx->mpr_tree);
+    rbtree_type *old_set = ctx->mpr_tree;
     ctx->mpr_tree = rbtree_create(rbtree_compare_by_inetaddr);
 
     /* make N set and N2 set */
@@ -263,4 +281,11 @@ void populate_mpr_set(OlsrContext *ctx)
 
     add_unique_bridge_to_mpr(ctx, n1_set, n2_set);
     populate_mpr_set_by_reachability(ctx, n1_set, n2_set);
+
+    /* Compare newly calculated MPR set with old one */
+    if (check_mpr_set_change(old_set, ctx->mpr_tree)) {
+        ctx->ansn += 1;
+    }
+
+    clean_mpr_set(old_set);
 }
