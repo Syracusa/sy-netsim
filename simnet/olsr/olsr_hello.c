@@ -108,10 +108,10 @@ void build_olsr_hello(OlsrContext *ctx,
     dump_hello(start, *len, "Own transmit");
 }
 
-static void mpr_selector_expire(void* arg)
+static void mpr_selector_expire(void *arg)
 {
-    OlsrContext* ctx = &g_olsr_ctx;
-    MprSelectorElem* exp_elem = arg;
+    OlsrContext *ctx = &g_olsr_ctx;
+    MprSelectorElem *exp_elem = arg;
 
     TLOGD("Mpr selector expire %s\n", ip2str(exp_elem->selector_addr));
 
@@ -174,14 +174,16 @@ static void populate_linkset(OlsrContext *ctx,
             case MPR_NEIGH:
                 /* Populate MPR Selector Set */
                 mpr_selector = (MprSelectorElem *)
-                    rbtree_search(ctx->selector_tree, &link->neighbor_iface_addr);
-                if (!mpr_selector){
+                    rbtree_search(ctx->selector_tree,
+                                  &link->neighbor_iface_addr);
+                if (!mpr_selector) {
                     mpr_selector = malloc(sizeof(MprSelectorElem));
                     mpr_selector->selector_addr = orig;
                     mpr_selector->expire_timer = timerqueue_new_timer();
                 }
                 mpr_selector->expire_timer->interval_us = vtime * 1000;
-                timerqueue_reactivate_timer(ctx->timerqueue, mpr_selector->expire_timer);
+                timerqueue_reactivate_timer(ctx->timerqueue,
+                                            mpr_selector->expire_timer);
                 break;
             default:
                 break;
@@ -215,6 +217,21 @@ static void populate_neigh2set(OlsrContext *ctx,
     }
 }
 
+static LocalNetIfaceElem *make_new_local_iface_elem(OlsrContext *ctx)
+{
+    LocalNetIfaceElem *iface;
+
+    iface = malloc(sizeof(LocalNetIfaceElem));
+    memset(iface, 0x00, sizeof(LocalNetIfaceElem));
+    iface->priv_rbn.key = &(iface->local_iface_addr);
+    iface->local_iface_addr = ctx->conf.own_ip;
+    iface->iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
+    rbtree_insert(ctx->local_iface_tree, (rbnode_type *)iface);
+    TLOGD("New local interface %s registered\n",
+          ip2str(iface->local_iface_addr));
+
+    return iface;
+}
 
 void process_olsr_hello(OlsrContext *ctx,
                         in_addr_t src,
@@ -223,23 +240,15 @@ void process_olsr_hello(OlsrContext *ctx,
                         olsr_reltime vtime,
                         size_t msgsize)
 {
-    LocalNetIfaceElem *iface =
-        (LocalNetIfaceElem *)rbtree_search(ctx->local_iface_tree,
-                                           &ctx->conf.own_ip);
     dump_hello(hello, msgsize, ip2str(src));
     HelloMsg *hello_msg = (HelloMsg *)hello;
     uint8_t willingness = hello_msg->willingness;
 
-    if (iface == NULL) {
-        iface = malloc(sizeof(LocalNetIfaceElem));
-        memset(iface, 0x00, sizeof(LocalNetIfaceElem));
-        iface->priv_rbn.key = &(iface->local_iface_addr);
-        iface->local_iface_addr = ctx->conf.own_ip;
-        iface->iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
-        rbtree_insert(ctx->local_iface_tree, (rbnode_type *)iface);
-        TLOGD("New local interface %s registered\n",
-              ip2str(iface->local_iface_addr));
-    }
+    LocalNetIfaceElem *iface = (LocalNetIfaceElem *)
+        rbtree_search(ctx->local_iface_tree, &ctx->conf.own_ip);
+
+    if (iface == NULL)
+        iface = make_new_local_iface_elem(ctx);
 
     NeighborElem *neigh =
         (NeighborElem *)rbtree_search(ctx->neighbor_tree, &src);
@@ -250,7 +259,7 @@ void process_olsr_hello(OlsrContext *ctx,
 
     LinkElem *link = (LinkElem *)rbtree_search(iface->iface_link_tree, &src);
     if (link == NULL) {
-        TLOGI("No link found on local iface %s to src %s\n",
+        TLOGI("New link found on local iface %s to src %s\n",
               ip2str(iface->local_iface_addr), ip2str(src));
         link = make_link_elem(ctx, src, ctx->conf.own_ip, vtime);
         rbtree_insert(iface->iface_link_tree, (rbnode_type *)link);
