@@ -70,20 +70,23 @@ void debug_olsr_context()
     offset += sprintf(offset, "\n==== Context of %-14s ====\n",
                       ip2str(ctx->conf.own_ip));
 
+    /* Print local interface tree */
     LocalNetIfaceElem *ielem;
     RBTREE_FOR(ielem, LocalNetIfaceElem *, ctx->local_iface_tree)
     {
         offset += sprintf(offset, "> Local Iface %s\n",
                           ip2str(ielem->local_iface_addr));
+        /* Print links of interface */
         LinkElem *lelem;
         RBTREE_FOR(lelem, LinkElem *, ielem->iface_link_tree)
         {
-            offset += sprintf(offset, ">     Link to %s Status %s\n",
+            offset += sprintf(offset, "> > Link to %s Status %s\n",
                               ip2str(lelem->neighbor_iface_addr),
                               link_status_str(lelem->status));
         }
     }
 
+    /* Print Neighbor tree */
     NeighborElem *nelem;
     RBTREE_FOR(nelem, NeighborElem *, ctx->neighbor_tree)
     {
@@ -91,13 +94,24 @@ void debug_olsr_context()
                           ip2str(nelem->neighbor_main_addr),
                           neighbor_status_str(nelem->status));
 
+        /* Print N2 Neighbor linked with N1 Neighbor */
         Neighbor2Elem *n2elem;
         RBTREE_FOR(n2elem, Neighbor2Elem *, nelem->neighbor2_tree)
         {
-            offset += sprintf(offset, ">     2hop neighbor %s\n",
+            offset += sprintf(offset, "> > 2hop neighbor %s\n",
                               ip2str(n2elem->neighbor2_main_addr));
         }
     }
+
+    /* Print MPR Tree */
+    offset += sprintf(offset, "> MPR Nodes\n");
+    MprElem *melem;
+    RBTREE_FOR(melem, MprElem *, ctx->mpr_tree)
+    {
+        offset += sprintf(offset, "> > %s\n",
+                          ip2str(melem->mpr_addr));
+    }
+
     offset += sprintf(offset, "\n");
 
     TLOGD("%s", logbuf);
