@@ -15,6 +15,7 @@
 #include "olsr_neighbor.h"
 #include "olsr_link.h"
 #include "olsr_mpr.h"
+#include "olsr_tc.h"
 
 #define DUMP_ROUTE_PKT 0
 
