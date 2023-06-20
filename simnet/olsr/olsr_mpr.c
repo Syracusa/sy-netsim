@@ -150,7 +150,6 @@ static int calc_reachability(NeighborElem *neigh,
                              rbtree_type *n2_set)
 {
     Neighbor2Elem *n2elem;
-    N2ReachabilityTreeElem *n2r_elem;
 
     int reachability = 0;
     RBTREE_FOR(n2elem, Neighbor2Elem *, neigh->neighbor2_tree)
@@ -163,15 +162,18 @@ static int calc_reachability(NeighborElem *neigh,
     return reachability;
 }
 
-static NeighborElem *get_max_reachablilty_neigh(rbtree_type *n1_set,
+static NeighborElem *get_max_reachablilty_neigh(OlsrContext *ctx,
+                                                rbtree_type *n1_set,
                                                 rbtree_type *n2_set)
 {
     int max_reachability = 0;
     NeighborElem *max_reachability_neigh = NULL;
-    NeighborElem *nelem;
+    AddrSetElem *aelem;
 
-    RBTREE_FOR(nelem, NeighborElem *, n1_set)
+    RBTREE_FOR(aelem, AddrSetElem *, n1_set)
     {
+        NeighborElem *nelem = (NeighborElem *)
+            rbtree_search(ctx->neighbor_tree, &aelem->addr);
         int reachability = calc_reachability(nelem, n2_set);
         if (reachability > max_reachability) {
             max_reachability = reachability;
@@ -191,7 +193,7 @@ static void populate_mpr_set_by_reachability(OlsrContext *ctx,
 
     /* Populate MPR set until no elem left in n2_set */
     while (n2_set->count > 0) {
-        nelem = get_max_reachablilty_neigh(n1_set, n2_set);
+        nelem = get_max_reachablilty_neigh(ctx, n1_set, n2_set);
         if (!nelem) {
             break;
         }
