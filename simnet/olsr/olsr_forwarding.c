@@ -87,10 +87,13 @@ void olsr_msg_forwarding(OlsrContext *ctx,
             return;
     } else {
         delem = create_dup_entry(ctx, dkey);
+        rbtree_insert(ctx->dup_tree, (rbnode_type *)delem);
     }
 
     if (!is_mpr_selector(ctx, src))
         return;
+
+    delem->retransmitted = 1;
 
     msg->ttl -= 1;
     msg->hopcnt += 1;
