@@ -223,7 +223,7 @@ static LocalNetIfaceElem *make_new_local_iface_elem(OlsrContext *ctx)
 
     iface = malloc(sizeof(LocalNetIfaceElem));
     memset(iface, 0x00, sizeof(LocalNetIfaceElem));
-    iface->priv_rbn.key = &(iface->local_iface_addr);
+    iface->rbn.key = &(iface->local_iface_addr);
     iface->local_iface_addr = ctx->conf.own_ip;
     iface->iface_link_tree = rbtree_create(rbtree_compare_by_inetaddr);
     rbtree_insert(ctx->local_iface_tree, (rbnode_type *)iface);

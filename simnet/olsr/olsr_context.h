@@ -14,7 +14,7 @@
 
 typedef struct LinkElem
 {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     in_addr_t neighbor_iface_addr; /* Rbtree Key */
     in_addr_t local_iface_addr;
     
@@ -27,7 +27,7 @@ typedef struct LinkElem
 
 typedef struct LocalNetIfaceElem
 {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     in_addr_t local_iface_addr; /* Rbtree Key */
 
     rbtree_type *iface_link_tree; /* Tree of LinkElem */
@@ -35,7 +35,7 @@ typedef struct LocalNetIfaceElem
 
 typedef struct Neighbor2Elem
 {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     in_addr_t neighbor2_main_addr; /* Rbtree Key */
     in_addr_t bridge_addr;
     TimerqueueElem *expire_timer;
@@ -43,7 +43,7 @@ typedef struct Neighbor2Elem
 
 typedef struct NeighborElem
 {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
 
     in_addr_t neighbor_main_addr; /* Rbtree Key */
     uint8_t status;
@@ -54,20 +54,20 @@ typedef struct NeighborElem
 
 typedef struct MprElem
 {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     in_addr_t mpr_addr; /* Rbtree Key */
 } MprElem;
 
 typedef struct MprSelectorElem
 {
-    rbnode_type priv_rbn; 
+    rbnode_type rbn; 
     in_addr_t selector_addr; /* Rbtree Key */
     TimerqueueElem *expire_timer;
 } MprSelectorElem;
 
 typedef struct DestTopologyInfoElem
 {
-    rbnode_type priv_rbn; 
+    rbnode_type rbn; 
     in_addr_t last_addr; /* Rbtree Key */
     uint16_t seq;
     TimerqueueElem *expire_timer;
@@ -75,7 +75,7 @@ typedef struct DestTopologyInfoElem
 
 typedef struct TopologyInfoElem
 {
-    rbnode_type priv_rbn; 
+    rbnode_type rbn; 
     in_addr_t dest_addr; /* Rbtree Key */
     DestTopologyInfoElem last_tree;
 } TopologyInfoElem;
@@ -88,7 +88,7 @@ typedef struct DuplicateSetKey
 
 typedef struct DuplicateSetElem
 {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     DuplicateSetKey key;
     int retransmitted;
     CllHead iface_addr_list;
@@ -110,7 +110,7 @@ typedef struct OlsrContext
     TimerqueueContext *timerqueue;
     RingBuffer *olsr_tx_msgbuf;
 
-    uint16_t pkt_seq;
+    uint16_t msg_seq;
     uint16_t ansn; /* Advertised Neighbor Sequence Number */
 
     rbtree_type *local_iface_tree; /* Tree of LocalNetIfaceElem */
@@ -118,6 +118,7 @@ typedef struct OlsrContext
     rbtree_type *mpr_tree; /* Tree of MprElem */
     rbtree_type *selector_tree; /* Tree of MprSelectorElem */
     rbtree_type *topology_tree; /* Tree of TopologyInfoElem */
+    rbtree_type *dup_tree; /* Tree of DuplicateSetElem */
 } OlsrContext;
 
 extern OlsrContext g_olsr_ctx;

@@ -4,12 +4,12 @@
 #define DEBUG_MPR 0
 
 typedef struct AddrSetElem {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     in_addr_t addr;
 } AddrSetElem;
 
 typedef struct N2ReachabilityTreeElem {
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     in_addr_t n2_addr;
     rbtree_type *n1_tree;
 } N2ReachabilityTreeElem;
@@ -37,7 +37,7 @@ static rbtree_type *calc_n1_set(OlsrContext *ctx)
 
             AddrSetElem *addr_elem = malloc(sizeof(AddrSetElem));
             addr_elem->addr = nelem->neighbor_main_addr;
-            addr_elem->priv_rbn.key = &addr_elem->addr;
+            addr_elem->rbn.key = &addr_elem->addr;
             rbtree_insert(n1_set, (rbnode_type *)addr_elem);
 
             nelem->status == SYM_NEIGH; /* MPR will be recalculated */
@@ -72,14 +72,14 @@ static rbtree_type *calc_n2_set(OlsrContext *ctx,
                 if (!n2r_elem) {
                     n2r_elem = (N2ReachabilityTreeElem *)
                         malloc(sizeof(N2ReachabilityTreeElem));
-                    n2r_elem->priv_rbn.key = &n2r_elem->n2_addr;
+                    n2r_elem->rbn.key = &n2r_elem->n2_addr;
                     n2r_elem->n2_addr = n2elem->neighbor2_main_addr;
                     n2r_elem->n1_tree = rbtree_create(rbtree_compare_by_inetaddr);
                 }
 
                 AddrSetElem *addr_elem = malloc(sizeof(AddrSetElem));
                 addr_elem->addr = nelem->neighbor_main_addr;
-                addr_elem->priv_rbn.key = &addr_elem->addr;
+                addr_elem->rbn.key = &addr_elem->addr;
                 rbtree_insert(n2r_elem->n1_tree, (rbnode_type *)addr_elem);
 
                 rbtree_insert(n2_set, (rbnode_type *)n2r_elem);
@@ -110,7 +110,7 @@ static void add_unique_bridge_to_mpr(OlsrContext *ctx,
                 TLOGD("New MPR : %s\n", ip2str(n1_addr));
             MprElem *mpr_elem = malloc(sizeof(MprElem));
             mpr_elem->mpr_addr = n1_addr;
-            mpr_elem->priv_rbn.key = &mpr_elem->mpr_addr;
+            mpr_elem->rbn.key = &mpr_elem->mpr_addr;
             if (!rbtree_insert(selected_mpr_tree, (rbnode_type *)mpr_elem)) {
                 /* Already selected MPR */
                 TLOGE("Insert fail : %s\n", ip2str(n1_addr));
@@ -198,7 +198,7 @@ static void populate_mpr_set_by_reachability(OlsrContext *ctx,
 
         MprElem *mpr_elem = malloc(sizeof(MprElem));
         mpr_elem->mpr_addr = nelem->neighbor_main_addr;
-        mpr_elem->priv_rbn.key = &mpr_elem->mpr_addr;
+        mpr_elem->rbn.key = &mpr_elem->mpr_addr;
         rbtree_insert(ctx->mpr_tree, (rbnode_type *)mpr_elem);
 
         /* Remove from N1 set */

@@ -19,7 +19,7 @@ void olsr_send_from_queue_cb(void *arg)
     memcpy(offset, &pktlen_be, sizeof(pktlen_be));
     offset += sizeof(pktlen_be);
 
-    uint16_t seq_be = htons(ctx->pkt_seq);
+    uint16_t seq_be = htons(ctx->msg_seq);
     memcpy(offset, &seq_be, sizeof(seq_be));
     offset += sizeof(seq_be);
 
@@ -44,7 +44,7 @@ void olsr_send_from_queue_cb(void *arg)
     ippkt_pack(&pkt, buf, &sendlen);
 
     ctx->conf.send_remote(buf, sendlen);
-    ctx->pkt_seq++;
+    ctx->msg_seq++;
 
     if (DUMP_ROUTE_PKT) {
         TLOGD("Send Route Pkt\n");
@@ -106,7 +106,7 @@ void olsr_queue_hello_cb(void *olsr_ctx)
     msghdr->originator = ctx->conf.own_ip;
     msghdr->ttl = 1;
     msghdr->hopcnt = 0;
-    msghdr->seqno = htons(ctx->pkt_seq);
+    msghdr->seqno = htons(ctx->msg_seq);
 
     offset += sizeof(OlsrMsgHeader);
 
@@ -131,7 +131,7 @@ void olsr_queue_tc_cb(OlsrContext *ctx)
     msghdr->originator = ctx->conf.own_ip;
     msghdr->ttl = 64;
     msghdr->hopcnt = 0;
-    msghdr->seqno = htons(ctx->pkt_seq);
+    msghdr->seqno = htons(ctx->msg_seq);
 
     offset += sizeof(OlsrMsgHeader);
 

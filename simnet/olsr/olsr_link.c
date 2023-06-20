@@ -138,7 +138,7 @@ LinkElem *make_link_elem(OlsrContext *ctx,
     LinkElem *link = malloc(sizeof(LinkElem));
     memset(link, 0x00, sizeof(LinkElem));
 
-    link->priv_rbn.key = &link->neighbor_iface_addr;
+    link->rbn.key = &link->neighbor_iface_addr;
     link->neighbor_iface_addr = src;
     link->local_iface_addr = my_addr;
     set_link_status(link, LOST_LINK);

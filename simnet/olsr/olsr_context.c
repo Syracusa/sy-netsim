@@ -22,6 +22,17 @@ int rbtree_compare_by_inetaddr(const void *k1, const void *k2)
     return *n1 - *n2;
 }
 
+int rbtree_compare_by_dupkey(const void *k1, const void *k2)
+{
+    const DuplicateSetKey* dk1 = k1;
+    const DuplicateSetKey* dk2 = k2;
+
+    uint32_t addrdiff = dk1->orig - dk2->orig;
+    if (addrdiff != 0)
+        return addrdiff;
+    return dk1->seq - dk2->seq;
+}
+
 void init_olsr_context(CommonRouteConfig *config)
 {
     memset(&g_olsr_ctx, 0x00, sizeof(g_olsr_ctx));
@@ -38,6 +49,7 @@ void init_olsr_context(CommonRouteConfig *config)
     g_olsr_ctx.mpr_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.selector_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.topology_tree = rbtree_create(rbtree_compare_by_inetaddr);
+    g_olsr_ctx.dup_tree = rbtree_create(rbtree_compare_by_dupkey);
 }
 
 static void free_arg(rbnode_type *rbn, void *dummy)

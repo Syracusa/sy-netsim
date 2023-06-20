@@ -39,7 +39,7 @@ TimerqueueElem* timerqueue_new_timer()
     memset(elem, 0x00, sizeof(TimerqueueElem));
 
     elem->priv_rbk.ptr = elem;
-    elem->priv_rbn.key = &elem->priv_rbk;
+    elem->rbn.key = &elem->priv_rbk;
 }
 
 void timerqueue_free_timer(TimerqueueElem* timer)
@@ -65,7 +65,7 @@ void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 void timerqueue_reactivate_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 {
     if (elem->attached == 1){
-        rbtree_delete(tq->rbt, elem->priv_rbn.key);
+        rbtree_delete(tq->rbt, elem->rbn.key);
         elem->attached = 0;
     } 
     timerqueue_register_timer(tq, elem);
@@ -82,7 +82,7 @@ void timerqueue_work(TimerqueueContext *tq)
     }
 
     while (check_expire(&(first->priv_rbk.expire), &currtime)) {
-        rbtree_delete(tq->rbt, first->priv_rbn.key);
+        rbtree_delete(tq->rbt, first->rbn.key);
         if (first->active) {
             first->callback(first->arg);
             if (first->use_once) {

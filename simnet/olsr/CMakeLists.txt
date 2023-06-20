@@ -9,6 +9,7 @@ add_library (sy-olsr
              olsr_neighbor.c
              olsr_mpr.c
              olsr_tc.c
+             olsr_forwarding.c
              ../../util/cll.c
              ../../util/util.c
              ../../util/netutil.c

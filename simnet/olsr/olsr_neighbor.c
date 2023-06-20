@@ -31,7 +31,7 @@ NeighborElem *make_neighbor_elem(OlsrContext *ctx,
 {
     NeighborElem *neigh = malloc(sizeof(NeighborElem));
 
-    neigh->priv_rbn.key = &neigh->neighbor_main_addr;
+    neigh->rbn.key = &neigh->neighbor_main_addr;
     neigh->neighbor_main_addr = neigh_addr;
     neigh->status = STATUS_UNAVAILABLE;
     neigh->willingness = willingness;
@@ -66,7 +66,7 @@ void update_neigh2_tuple(OlsrContext *ctx,
 
     if (n2elem == NULL) {
         Neighbor2Elem *n2elem = (Neighbor2Elem *)malloc(sizeof(Neighbor2Elem));
-        n2elem->priv_rbn.key = &n2elem->neighbor2_main_addr;
+        n2elem->rbn.key = &n2elem->neighbor2_main_addr;
         n2elem->neighbor2_main_addr = n2addr;
         n2elem->bridge_addr = neigh->neighbor_main_addr;
 

@@ -16,7 +16,7 @@ typedef struct {
 
 typedef struct {
     /* Privates */
-    rbnode_type priv_rbn;
+    rbnode_type rbn;
     TqKey priv_rbk;
     int max_jitter;
 
