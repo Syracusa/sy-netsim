@@ -17,7 +17,7 @@ typedef struct LinkElem
     rbnode_type rbn;
     in_addr_t neighbor_iface_addr; /* Rbtree Key */
     in_addr_t local_iface_addr;
-    
+
     uint8_t status;
 
     TimerqueueElem *sym_timer;
@@ -60,24 +60,25 @@ typedef struct MprElem
 
 typedef struct MprSelectorElem
 {
-    rbnode_type rbn; 
+    rbnode_type rbn;
     in_addr_t selector_addr; /* Rbtree Key */
     TimerqueueElem *expire_timer;
 } MprSelectorElem;
 
-typedef struct DestTopologyInfoElem
+typedef struct AdvertisedNeighElem
 {
-    rbnode_type rbn; 
+    rbnode_type rbn;
     in_addr_t last_addr; /* Rbtree Key */
-    uint16_t seq;
-    TimerqueueElem *expire_timer;
-} DestTopologyInfoElem;
+
+} AdvertisedNeighElem;
 
 typedef struct TopologyInfoElem
 {
-    rbnode_type rbn; 
+    rbnode_type rbn;
     in_addr_t dest_addr; /* Rbtree Key */
-    DestTopologyInfoElem last_tree;
+    uint16_t seq;
+    rbtree_type *an_tree; /* Tree of AdvertisedNeighElem */
+    TimerqueueElem *expire_timer;
 } TopologyInfoElem;
 
 typedef struct DuplicateSetKey
@@ -92,7 +93,7 @@ typedef struct DuplicateSetElem
     DuplicateSetKey key;
     int retransmitted;
     CllHead iface_addr_list;
-    TimerqueueElem* expire_timer;
+    TimerqueueElem *expire_timer;
 } DuplicateSetElem;
 
 typedef struct OlsrParam

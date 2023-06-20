@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 /**
  * This structure must be the first member of the data structure in
@@ -172,6 +173,8 @@ rbnode_type *rbtree_previous(rbnode_type *rbtree);
 		(rbnode_type*)node != RBTREE_NULL; \
 		node = (type)rbtree_next((rbnode_type*)node))
 
+
+
 /**
  * Call function for all elements in the redblack tree, such that
  * leaf elements are called before parent elements. So that all
@@ -185,5 +188,13 @@ rbnode_type *rbtree_previous(rbnode_type *rbtree);
  */
 void traverse_postorder(rbtree_type* tree, void (*func)(rbnode_type*, void*),
 	void* arg);
+
+
+/* Use with tracerse_postorder */
+static inline void free_arg(rbnode_type *rbn, void *dummy)
+{
+    (void)dummy;
+    free(rbn);
+}
 
 #endif /* UTIL_RBTREE_H_ */

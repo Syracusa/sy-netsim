@@ -13,12 +13,6 @@ typedef struct N2ReachabilityTreeElem {
     rbtree_type *n1_tree;
 } N2ReachabilityTreeElem;
 
-static void free_arg(rbnode_type *rbn, void *dummy)
-{
-    (void)dummy;
-    free(rbn);
-}
-
 void clean_mpr_set(rbtree_type *tree)
 {
     traverse_postorder(tree, free_arg, NULL);
@@ -226,7 +220,7 @@ static void populate_mpr_set_by_reachability(OlsrContext *ctx,
     }
 }
 
-void print_n1_set(rbtree_type *n1_set)
+static void print_n1_set(rbtree_type *n1_set)
 {
     if (n1_set->count == 0) {
         TLOGD("N1: empty\n");
@@ -239,7 +233,7 @@ void print_n1_set(rbtree_type *n1_set)
     }
 }
 
-void print_n2_set(rbtree_type *n2_set)
+static void print_n2_set(rbtree_type *n2_set)
 {
     if (n2_set->count == 0) {
         TLOGD("N2: empty\n");
@@ -271,7 +265,7 @@ static int check_mpr_set_change(rbtree_type *old_set,
     return 0;
 }
 
-void clean_n1_set(OlsrContext *ctx, rbtree_type *n1_set)
+static void clean_n1_set(OlsrContext *ctx, rbtree_type *n1_set)
 {
     AddrSetElem *addr_elem;
     RBTREE_FOR(addr_elem, AddrSetElem *, n1_set)

@@ -52,12 +52,6 @@ void init_olsr_context(CommonRouteConfig *config)
     g_olsr_ctx.dup_tree = rbtree_create(rbtree_compare_by_dupkey);
 }
 
-static void free_arg(rbnode_type *rbn, void *dummy)
-{
-    (void)dummy;
-    free(rbn);
-}
-
 void finalize_olsr_context()
 {
     traverse_postorder(g_olsr_ctx.local_iface_tree, free_arg, NULL);
