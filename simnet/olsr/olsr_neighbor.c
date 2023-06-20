@@ -103,7 +103,8 @@ void update_neighbor_status(OlsrContext *ctx,
     }
 
     if (neighbor_is_sym) {
-        set_neighbor_status(neigh, SYM_NEIGH);
+        if (neigh->status != MPR_NEIGH)
+            set_neighbor_status(neigh, SYM_NEIGH);
     } else {
         set_neighbor_status(neigh, NOT_NEIGH);
     }

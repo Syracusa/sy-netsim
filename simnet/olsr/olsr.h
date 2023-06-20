@@ -19,12 +19,9 @@
 #include "olsr_forwarding.h"
 
 #define DUMP_ROUTE_PKT 0
-
 #define DUMP_HELLO_MSG 0
-#define LOG_HELLO_MSG  0
-
 #define LOG_LINK_TIMER 0
-
+#define DEBUG_MPR 0
 
 static const char *neighbor_status_str(uint8_t neighbor_code)
 {

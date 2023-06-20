@@ -24,8 +24,8 @@ int rbtree_compare_by_inetaddr(const void *k1, const void *k2)
 
 int rbtree_compare_by_dupkey(const void *k1, const void *k2)
 {
-    const DuplicateSetKey* dk1 = k1;
-    const DuplicateSetKey* dk2 = k2;
+    const DuplicateSetKey *dk1 = k1;
+    const DuplicateSetKey *dk2 = k2;
 
     uint32_t addrdiff = dk1->orig - dk2->orig;
     if (addrdiff != 0)
@@ -72,7 +72,7 @@ void finalize_olsr_context()
     free(g_olsr_ctx.topology_tree);
 }
 
-void debug_olsr_context()
+void dump_olsr_context()
 {
     OlsrContext *ctx = &g_olsr_ctx;
 
@@ -116,12 +116,29 @@ void debug_olsr_context()
     }
 
     /* Print MPR Tree */
-    offset += sprintf(offset, "> MPR Nodes\n");
-    MprElem *melem;
-    RBTREE_FOR(melem, MprElem *, ctx->mpr_tree)
-    {
-        offset += sprintf(offset, "> > %s\n",
-                          ip2str(melem->mpr_addr));
+    if (ctx->mpr_tree->count != 0) {
+        offset += sprintf(offset, "> MPR Nodes\n");
+        MprElem *melem;
+        RBTREE_FOR(melem, MprElem *, ctx->mpr_tree)
+        {
+            offset += sprintf(offset, "> > %s\n",
+                              ip2str(melem->mpr_addr));
+        }
+    } else {
+        offset += sprintf(offset, "> No MPR Node Exists\n");
+    }
+
+    /* Print MPR Selector Tree */
+    if (ctx->selector_tree->count != 0) {
+        offset += sprintf(offset, "> MPR Selector Nodes\n");
+        MprSelectorElem *selem;
+        RBTREE_FOR(selem, MprSelectorElem *, ctx->selector_tree)
+        {
+            offset += sprintf(offset, "> > %s\n",
+                              ip2str(selem->selector_addr));
+        }
+    } else {
+        offset += sprintf(offset, "> No MPR Selector Exists\n");
     }
 
     offset += sprintf(offset, "\n");

@@ -112,6 +112,7 @@ void link_elem_sym_timer_set(OlsrContext *ctx,
 {
     if (LOG_LINK_TIMER)
         TLOGD("SYM link timer set\n");
+    
     set_link_status(link, SYM_LINK);
 
     if (link->sym_timer == NULL) {

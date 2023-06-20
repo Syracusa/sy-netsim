@@ -1,5 +1,5 @@
 #include "olsr_forwarding.h"
-#include "olsr_context.h"
+#include "olsr.h"
 
 static int is_mpr_selector(OlsrContext *ctx,
                            in_addr_t addr)
@@ -16,20 +16,29 @@ typedef struct AddrListElem {
     in_addr_t addr;
 } AddrListElem;
 
+static void destroy_addr_list(DuplicateSetElem *delem)
+{
+    CllElem *l = NULL;
+    CllElem *prev = NULL;
+    cll_foreach(l, &delem->iface_addr_list)
+    {
+        if (l->prev != &delem->iface_addr_list)
+            free(l->prev);
+    }
+
+    if (l->prev != l)
+        free(l->prev);
+}
+
 static void expire_dup_entry_cb(void *arg)
 {
     OlsrContext *ctx = &g_olsr_ctx;
     DuplicateSetElem *delem = arg;
 
     rbtree_delete(ctx->dup_tree, &delem->key);
-
-    CllElem *l;
-    cll_foreach(l, &delem->iface_addr_list)
-    {
-        AddrListElem *al = (AddrListElem *)l;
-        free(al);
-    }
+    destroy_addr_list(delem);
     timerqueue_free_timer(delem->expire_timer);
+
     free(delem);
 }
 
@@ -38,6 +47,7 @@ static DuplicateSetElem *create_dup_entry(OlsrContext *ctx,
 {
     DuplicateSetElem *delem =
         (DuplicateSetElem *)malloc(sizeof(DuplicateSetElem));
+    memset(delem, 0x00, sizeof(DuplicateSetElem));
 
     delem->rbn.key = &delem->key;
     delem->key = dkey;
@@ -57,6 +67,8 @@ static DuplicateSetElem *create_dup_entry(OlsrContext *ctx,
     timer->interval_us = DEF_DUP_HOLD_TIME_MS * 1000;
     timer->use_once = 1;
     timerqueue_register_timer(ctx->timerqueue, timer);
+
+    delem->expire_timer = timer;
 }
 
 void olsr_msg_forwarding(OlsrContext *ctx,
@@ -87,5 +99,8 @@ void olsr_msg_forwarding(OlsrContext *ctx,
         return;
 
     /* Finally forwarding msg */
+    TLOGD("Forwarding msg from %s(orignator %s)\n",
+          ip2str(src),
+          ip2str(msg->originator));
     RingBuffer_push(ctx->olsr_tx_msgbuf, msg, ntohs(msg->olsr_msgsize));
 }

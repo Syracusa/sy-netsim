@@ -52,24 +52,35 @@ void olsr_send_from_queue_cb(void *arg)
     }
 }
 
-static void debug_olsr_context_cb(void *arg)
+static void dump_olsr_context_cb(void *arg)
 {
     (void)arg;
-    debug_olsr_context();
+    dump_olsr_context();
 }
 
 void olsr_start_timer(OlsrContext *ctx)
 {
-    static TimerqueueElem *queue_hello = NULL;
-    if (queue_hello == NULL)
-        queue_hello = timerqueue_new_timer();
+    static TimerqueueElem *hello_timer = NULL;
+    if (hello_timer == NULL)
+        hello_timer = timerqueue_new_timer();
 
-    queue_hello->arg = ctx;
-    queue_hello->callback = olsr_queue_hello_cb;
-    queue_hello->use_once = 0;
-    queue_hello->interval_us = ctx->param.hello_interval_ms * 1000;
-    queue_hello->max_jitter = ctx->param.hello_interval_ms * 1000 / 8;
-    timerqueue_register_timer(ctx->timerqueue, queue_hello);
+    hello_timer->arg = ctx;
+    hello_timer->callback = olsr_hello_timer_cb;
+    hello_timer->use_once = 0;
+    hello_timer->interval_us = ctx->param.hello_interval_ms * 1000;
+    hello_timer->max_jitter = ctx->param.hello_interval_ms * 1000 / 8;
+    timerqueue_register_timer(ctx->timerqueue, hello_timer);
+
+    static TimerqueueElem *tc_timer = NULL;
+    if (tc_timer == NULL)
+        tc_timer = timerqueue_new_timer();
+
+    tc_timer->arg = ctx;
+    tc_timer->callback = olsr_tc_timer_cb;
+    tc_timer->use_once = 0;
+    tc_timer->interval_us = ctx->param.tc_interval_ms * 1000;
+    tc_timer->max_jitter = ctx->param.tc_interval_ms * 1000 / 8;
+    timerqueue_register_timer(ctx->timerqueue, tc_timer);
 
     static TimerqueueElem *job_tx_msg = NULL;
     if (job_tx_msg == NULL)
@@ -86,14 +97,14 @@ void olsr_start_timer(OlsrContext *ctx)
         debug_timer = timerqueue_new_timer();
 
     debug_timer->arg = NULL;
-    debug_timer->callback = debug_olsr_context_cb;
+    debug_timer->callback = dump_olsr_context_cb;
     debug_timer->use_once = 0;
     debug_timer->interval_us = 2000 * 1000;
     debug_timer->max_jitter = 100 * 1000;
     timerqueue_register_timer(ctx->timerqueue, debug_timer);
 }
 
-void olsr_queue_hello_cb(void *olsr_ctx)
+void olsr_hello_timer_cb(void *olsr_ctx)
 {
     OlsrContext *ctx = olsr_ctx;
 
@@ -120,8 +131,10 @@ void olsr_queue_hello_cb(void *olsr_ctx)
     RingBuffer_push(ctx->olsr_tx_msgbuf, buf, msglen);
 }
 
-void olsr_queue_tc_cb(OlsrContext *ctx)
+void olsr_tc_timer_cb(void *olsr_ctx)
 {
+    OlsrContext *ctx = olsr_ctx;
+
     uint8_t buf[MAX_IPPKT_SIZE];
     uint8_t *offset = buf;
 
@@ -179,30 +192,24 @@ static void process_olsr_msg(OlsrContext *ctx,
                                vtime, msgsize - sizeof(OlsrMsgHeader));
             break;
         case MSG_TYPE_TC:
-            /* TODO */
+            TLOGD("TC Handling must be implemented\n");
             break;
         default:
             break;
     }
 }
 
-static void forwarding_olsr_msg(OlsrContext *ctx,
-                                OlsrMsgHeader *msg,
-                                in_addr_t src)
-{
-
-}
-
 static void handle_olsr_msg(OlsrMsgHeader *msg,
                             in_addr_t src)
 {
-    /* Check TTL */
-    // TODO
     OlsrContext *ctx = &g_olsr_ctx;
+    if (msg->originator == ctx->conf.own_ip)
+        return;
+
     process_olsr_msg(ctx, msg, src);
-    
+
     if (msg->ttl > 1)
-        forwarding_olsr_msg(ctx, msg, src);
+        olsr_msg_forwarding(ctx, msg, src);
 }
 
 void handle_route_pkt(PktBuf *pkt)

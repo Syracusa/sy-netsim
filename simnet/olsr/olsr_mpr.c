@@ -1,7 +1,6 @@
 #include "olsr_mpr.h"
 #include "olsr.h"
 
-#define DEBUG_MPR 0
 
 typedef struct AddrSetElem {
     rbnode_type rbn;
@@ -39,8 +38,6 @@ static rbtree_type *calc_n1_set(OlsrContext *ctx)
             addr_elem->addr = nelem->neighbor_main_addr;
             addr_elem->rbn.key = &addr_elem->addr;
             rbtree_insert(n1_set, (rbnode_type *)addr_elem);
-
-            nelem->status == SYM_NEIGH; /* MPR will be recalculated */
         }
     }
     return n1_set;
@@ -56,7 +53,8 @@ static rbtree_type *calc_n2_set(OlsrContext *ctx,
     rbtree_type *n2_set = rbtree_create(rbtree_compare_by_inetaddr);
     RBTREE_FOR(nelem, NeighborElem *, ctx->neighbor_tree)
     {
-        if (nelem->status == SYM_NEIGH) {
+        if (nelem->status == SYM_NEIGH ||
+            nelem->status == MPR_NEIGH) {
 
             RBTREE_FOR(n2elem, Neighbor2Elem *, nelem->neighbor2_tree)
             {
@@ -131,6 +129,8 @@ static void add_unique_bridge_to_mpr(OlsrContext *ctx,
         NeighborElem *mpr_neigh =
             (NeighborElem *)rbtree_search(ctx->neighbor_tree, &mpr_elem->mpr_addr);
 
+        set_neighbor_status(mpr_neigh, MPR_NEIGH);
+
         RBTREE_FOR(n2elem, Neighbor2Elem *, mpr_neigh->neighbor2_tree)
         {
             /* Remove from N2 set */
@@ -196,6 +196,8 @@ static void populate_mpr_set_by_reachability(OlsrContext *ctx,
             break;
         }
 
+        set_neighbor_status(nelem, MPR_NEIGH);
+
         MprElem *mpr_elem = malloc(sizeof(MprElem));
         mpr_elem->mpr_addr = nelem->neighbor_main_addr;
         mpr_elem->rbn.key = &mpr_elem->mpr_addr;
@@ -249,21 +251,35 @@ void print_n2_set(rbtree_type *n2_set)
     }
 }
 
-int check_mpr_set_change(rbtree_type *old, rbtree_type *new)
+static int check_mpr_set_change(rbtree_type *old_set,
+                                rbtree_type *new_set)
 {
-    if (old->count != new->count)
+    if (old_set->count != new_set->count)
         return 1;
 
     MprElem *old_elem;
     MprElem *new_elem;
-    RBTREE_FOR(old_elem, MprElem *, old)
+    RBTREE_FOR(old_elem, MprElem *, old_set)
     {
-        new_elem = (MprElem *)rbtree_search(new, &old_elem->mpr_addr);
+        new_elem = (MprElem *)rbtree_search(new_set, &old_elem->mpr_addr);
         if (!new_elem)
             return 1;
     }
 
     return 0;
+}
+
+void clean_n1_set(OlsrContext *ctx, rbtree_type *n1_set)
+{
+    AddrSetElem *addr_elem;
+    RBTREE_FOR(addr_elem, AddrSetElem *, n1_set)
+    {
+        NeighborElem *nelem = (NeighborElem *)
+            rbtree_search(ctx->neighbor_tree, &addr_elem->addr);
+        set_neighbor_status(nelem, SYM_NEIGH);
+    }
+    traverse_postorder(n1_set, free_arg, NULL);
+    free(n1_set);
 }
 
 void populate_mpr_set(OlsrContext *ctx)
@@ -286,6 +302,12 @@ void populate_mpr_set(OlsrContext *ctx)
     if (check_mpr_set_change(old_set, ctx->mpr_tree)) {
         ctx->ansn += 1;
     }
+
+    clean_n1_set(ctx, n1_set);
+    if (n2_set->count != 0) {
+        TLOGE("N2 set not empty!!\n");
+    }
+    free(n2_set);
 
     clean_mpr_set(old_set);
 }

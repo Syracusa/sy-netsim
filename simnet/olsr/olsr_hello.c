@@ -8,31 +8,35 @@ static void dump_hello(void *data,
     if (!DUMP_HELLO_MSG)
         return;
 
+    char logbuf[1000];
+    char *log_offset = logbuf;
+    
     uint8_t *start = data;
     uint8_t *offset = data;
 
     HelloMsg *hello = (HelloMsg *)data;
     offset += sizeof(HelloMsg);
-    TLOGD("\n");
-    TLOGD(" === Dump Hello(From %s) ===\n", identifier);
-    TLOGD("> Willingness : %u\n", hello->willingness);
-    TLOGD("> HTime : %u\n", me_to_reltime(hello->htime));
+    log_offset += sprintf(log_offset, "\n");
+    log_offset += sprintf(log_offset, " === Dump Hello(From %s) ===\n", identifier);
+    log_offset += sprintf(log_offset, "> Willingness : %u\n", hello->willingness);
+    log_offset += sprintf(log_offset, "> HTime : %u\n", me_to_reltime(hello->htime));
 
     while (msg_size > offset - start) {
         HelloInfo *info = (HelloInfo *)offset;
         offset += sizeof(info);
 
         int entrysz = ntohs(info->size);
-        TLOGD("> Link code %s Neibor status %s EntryNum %d\n",
+        log_offset += sprintf(log_offset, "> Link code %s Neibor status %s EntryNum %d\n",
               link_status_str(EXTRACT_LINK(info->link_code)),
               neighbor_status_str(EXTRACT_STATUS(info->link_code)),
               entrysz);
         for (int i = 0; i < entrysz; i++) {
-            TLOGD("> > %s\n", ip2str(info->neigh_addr[i]));
+            log_offset += sprintf(log_offset, "> > %s\n", ip2str(info->neigh_addr[i]));
         }
         offset += sizeof(in_addr_t) * msg_size;
     }
-    TLOGD("\n");
+    log_offset += sprintf(log_offset, "\n");
+    TLOGD("%s", logbuf);
 }
 
 
@@ -139,9 +143,7 @@ static void populate_linkset(OlsrContext *ctx,
         int entrynum = ntohs(hello_info->size);
         for (int i = 0; i < entrynum; i++) {
             in_addr_t neigh_addr = hello_info->neigh_addr[i];
-            if (LOG_HELLO_MSG)
-                TLOGD("Hello from %s link state %u\n", ip2str(neigh_addr),
-                      EXTRACT_LINK(hello_info->link_code));
+
             if (neigh_addr == ctx->conf.own_ip) {
                 linkcode_to_me = hello_info->link_code;
                 break;
@@ -178,12 +180,14 @@ static void populate_linkset(OlsrContext *ctx,
                                   &link->neighbor_iface_addr);
                 if (!mpr_selector) {
                     mpr_selector = malloc(sizeof(MprSelectorElem));
+                    mpr_selector->rbn.key = &mpr_selector->selector_addr;
                     mpr_selector->selector_addr = orig;
                     mpr_selector->expire_timer = timerqueue_new_timer();
                 }
                 mpr_selector->expire_timer->interval_us = vtime * 1000;
                 timerqueue_reactivate_timer(ctx->timerqueue,
                                             mpr_selector->expire_timer);
+                rbtree_insert(ctx->selector_tree, (rbnode_type *)mpr_selector);
                 break;
             default:
                 break;
