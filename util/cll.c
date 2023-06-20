@@ -4,7 +4,7 @@
 
 /* Circular Linked List Implementation */
 
-int cll_init_head(CircularLL *head)
+int cll_init_head(CllElem *head)
 {
     head->next = head;
     head->prev = head;
@@ -12,12 +12,12 @@ int cll_init_head(CircularLL *head)
 }
 
 /* Add to circular linked list */
-int cll_add_tail(CircularLL *head, CircularLL *elem)
+int cll_add_tail(CllElem *head, CllElem *elem)
 {
     if (!head || !elem)
         return -1;
 
-    CircularLL *pprev = head->prev;
+    CllElem *pprev = head->prev;
 
     pprev->next = elem;
     elem->prev = pprev;
@@ -28,7 +28,7 @@ int cll_add_tail(CircularLL *head, CircularLL *elem)
     return 1;
 }
 
-int cll_delete(CircularLL *head, CircularLL *delete_elem)
+int cll_delete(CllElem *head, CllElem *delete_elem)
 {
     if (!head || !delete_elem)
         return -1;
@@ -36,13 +36,13 @@ int cll_delete(CircularLL *head, CircularLL *delete_elem)
     if (head == head->next)
         return -2;
 
-    CircularLL *trav_elem = head;
+    CllElem *trav_elem = head;
 
     cll_foreach(trav_elem, head)
     {
         if (trav_elem == delete_elem) {
-            CircularLL *dprev = delete_elem->prev;
-            CircularLL *dnext = delete_elem->next;
+            CllElem *dprev = delete_elem->prev;
+            CllElem *dnext = delete_elem->next;
 
             dprev->next = dnext;
             dnext->prev = dprev;

@@ -164,6 +164,9 @@ static void handle_olsr_msg(OlsrMsgHeader *msg, in_addr_t src, size_t msgsize)
         default:
             break;
     }
+
+    /* Check if we should forwarding this message */
+    
 }
 
 void handle_route_pkt(PktBuf *pkt)
@@ -194,4 +197,6 @@ void handle_route_pkt(PktBuf *pkt)
 void handle_data_pkt(PktBuf *pkt)
 {
 
+
+ 
 }

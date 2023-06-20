@@ -5,10 +5,12 @@
 
 /* Circular Linked List Implementation */
 
-typedef struct _CircularLL {
-    struct _CircularLL *prev;
-    struct _CircularLL *next;
-} CircularLL;
+typedef struct _CllElem {
+    struct _CllElem *prev;
+    struct _CllElem *next;
+} CllElem;
+
+typedef CllElem CllHead;
 
 #define cll_foreach(trav_elem, head) \
     for ((trav_elem) = (head)->next; \
@@ -21,8 +23,8 @@ typedef struct _CircularLL {
 #define cll_one_entry(head) \
     ((head)->next->next == head)
 
-int cll_add_tail(CircularLL *head, CircularLL *elem);
-int cll_delete(CircularLL *head, CircularLL *delete_elem);
-int cll_init_head(CircularLL *head);
+int cll_add_tail(CllElem *head, CllElem *elem);
+int cll_delete(CllElem *head, CllElem *delete_elem);
+int cll_init_head(CllElem *head);
 
 #endif

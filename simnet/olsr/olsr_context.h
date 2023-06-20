@@ -8,6 +8,7 @@
 #include "olsr_route_iface.h"
 #include "rbtree.h"
 #include "olsr_mantissa.h"
+#include "cll.h"
 
 #define OLSR_TX_MSGBUF_SIZE 2000
 
@@ -78,6 +79,21 @@ typedef struct TopologyInfoElem
     in_addr_t dest_addr; /* Rbtree Key */
     DestTopologyInfoElem last_tree;
 } TopologyInfoElem;
+
+typedef struct DuplicateSetKey
+{
+    in_addr_t orig;
+    uint16_t seq;
+} DuplicateSetKey;
+
+typedef struct DuplicateSetElem
+{
+    rbnode_type priv_rbn;
+    DuplicateSetKey key;
+    int retransmitted;
+    CllHead iface_addr_list;
+    TimerqueueElem* expire_timer;
+} DuplicateSetElem;
 
 typedef struct OlsrParam
 {
