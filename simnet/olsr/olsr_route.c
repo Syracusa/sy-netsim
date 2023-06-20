@@ -184,15 +184,17 @@ static void process_olsr_msg(OlsrContext *ctx,
     }
     olsr_reltime vtime = me_to_reltime(msg->olsr_vtime);
     uint16_t msgsize = ntohs(msg->olsr_msgsize);
+    uint16_t payloadsize = msgsize - sizeof(OlsrMsgHeader);
 
     /* Process OLSR Routing Messages */
     switch (msg->olsr_msgtype) {
         case MSG_TYPE_HELLO:
             process_olsr_hello(ctx, src, msg->originator, msg->msg_payload,
-                               vtime, msgsize - sizeof(OlsrMsgHeader));
+                               vtime, payloadsize);
             break;
         case MSG_TYPE_TC:
-            TLOGD("TC Handling must be implemented\n");
+            process_olsr_tc(ctx, (TcMsg *)msg->msg_payload, payloadsize,
+                            src, msg->originator, vtime);
             break;
         default:
             break;

@@ -135,6 +135,26 @@ void dump_olsr_context()
         offset += sprintf(offset, "> No MPR Selector Exists\n");
     }
 
+    /* Print Topology Tree */
+    if (ctx->topology_tree->count != 0) {
+        offset += sprintf(offset, "> Topology Nodes\n");
+        TopologyInfoElem *telem;
+        RBTREE_FOR(telem, TopologyInfoElem *, ctx->topology_tree)
+        {
+            offset += sprintf(offset, "> > Advertised Neighbor of %s\n",
+                              ip2str(telem->dest_addr));
+            /* Print advertised neighbor Tree */
+            AdvertisedNeighElem *anelem;
+            RBTREE_FOR(anelem, AdvertisedNeighElem *, telem->an_tree)
+            {
+                offset += sprintf(offset, "> > > %s\n",
+                                  ip2str(anelem->last_addr));
+            }
+        }
+    } else {
+        offset += sprintf(offset, "> No Topology Node Exists\n");
+    }
+
     offset += sprintf(offset, "\n");
 
     TLOGD("%s", logbuf);
