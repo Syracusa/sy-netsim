@@ -3,10 +3,9 @@
 
 #include <time.h>
 
-/*=== Circular Linked List Implementation ===*/
+/* Circular Linked List Implementation */
 
-typedef struct _CircularLL
-{
+typedef struct _CircularLL {
     struct _CircularLL *prev;
     struct _CircularLL *next;
 } CircularLL;

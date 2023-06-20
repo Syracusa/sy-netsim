@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "cll.h"
 
-/*=== Circular Linked List Implementation ===*/
+/* Circular Linked List Implementation */
 
 int cll_init_head(CircularLL *head)
 {
@@ -14,7 +14,8 @@ int cll_init_head(CircularLL *head)
 /* Add to circular linked list */
 int cll_add_tail(CircularLL *head, CircularLL *elem)
 {
-    int res;
+    if (!head || !elem)
+        return -1;
 
     CircularLL *pprev = head->prev;
 
@@ -24,41 +25,30 @@ int cll_add_tail(CircularLL *head, CircularLL *elem)
     head->prev = elem;
     elem->next = head;
 
-    res = 1;
-
-    return res;
+    return 1;
 }
 
 int cll_delete(CircularLL *head, CircularLL *delete_elem)
 {
-    int res = 0;
-    if (head == NULL || delete_elem == NULL)
-    {
-        fprintf(stderr, "[CLL] wrong pointer\n");
-        res = -1;
-    }
-    else
-    {
-        CircularLL *trav_elem = head;
-        if (trav_elem == trav_elem->next)
-        {
-            fprintf(stderr, "[CLL] No element at list\n");
-        }
-        else
-        {
-            cll_foreach(trav_elem, head)
-            {
-                if (trav_elem == delete_elem)
-                {
-                    CircularLL *dprev = delete_elem->prev;
-                    CircularLL *dnext = delete_elem->next;
+    if (!head || !delete_elem)
+        return -1;
 
-                    dprev->next = dnext;
-                    dnext->prev = dprev;
-                    res = 1;
-                }
-            }
+    if (head == head->next)
+        return -2;
+
+    CircularLL *trav_elem = head;
+
+    cll_foreach(trav_elem, head)
+    {
+        if (trav_elem == delete_elem) {
+            CircularLL *dprev = delete_elem->prev;
+            CircularLL *dnext = delete_elem->next;
+
+            dprev->next = dnext;
+            dnext->prev = dprev;
+            return 1; /* Success */
         }
     }
-    return res;
+
+    return 0; /* Not founded */
 }
