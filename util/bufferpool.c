@@ -21,9 +21,7 @@ void *get_buffer(bufferpool *bp)
     void *buffer_ptr = NULL;
     ssize_t readlen = RingBuffer_pop(bp->buffer_ptrs, &buffer_ptr, sizeof(void *));
     if (readlen != sizeof(void *))
-    {
-        fprintf(stderr, "No left buffer!\n");
-    }
+        buffer_ptr = malloc(bp->buffersize);
     return buffer_ptr;
 }
 
