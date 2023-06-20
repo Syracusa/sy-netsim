@@ -134,11 +134,11 @@ static void local_send(void *data, size_t len)
 
 int main(int argc, char *argv[])
 {
-    usleep(rand() % 1000000);
     SimNetCtx *snctx = create_simnet_context();
     g_snctx = snctx;
     parse_arg(snctx, argc, argv);
     printf("Simnet start with nodeid %d\n", snctx->node_id);
+    srand(time(NULL) + snctx->node_id);
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
 
     /* Initiate message queue */

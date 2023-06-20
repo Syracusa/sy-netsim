@@ -91,7 +91,7 @@ void timerqueue_work(TimerqueueContext *tq)
             } else {
                 int new_interval = first->interval_us;
                 if (first->max_jitter) {
-                    new_interval += rand() % (first->max_jitter * 2);
+                    new_interval += (rand() % 100 + 1) * (first->max_jitter * 2) / 100;
                     new_interval -= first->max_jitter;
                 }
                 timespec_add_usec(&first->priv_rbk.expire, new_interval);
