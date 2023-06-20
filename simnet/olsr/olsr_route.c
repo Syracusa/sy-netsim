@@ -58,7 +58,7 @@ static void debug_olsr_context_cb(void *arg)
     debug_olsr_context();
 }
 
-void olsr_start_timer(OlsrContext* ctx)
+void olsr_start_timer(OlsrContext *ctx)
 {
     static TimerqueueElem *queue_hello = NULL;
     if (queue_hello == NULL)
@@ -145,12 +145,32 @@ void olsr_queue_tc_cb(OlsrContext *ctx)
     RingBuffer_push(ctx->olsr_tx_msgbuf, buf, msglen);
 }
 
-static void handle_olsr_msg(OlsrMsgHeader *msg, in_addr_t src, size_t msgsize)
+static int is_already_processed(OlsrContext *ctx,
+                                OlsrMsgHeader *msg)
 {
-    /* Check TTL and Forwarding */
-    OlsrContext *ctx = &g_olsr_ctx;
+    DuplicateSetKey dkey;
+    dkey.orig = msg->originator;
+    dkey.seq = ntohs(msg->seqno);
 
+    DuplicateSetElem *delem = (DuplicateSetElem *)
+        rbtree_search(ctx->dup_tree, &dkey);
+
+    if (delem)
+        return 1;
+    return 0;
+}
+
+static void process_olsr_msg(OlsrContext *ctx,
+                             OlsrMsgHeader *msg,
+                             in_addr_t src)
+{
+    if (is_already_processed(ctx, msg)) {
+        TLOGD("Drop Duplicated Msg From %s(Orignator %s)\n",
+              ip2str(src), ip2str(msg->originator));
+        return;
+    }
     olsr_reltime vtime = me_to_reltime(msg->olsr_vtime);
+    uint16_t msgsize = ntohs(msg->olsr_msgsize);
 
     /* Process OLSR Routing Messages */
     switch (msg->olsr_msgtype) {
@@ -164,9 +184,25 @@ static void handle_olsr_msg(OlsrMsgHeader *msg, in_addr_t src, size_t msgsize)
         default:
             break;
     }
+}
 
-    /* Check if we should forwarding this message */
+static void forwarding_olsr_msg(OlsrContext *ctx,
+                                OlsrMsgHeader *msg,
+                                in_addr_t src)
+{
+
+}
+
+static void handle_olsr_msg(OlsrMsgHeader *msg,
+                            in_addr_t src)
+{
+    /* Check TTL */
+    // TODO
+    OlsrContext *ctx = &g_olsr_ctx;
+    process_olsr_msg(ctx, msg, src);
     
+    if (msg->ttl > 1)
+        forwarding_olsr_msg(ctx, msg, src);
 }
 
 void handle_route_pkt(PktBuf *pkt)
@@ -188,7 +224,7 @@ void handle_route_pkt(PktBuf *pkt)
             TLOGF("Msgsize is 0!\n");
             exit(2);
         }
-        handle_olsr_msg(msghdr, pkt->iph.saddr, msgsize);
+        handle_olsr_msg(msghdr, pkt->iph.saddr);
 
         offset += msgsize;
     }
@@ -198,5 +234,5 @@ void handle_data_pkt(PktBuf *pkt)
 {
 
 
- 
+
 }
