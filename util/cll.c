@@ -33,22 +33,11 @@ int cll_delete(CllElem *head, CllElem *delete_elem)
     if (!head || !delete_elem)
         return -1;
 
-    if (head == head->next)
-        return -2;
+    CllElem *dprev = delete_elem->prev;
+    CllElem *dnext = delete_elem->next;
 
-    CllElem *trav_elem = head;
+    dprev->next = dnext;
+    dnext->prev = dprev;
 
-    cll_foreach(trav_elem, head)
-    {
-        if (trav_elem == delete_elem) {
-            CllElem *dprev = delete_elem->prev;
-            CllElem *dnext = delete_elem->next;
-
-            dprev->next = dnext;
-            dnext->prev = dprev;
-            return 1; /* Success */
-        }
-    }
-
-    return 0; /* Not founded */
+    return 1;
 }
