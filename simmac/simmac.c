@@ -12,6 +12,7 @@
 #include "params.h"
 
 char dbgname[10];
+FILE* dbgfile;
 
 typedef struct
 {
@@ -182,11 +183,13 @@ static void parse_arg(SimMacCtx *smctx, int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     SimMacCtx *smctx = create_simmac_context();
+    sprintf(dbgname, "MAC-%-2d", smctx->node_id);
+    dbgfile = stderr;
 
     parse_arg(smctx, argc, argv);
     printf("Simnet start with nodeid %d\n", smctx->node_id);
 
-    sprintf(dbgname, "MAC-%-2d", smctx->node_id);
+
     init_mq(smctx);
 
     sendto_phy(smctx, NULL, 0, MESSAGE_TYPE_HEARTBEAT);

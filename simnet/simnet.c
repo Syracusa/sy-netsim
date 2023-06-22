@@ -8,6 +8,7 @@
 
 SimNetCtx *g_snctx = NULL;
 char dbgname[10];
+FILE* dbgfile;
 
 void init_mq(SimNetCtx *snctx)
 {
@@ -139,8 +140,16 @@ int main(int argc, char *argv[])
     parse_arg(snctx, argc, argv);
     printf("Simnet start with nodeid %d\n", snctx->node_id);
     srand(time(NULL) + snctx->node_id);
-    sprintf(dbgname, "NET-%-2d", snctx->node_id);
 
+    sprintf(dbgname, "NET-%-2d", snctx->node_id);
+    dbgfile = stderr;
+    
+    char logfile[100];
+    sprintf(logfile, "/tmp/viewlog/n%d", snctx->node_id);
+    FILE* f = fopen(logfile, "w+");
+    if (f)
+        dbgfile = f;
+    
     /* Initiate message queue */
     init_mq(snctx);
 

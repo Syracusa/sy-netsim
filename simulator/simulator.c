@@ -22,6 +22,8 @@
 #include "httpserver.h"
 
 char dbgname[10];
+FILE* dbgfile;
+
 SimulatorCtx *g_sctx = NULL;
 
 #define D2R(d) (d / 180.0 * 3.14159)
@@ -235,7 +237,9 @@ static void app_exit(int signo)
 
 int main()
 {
+    dbgfile = stderr;
     TLOGI("Start simulator...\n");
+
     SimulatorCtx *sctx = create_simulator_context();
     signal(SIGINT, &app_exit);
 
@@ -249,6 +253,7 @@ int main()
     send_config_msgs(sctx);
 
     sleep(100);
+    TLOGI("Finish\n");
 
     delete_simulator_context(sctx);
     return 0;

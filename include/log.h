@@ -9,6 +9,7 @@
 #include <time.h>
 
 extern char dbgname[10];
+extern FILE* dbgfile;
 
 #ifndef LOG_LEVEL
 #define LOG_LEVEL (7)
@@ -68,7 +69,7 @@ extern char dbgname[10];
 }while(0);
 
 /* Log macro */
-#define _LOGPRT(_color, _loglv, M, ...)  do { fprintf(stderr, _color _loglv COLOR_NONE " " LOG_HDR  M, ##__VA_ARGS__); } while(0)
+#define _LOGPRT(_color, _loglv, M, ...)  do { fprintf(dbgfile, _color _loglv COLOR_NONE " " LOG_HDR  M, ##__VA_ARGS__); fflush(dbgfile); } while(0)
 #define LOGF(M, ...) _LOGPRT(FATAL_LOGCOLOR, "F", M,  ##__VA_ARGS__)
 #define LOGC(M, ...) _LOGPRT(CRITICAL_LOGCOLOR, "C", M,  ##__VA_ARGS__)
 #define LOGE(M, ...) _LOGPRT(ERROR_LOGCOLOR, "E", M,  ##__VA_ARGS__)
@@ -78,7 +79,7 @@ extern char dbgname[10];
 #define LOGD(M, ...) _LOGPRT(DEBUG_LOGCOLOR, "D", M,  ##__VA_ARGS__)
 
 /* Log macro with where */
-#define _WLOGPRT(_color, _loglv, M, ...) do { fprintf(stderr, _color _loglv COLOR_NONE " " LOG_HDR  "%s (%s:%d) " M, __func__, __FILENAME__, __LINE__, ##__VA_ARGS__); } while(0)
+#define _WLOGPRT(_color, _loglv, M, ...) do { fprintf(dbgfile, _color _loglv COLOR_NONE " " LOG_HDR  "%s (%s:%d) " M, __func__, __FILENAME__, __LINE__, ##__VA_ARGS__); fflush(dbgfile); } while(0)
 #define WLOGF(M, ...) _WLOGPRT(FATAL_LOGCOLOR, "F", M,  ##__VA_ARGS__)
 #define WLOGC(M, ...) _WLOGPRT(CRITICAL_LOGCOLOR, "C", M,  ##__VA_ARGS__)
 #define WLOGE(M, ...) _WLOGPRT(ERROR_LOGCOLOR, "E", M,  ##__VA_ARGS__)
@@ -88,7 +89,7 @@ extern char dbgname[10];
 #define WLOGD(M, ...) _WLOGPRT(DEBUG_LOGCOLOR, "D", M,  ##__VA_ARGS__)
 
 /* Log macro with Time */
-#define _TLOGPRT(_color, _loglv, M, ...) do { char _tbuf[20]; _GET_CURRTIME(_tbuf); fprintf(stderr, _color _loglv COLOR_NONE " "  "%s %-7s"  M, _tbuf, dbgname, ##__VA_ARGS__); } while(0)
+#define _TLOGPRT(_color, _loglv, M, ...) do { char _tbuf[20]; _GET_CURRTIME(_tbuf); fprintf(dbgfile, _color _loglv COLOR_NONE " "  "%s %-7s"  M, _tbuf, dbgname, ##__VA_ARGS__); fflush(dbgfile); } while(0)
 #define TLOGF(M, ...) _TLOGPRT(FATAL_LOGCOLOR, "F", M,  ##__VA_ARGS__)
 #define TLOGC(M, ...) _TLOGPRT(CRITICAL_LOGCOLOR, "C", M,  ##__VA_ARGS__)
 #define TLOGE(M, ...) _TLOGPRT(ERROR_LOGCOLOR, "E", M,  ##__VA_ARGS__)
@@ -97,7 +98,7 @@ extern char dbgname[10];
 #define TLOGI(M, ...) _TLOGPRT(INFO_LOGCOLOR, "I", M,  ##__VA_ARGS__)
 #define TLOGD(M, ...) _TLOGPRT(DEBUG_LOGCOLOR, "D", M,  ##__VA_ARGS__)
 
-#define PRT_ERRNO() do{fprintf(stderr, "errno : %s\n", clean_errno());}while(0)
+#define PRT_ERRNO() do{fprintf(dbgfile, "errno : %s\n", clean_errno());}while(0)
 
 /* LOG_LEVEL controls */
 #if LOG_LEVEL < DEBUG

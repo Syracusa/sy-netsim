@@ -14,6 +14,7 @@
 #include "config_msg.h"
 
 char dbgname[10];
+FILE* dbgfile;
 
 void init_mq(SimPhyCtx *spctx)
 {
@@ -225,10 +226,10 @@ static void mainloop(SimPhyCtx *spctx)
 
 int main()
 {
+    sprintf(dbgname, "PHY   ");
+    dbgfile = stderr;
     TLOGI("SIMPHY STARTED\n");
     SimPhyCtx *spctx = create_context();
-
-    sprintf(dbgname, "PHY   ");
 
     init_mq(spctx);
     mainloop(spctx);
