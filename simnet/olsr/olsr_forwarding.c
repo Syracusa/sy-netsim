@@ -11,11 +11,6 @@ static int is_mpr_selector(OlsrContext *ctx,
     return 0;
 }
 
-typedef struct AddrListElem {
-    CllElem elem;
-    in_addr_t addr;
-} AddrListElem;
-
 static void destroy_addr_list(DuplicateSetElem *delem)
 {
     CllElem *l = NULL;

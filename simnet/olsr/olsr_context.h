@@ -103,6 +103,20 @@ typedef struct OlsrParam
     int willingness;
 } OlsrParam;
 
+typedef struct AddrListElem
+{
+    CllElem elem;
+    in_addr_t addr;
+} AddrListElem;
+
+typedef struct RoutingEntry
+{
+    rbnode_type *rbn;
+    in_addr_t dest_addr; /* Rbtree Key */
+    int hop_count;
+    CllElem *route;
+} RoutingEntry;
+
 typedef struct OlsrContext
 {
     CommonRouteConfig conf;
@@ -120,6 +134,7 @@ typedef struct OlsrContext
     rbtree_type *selector_tree; /* Tree of MprSelectorElem */
     rbtree_type *topology_tree; /* Tree of TopologyInfoElem */
     rbtree_type *dup_tree; /* Tree of DuplicateSetElem */
+    rbtree_type *routing_table; /* Tree of RoutingEntry */
 } OlsrContext;
 
 extern OlsrContext g_olsr_ctx;
