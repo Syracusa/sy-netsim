@@ -28,6 +28,20 @@ int cll_add_tail(CllElem *head, CllElem *elem)
     return 1;
 }
 
+CllElem *cll_pop_head(CllElem *head)
+{
+    if (!head)
+        return NULL;
+
+    if (head->next != head) {
+        CllElem *res = head->next;
+        cll_delete(head, res);
+        return res;
+    }
+
+    return NULL;
+}
+
 int cll_delete(CllElem *head, CllElem *delete_elem)
 {
     if (!head || !delete_elem)

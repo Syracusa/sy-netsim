@@ -24,6 +24,7 @@ typedef CllElem CllHead;
     ((head)->next->next == head)
 
 int cll_add_tail(CllElem *head, CllElem *elem);
+CllElem *cll_pop_head(CllElem *head);
 int cll_delete(CllElem *head, CllElem *delete_elem);
 int cll_init_head(CllElem *head);
 
