@@ -69,7 +69,6 @@ typedef struct AdvertisedNeighElem
 {
     rbnode_type rbn;
     in_addr_t last_addr; /* Rbtree Key */
-
 } AdvertisedNeighElem;
 
 typedef struct TopologyInfoElem
@@ -111,10 +110,10 @@ typedef struct AddrListElem
 
 typedef struct RoutingEntry
 {
-    rbnode_type *rbn;
+    rbnode_type rbn;
     in_addr_t dest_addr; /* Rbtree Key */
     int hop_count;
-    CllElem *route;
+    CllHead route;
 } RoutingEntry;
 
 typedef struct OlsrContext
