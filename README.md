@@ -1,4 +1,4 @@
-# Ubuntu install
+# Installation(Ubuntu)
 ## Install pkg-config
 + sudo apt install pkg-config
 ## Install openssl-dev

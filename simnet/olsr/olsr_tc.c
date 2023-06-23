@@ -1,8 +1,6 @@
 #include "olsr_tc.h"
 #include "olsr.h"
 
-#define DUMP_TC_MSG 1
-
 static void dump_olsr_tc(TcMsg *tcmsg, int entrynum, const char *from)
 {
     if (!DUMP_TC_MSG)
