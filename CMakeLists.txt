@@ -4,7 +4,7 @@ project(netsim)
 
 set(CMAKE_BUILD_TYPE Debug)
 
-add_compile_options(-fsanitize=address -Wno-address-of-packed-member)
+add_compile_options(-fsanitize=address -Wall -Wno-address-of-packed-member -Wno-unused-function)
 add_link_options(-fsanitize=address)
 
 include_directories(ext/cjson ext/timerqueue include util)

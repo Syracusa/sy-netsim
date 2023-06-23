@@ -15,12 +15,6 @@ void aodv_work();
 
 void aodv_end();
 
-static RouteFunctions aodv_iface = {
-    .handle_local_pkt = aodv_handle_local_pkt,
-    .handle_remote_pkt = aodv_handle_remote_pkt,
-    .start = aodv_start,
-    .work = aodv_work,
-    .end = aodv_end
-};
+extern RouteFunctions aodv_iface;
 
 #endif

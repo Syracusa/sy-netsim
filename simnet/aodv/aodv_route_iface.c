@@ -2,6 +2,14 @@
 
 #include <stdio.h>
 
+RouteFunctions aodv_iface = {
+    .handle_local_pkt = aodv_handle_local_pkt,
+    .handle_remote_pkt = aodv_handle_remote_pkt,
+    .start = aodv_start,
+    .work = aodv_work,
+    .end = aodv_end
+};
+
 void aodv_handle_local_pkt(void *data, size_t len)
 {
     printf("aodv_handle_local_pkt() called\n");

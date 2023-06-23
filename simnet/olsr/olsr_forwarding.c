@@ -14,7 +14,6 @@ static int is_mpr_selector(OlsrContext *ctx,
 static void destroy_addr_list(DuplicateSetElem *delem)
 {
     CllElem *l = NULL;
-    CllElem *prev = NULL;
     cll_foreach(l, &delem->iface_addr_list)
     {
         if (l->prev != &delem->iface_addr_list)
@@ -64,6 +63,7 @@ static DuplicateSetElem *create_dup_entry(OlsrContext *ctx,
     timerqueue_register_timer(ctx->timerqueue, timer);
 
     delem->expire_timer = timer;
+    return delem;
 }
 
 void olsr_msg_forwarding(OlsrContext *ctx,

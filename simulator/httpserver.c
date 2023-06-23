@@ -43,5 +43,6 @@ void init_http_server() {
         {"http-only", http_callback, 0, 0},
         { NULL, NULL, 0, 0 } /* terminator */ };
 
+    (void)protocols;
 
 }

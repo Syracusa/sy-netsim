@@ -16,7 +16,6 @@ static int compare_elem(const void *k1, const void *k2)
     TqKey *n1 = (TqKey *)k1;
     TqKey *n2 = (TqKey *)k2;
 
-    struct timespec diff;
     if (n1->expire.tv_nsec == n2->expire.tv_nsec &&
         n1->expire.tv_sec == n2->expire.tv_sec) {
         if (n1->ptr > n2->ptr) {
@@ -40,6 +39,8 @@ TimerqueueElem* timerqueue_new_timer()
 
     elem->priv_rbk.ptr = elem;
     elem->rbn.key = &elem->priv_rbk;
+
+    return elem;
 }
 
 void timerqueue_free_timer(TimerqueueElem* timer)

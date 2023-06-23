@@ -247,6 +247,7 @@ void process_olsr_hello(OlsrContext *ctx,
     dump_hello(hello, msgsize, ip2str(src));
     HelloMsg *hello_msg = (HelloMsg *)hello;
     uint8_t willingness = hello_msg->willingness;
+    (void)willingness;
 
     LocalNetIfaceElem *iface = (LocalNetIfaceElem *)
         rbtree_search(ctx->local_iface_tree, &ctx->conf.own_ip);

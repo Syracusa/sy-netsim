@@ -16,7 +16,7 @@ static void duplicate_neigh_info(OlsrContext *ctx)
                       ip2str(aelem->last_addr));
                 continue;
             }
-            rbtree_insert(peer, &telem->dest_addr);
+            rbtree_insert(peer->an_tree, (rbnode_type *)&telem->dest_addr);
         }
     }
 }
@@ -42,7 +42,7 @@ static void routing_table_add_one_hop_neigh(OlsrContext *ctx, CllHead *visit_que
             elem->addr = nelem->neighbor_main_addr;
             cll_init_head(&entry->route);
             cll_add_tail(&entry->route, (CllElem *)elem);
-            rbtree_insert(ctx->routing_table, entry);
+            rbtree_insert(ctx->routing_table, (rbnode_type *)entry);
 
             vqelem = (VisitQueueElem *)malloc(sizeof(VisitQueueElem));
             vqelem->route_entry = entry;
@@ -86,15 +86,34 @@ void calc_routing_table(OlsrContext *ctx)
                 rbtree_search(ctx->routing_table, &aelem->last_addr);
 
             if (!candidate_entry) {
-                RoutingEntry *new_entry = (RoutingEntry *)malloc(sizeof(RoutingEntry));
+                RoutingEntry *new_entry = (RoutingEntry *)
+                    malloc(sizeof(RoutingEntry));
                 new_entry->rbn.key = &new_entry->dest_addr;
                 new_entry->dest_addr = aelem->last_addr;
                 new_entry->hop_count = curr_entry->hop_count + 1;
 
                 /* Copy list */
-                AddrListElem *elem;
-                cll_init_head(&new_entry->route);
-                
+                CllElem* elem;
+                cll_foreach(elem, &curr_entry->route) {
+                    AddrListElem *new_elem = (AddrListElem *)
+                        malloc(sizeof(AddrListElem));
+                    new_elem->addr = ((AddrListElem *)elem)->addr;
+                    cll_add_tail(&new_entry->route, (CllElem *)new_elem);
+                }
+
+                /* Add dest */
+                AddrListElem *new_elem = (AddrListElem *)
+                    malloc(sizeof(AddrListElem));
+                new_elem->addr = aelem->last_addr;
+                cll_add_tail(&new_entry->route, (CllElem *)new_elem);
+
+
+                // AddrListElem *elem;
+                // cll_init_head(&new_entry->route);
+                // elem->addr = curr_entry->dest_addr;
+
+                // cll_add_tail(&new_entry->route, (CllElem *)elem);
+
                 /* Add dest */
 
             }

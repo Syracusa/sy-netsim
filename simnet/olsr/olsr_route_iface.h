@@ -14,12 +14,5 @@ void olsr_work();
 
 void olsr_end();
 
-static RouteFunctions olsr_iface = {
-    .handle_local_pkt = olsr_handle_local_pkt,
-    .handle_remote_pkt = olsr_handle_remote_pkt,
-    .start = olsr_start,
-    .work = olsr_work,
-    .end = olsr_end
-};
-
+extern RouteFunctions olsr_iface;
 #endif

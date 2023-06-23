@@ -24,7 +24,7 @@
 #define LOG_LINK_TIMER 0
 #define DEBUG_MPR 0
 
-static const char *neighbor_status_str(uint8_t neighbor_code)
+static inline const char *neighbor_status_str(uint8_t neighbor_code)
 {
     switch (neighbor_code)
     {
@@ -37,7 +37,7 @@ static const char *neighbor_status_str(uint8_t neighbor_code)
     }
 }
 
-static const char *link_status_str(uint8_t link_code)
+static inline const char *link_status_str(uint8_t link_code)
 {
     switch (link_code)
     {

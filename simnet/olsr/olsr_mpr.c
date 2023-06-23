@@ -89,7 +89,6 @@ static void add_unique_bridge_to_mpr(OlsrContext *ctx,
                                      rbtree_type *n1_set,
                                      rbtree_type *n2_set)
 {
-    NeighborElem *nelem;
     Neighbor2Elem *n2elem;
     N2ReachabilityTreeElem *n2r_elem;
 

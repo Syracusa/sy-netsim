@@ -200,7 +200,6 @@ void send_config(SimulatorCtx *sctx,
 
 static void send_dummystream_config_msgs(SimulatorCtx *sctx)
 {
-    MqMsgbuf mbuf;
     SimulatorConfig *conf = &(sctx->conf);
 
     /* Dummy stream config */
@@ -215,7 +214,6 @@ static void send_dummystream_config_msgs(SimulatorCtx *sctx)
 
 static void send_link_config_msgs(SimulatorCtx *sctx)
 {
-    MqMsgbuf mbuf;
     for (int i = 0; i < sctx->conf.simlink_conf_num; i++) {
         send_config(sctx, sctx->mqid_phy_command,
                     &sctx->conf.linkconfs[i], sizeof(PhyLinkConfig),
