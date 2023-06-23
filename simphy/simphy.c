@@ -102,7 +102,8 @@ static void process_mac_frame(SimPhyCtx *spctx,
 
             SimLink *link = &spctx->links[sender_nid][nid];
             if (link->los != 1) {
-                TLOGW("PHY DROP FRAME %d => %d LOS\n", sender_nid, nid);
+                if (DEBUG_PHY_DROP)
+                    TLOGW("PHY DROP FRAME %d => %d LOS\n", sender_nid, nid);
                 continue;
             }
             send_to_local_mac(spctx, nid, data, len, MESSAGE_TYPE_DATA);

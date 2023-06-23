@@ -183,6 +183,10 @@ static void populate_linkset(OlsrContext *ctx,
                     mpr_selector->rbn.key = &mpr_selector->selector_addr;
                     mpr_selector->selector_addr = orig;
                     mpr_selector->expire_timer = timerqueue_new_timer();
+                    mpr_selector->expire_timer->callback = mpr_selector_expire;
+                    mpr_selector->expire_timer->arg = mpr_selector;
+                    timerqueue_register_timer(ctx->timerqueue,
+                                              mpr_selector->expire_timer);
                 }
                 mpr_selector->expire_timer->interval_us = vtime * 1000;
                 timerqueue_reactivate_timer(ctx->timerqueue,

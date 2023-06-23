@@ -69,6 +69,7 @@ void olsr_start_timer(OlsrContext *ctx)
     hello_timer->use_once = 0;
     hello_timer->interval_us = ctx->param.hello_interval_ms * 1000;
     hello_timer->max_jitter = ctx->param.hello_interval_ms * 1000 / 8;
+    sprintf(hello_timer->debug_name, "olsr_hello_timer_cb");
     timerqueue_register_timer(ctx->timerqueue, hello_timer);
 
     static TimerqueueElem *tc_timer = NULL;
@@ -80,6 +81,7 @@ void olsr_start_timer(OlsrContext *ctx)
     tc_timer->use_once = 0;
     tc_timer->interval_us = ctx->param.tc_interval_ms * 1000;
     tc_timer->max_jitter = ctx->param.tc_interval_ms * 1000 / 8;
+    sprintf(tc_timer->debug_name, "olsr_tc_timer_cb");
     timerqueue_register_timer(ctx->timerqueue, tc_timer);
 
     static TimerqueueElem *job_tx_msg = NULL;
@@ -90,6 +92,7 @@ void olsr_start_timer(OlsrContext *ctx)
     job_tx_msg->callback = olsr_send_from_queue_cb;
     job_tx_msg->use_once = 0;
     job_tx_msg->interval_us = 50 * 1000;
+    sprintf(job_tx_msg->debug_name, "olsr_send_from_queue_cb");
     timerqueue_register_timer(ctx->timerqueue, job_tx_msg);
 
     static TimerqueueElem *debug_timer = NULL;
@@ -101,6 +104,7 @@ void olsr_start_timer(OlsrContext *ctx)
     debug_timer->use_once = 0;
     debug_timer->interval_us = 2000 * 1000;
     debug_timer->max_jitter = 100 * 1000;
+    sprintf(debug_timer->debug_name, "dump_olsr_context_cb");
     timerqueue_register_timer(ctx->timerqueue, debug_timer);
 }
 

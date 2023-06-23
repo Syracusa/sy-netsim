@@ -28,5 +28,5 @@
 #define DEBUG_NET_TRX 0
 #define DEBUG_MAC_TRX 0
 #define DEBUG_PHY_TRX 0
-
+#define DEBUG_PHY_DROP 0
 #endif

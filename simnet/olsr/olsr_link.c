@@ -75,6 +75,7 @@ void link_elem_expire_timer_set(OlsrContext *ctx,
         link->expire_timer->callback = link_timer_expire;
         link->expire_timer->arg = link;
         link->expire_timer->interval_us = vtime * 1000;
+        sprintf(link->expire_timer->debug_name, "link_timer_expire");
         timerqueue_register_timer(ctx->timerqueue, link->expire_timer);
     } else {
         link->expire_timer->interval_us = vtime * 1000;
@@ -99,6 +100,7 @@ void link_elem_asym_timer_set(OlsrContext *ctx,
         link->asym_timer->callback = link_timer_expire;
         link->asym_timer->arg = link;
         link->asym_timer->interval_us = vtime * 1000;
+        sprintf(link->asym_timer->debug_name, "link_timer_expire");
         timerqueue_register_timer(ctx->timerqueue, link->asym_timer);
     } else {
         link->asym_timer->interval_us = vtime * 1000;
@@ -122,6 +124,7 @@ void link_elem_sym_timer_set(OlsrContext *ctx,
         link->sym_timer->callback = link_timer_expire;
         link->sym_timer->arg = link;
         link->sym_timer->interval_us = vtime * 1000;
+        sprintf(link->sym_timer->debug_name, "link_timer_expire");
         timerqueue_register_timer(ctx->timerqueue, link->sym_timer);
     } else {
         link->sym_timer->interval_us = vtime * 1000;

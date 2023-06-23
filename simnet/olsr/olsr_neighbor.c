@@ -76,7 +76,7 @@ void update_neigh2_tuple(OlsrContext *ctx,
         n2elem->expire_timer->arg = n2elem;
         n2elem->expire_timer->callback = neigh2_elem_expire;
         timerqueue_register_timer(ctx->timerqueue, n2elem->expire_timer);
-
+        sprintf(n2elem->expire_timer->debug_name, "neigh2_elem_expire");
         rbtree_insert(neigh->neighbor2_tree, (rbnode_type *)n2elem);
     } else {
         n2elem->expire_timer->interval_us = vtime * 1000;

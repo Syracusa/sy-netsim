@@ -32,9 +32,9 @@ static int compare_elem(const void *k1, const void *k2)
     }
 }
 
-TimerqueueElem* timerqueue_new_timer()
+TimerqueueElem *timerqueue_new_timer()
 {
-    TimerqueueElem* elem = malloc(sizeof(TimerqueueElem));
+    TimerqueueElem *elem = malloc(sizeof(TimerqueueElem));
     memset(elem, 0x00, sizeof(TimerqueueElem));
 
     elem->priv_rbk.ptr = elem;
@@ -43,10 +43,10 @@ TimerqueueElem* timerqueue_new_timer()
     return elem;
 }
 
-void timerqueue_free_timer(TimerqueueElem* timer)
+void timerqueue_free_timer(TimerqueueElem *timer)
 {
     timer->active = 0;
-    if (timer->attached){
+    if (timer->attached) {
         timer->free_on_detach = 1;
     } else {
         free(timer);
@@ -65,10 +65,10 @@ void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 
 void timerqueue_reactivate_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 {
-    if (elem->attached == 1){
+    if (elem->attached == 1) {
         rbtree_delete(tq->rbt, elem->rbn.key);
         elem->attached = 0;
-    } 
+    }
     timerqueue_register_timer(tq, elem);
 }
 
@@ -85,6 +85,8 @@ void timerqueue_work(TimerqueueContext *tq)
     while (check_expire(&(first->priv_rbk.expire), &currtime)) {
         rbtree_delete(tq->rbt, first->rbn.key);
         if (first->active) {
+            if (!first->callback)
+                fprintf(stderr, "NULL callback! (%s)\n", first->debug_name);
             first->callback(first->arg);
             if (first->use_once) {
                 first->active = 0;
@@ -102,7 +104,7 @@ void timerqueue_work(TimerqueueContext *tq)
             first->attached = 0;
         }
 
-        if (first->attached == 0){
+        if (first->attached == 0) {
             if (first->detached_callback)
                 first->detached_callback(first->arg);
             if (first->free_on_detach)

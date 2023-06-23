@@ -94,6 +94,7 @@ void process_olsr_tc(OlsrContext *ctx,
         timer->interval_us = vtime * 1000;
         timer->use_once = 1;
         timer->arg = telem;
+        sprintf(timer->debug_name, "topology_info_timer_expire_cb");
         timerqueue_register_timer(ctx->timerqueue, timer);
         telem->expire_timer = timer;
 

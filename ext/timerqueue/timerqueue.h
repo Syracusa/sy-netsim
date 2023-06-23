@@ -25,8 +25,9 @@ typedef struct {
 
     /* If 0 then safely free this elem */
     int attached;
-
     int free_on_detach;
+
+    char debug_name[50];
 
     /* User should write these field */
     int interval_us;
