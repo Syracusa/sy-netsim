@@ -60,6 +60,28 @@ void topology_info_timer_expire_cb(void *arg)
     free(telem);
 }
 
+static void remove_obsolute_advertised_neighbor(TopologyInfoElem *telem)
+{
+    const int max_obsolutes = 10;
+    in_addr_t obsolutes[max_obsolutes];
+    int obsolutes_num = 0;
+
+    AdvertisedNeighElem *aelem;
+    RBTREE_FOR(aelem, AdvertisedNeighElem *, telem->an_tree)
+    {
+        if (aelem->obsolete) {
+            obsolutes[obsolutes_num] = aelem->last_addr;
+            obsolutes_num++;
+        }
+        if (obsolutes_num == max_obsolutes)
+            break;
+    }
+
+    for (int i = 0; i < obsolutes_num; i++) {
+        rbtree_delete(telem->an_tree, &obsolutes[i]);
+    }
+}
+
 void process_olsr_tc(OlsrContext *ctx,
                      TcMsg *msg,
                      uint16_t tc_size,
@@ -101,14 +123,18 @@ void process_olsr_tc(OlsrContext *ctx,
 
     if (ansn < telem->seq)
         return;
-    
+
     telem->seq = ansn;
     timerqueue_reactivate_timer(ctx->timerqueue, telem->expire_timer);
 
-    /* Reset advertised neighbor set */
-    traverse_postorder(telem->an_tree, free_arg, NULL);
-    free(telem->an_tree);
-    telem->an_tree = rbtree_create(rbtree_compare_by_inetaddr);
+    /* Mark all element in tree as obsolete */
+    AdvertisedNeighElem *anelem;
+    RBTREE_FOR(anelem, AdvertisedNeighElem *, telem->an_tree)
+    {
+        anelem->obsolete = 1;
+    }
+
+    int info_changed = 0;
 
     int entry_num = tc_size / sizeof(in_addr_t) - 1;
     dump_olsr_tc(msg, entry_num, ip2str(orig));
@@ -120,7 +146,23 @@ void process_olsr_tc(OlsrContext *ctx,
             malloc(sizeof(AdvertisedNeighElem));
         anelem->rbn.key = &anelem->last_addr;
         anelem->last_addr = ana;
+        anelem->obsolete = 0;
 
-        rbtree_insert(telem->an_tree, (rbnode_type *)anelem);
+
+        if (rbtree_insert(telem->an_tree, (rbnode_type *)anelem)) {
+            /* This mean new neighbor is added to TC */
+            info_changed = 1;
+        } else {
+            /* Neighbor keep exist in TC. Just unmark obsolete flag */
+            free(anelem);
+            anelem->obsolete = 0;
+        }
     }
+
+    remove_obsolute_advertised_neighbor(telem);
+
+    /* Check for topology change,
+    If any change detected, Recalculate routing table */
+    if (info_changed)
+        calc_routing_table(ctx);
 }

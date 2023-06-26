@@ -52,13 +52,19 @@ static void routing_table_add_one_hop_neigh(OlsrContext *ctx, CllHead *visit_que
     }
 }
 
+/* Calculate routing table form collected information */
 void calc_routing_table(OlsrContext *ctx)
 {
+    /* Advertised neighbor info might include only 
+       one-way as it can advertise MPR selector nodes only.. 
+       So we duplicate's one neighbor info to oppnent node's data
+       for convinience */
     duplicate_neigh_info(ctx);
 
+
+    /* Initialize visit queue to do carry out SPF  */
     CllHead visit_queue;
     cll_init_head(&visit_queue);
-
 
     /* Add all one-hop symmetric neighbor to routing table */
     routing_table_add_one_hop_neigh(ctx, &visit_queue);
@@ -82,6 +88,8 @@ void calc_routing_table(OlsrContext *ctx)
                 continue;
             }
 
+
+            /* If the neighbor of the entry is not in routing table, Add it */
             RoutingEntry *candidate_entry = (RoutingEntry *)
                 rbtree_search(ctx->routing_table, &aelem->last_addr);
 
@@ -91,6 +99,11 @@ void calc_routing_table(OlsrContext *ctx)
                 new_entry->rbn.key = &new_entry->dest_addr;
                 new_entry->dest_addr = aelem->last_addr;
                 new_entry->hop_count = curr_entry->hop_count + 1;
+
+                TLOGI("New route entry %s -> %s (%d hop)\n",
+                      ip2str(curr_entry->dest_addr),
+                      ip2str(new_entry->dest_addr),
+                      new_entry->hop_count);
 
                 /* Copy list */
                 CllElem* elem;
@@ -107,18 +120,13 @@ void calc_routing_table(OlsrContext *ctx)
                 new_elem->addr = aelem->last_addr;
                 cll_add_tail(&new_entry->route, (CllElem *)new_elem);
 
-
-                // AddrListElem *elem;
-                // cll_init_head(&new_entry->route);
-                // elem->addr = curr_entry->dest_addr;
-
-                // cll_add_tail(&new_entry->route, (CllElem *)elem);
-
-                /* Add dest */
-
+                /* Insert to routing table */
+                rbtree_insert(ctx->routing_table, (rbnode_type *)new_entry);
+            
+                /* Add to visit queue to find further nodes */
+                cll_add_tail(&visit_queue, (CllElem *)new_entry);
             }
         }
-
     }
 
 
