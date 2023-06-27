@@ -60,7 +60,7 @@ void topology_info_timer_expire_cb(void *arg)
     free(telem);
 }
 
-static void remove_obsolute_advertised_neighbor(TopologyInfoElem *telem)
+static int remove_obsolute_advertised_neighbor(TopologyInfoElem *telem)
 {
     const int max_obsolutes = 10;
     in_addr_t obsolutes[max_obsolutes];
@@ -80,6 +80,8 @@ static void remove_obsolute_advertised_neighbor(TopologyInfoElem *telem)
     for (int i = 0; i < obsolutes_num; i++) {
         rbtree_delete(telem->an_tree, &obsolutes[i]);
     }
+
+    return obsolutes_num;
 }
 
 void process_olsr_tc(OlsrContext *ctx,
@@ -121,8 +123,10 @@ void process_olsr_tc(OlsrContext *ctx,
         rbtree_insert(ctx->topology_tree, (rbnode_type *)telem);
     }
 
-    if (ansn < telem->seq)
+    if (ansn < telem->seq){   
+        TLOGD("Ignore TC from %s (old seqno)", ip2str(orig));
         return;
+    }
 
     telem->seq = ansn;
     timerqueue_reactivate_timer(ctx->timerqueue, telem->expire_timer);
@@ -152,15 +156,22 @@ void process_olsr_tc(OlsrContext *ctx,
         if (rbtree_insert(telem->an_tree, (rbnode_type *)anelem)) {
             /* This mean new neighbor is added to TC */
             info_changed = 1;
+            TLOGD("New advertised neighbor %s from %s\n", 
+                    ip2str(ana), ip2str(telem->dest_addr));
         } else {
             /* Neighbor keep exist in TC. Just unmark obsolete flag */
             free(anelem);
+            anelem = (AdvertisedNeighElem *)
+                rbtree_search(telem->an_tree, &ana);
             anelem->obsolete = 0;
         }
     }
 
-    remove_obsolute_advertised_neighbor(telem);
-
+    int obsoluted = remove_obsolute_advertised_neighbor(telem);
+    if (obsoluted){
+        TLOGD("Obsoluted %d advertised neighbor(s) removed", obsoluted);
+        info_changed = 1;
+    }
     /* Check for topology change,
     If any change detected, Recalculate routing table */
     if (info_changed)

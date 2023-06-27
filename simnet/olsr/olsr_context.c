@@ -50,6 +50,7 @@ void init_olsr_context(CommonRouteConfig *config)
     g_olsr_ctx.selector_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.topology_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.dup_tree = rbtree_create(rbtree_compare_by_dupkey);
+    g_olsr_ctx.routing_table = rbtree_create(rbtree_compare_by_inetaddr);
 }
 
 void finalize_olsr_context()
@@ -64,6 +65,10 @@ void finalize_olsr_context()
     free(g_olsr_ctx.selector_tree);
     traverse_postorder(g_olsr_ctx.topology_tree, free_arg, NULL);
     free(g_olsr_ctx.topology_tree);
+    traverse_postorder(g_olsr_ctx.dup_tree, free_arg, NULL);
+    free(g_olsr_ctx.dup_tree);
+    traverse_postorder(g_olsr_ctx.routing_table, free_arg, NULL);
+    free(g_olsr_ctx.routing_table);
 }
 
 void dump_olsr_context()
@@ -153,6 +158,27 @@ void dump_olsr_context()
         }
     } else {
         offset += sprintf(offset, "> No Topology Node Exists\n");
+    }
+
+    /* Print Routing table */
+    if (ctx->routing_table->count != 0) {
+        offset += sprintf(offset, "> Routing Table\n");
+        RoutingEntry *relem;
+        RBTREE_FOR(relem, RoutingEntry *, ctx->routing_table)
+        {
+            offset += sprintf(offset, "> > Destination %s\n",
+                              ip2str(relem->dest_addr));
+            CllElem *l;
+            cll_foreach(l, &relem->route)
+            {
+                AddrListElem *path = (AddrListElem *)l;
+                offset += sprintf(offset, " -> %s ",
+                                  ip2str(path->addr));
+            }
+            offset += sprintf(offset, "\n");
+        }
+    } else {
+        offset += sprintf(offset, "> No Routing Table Exists\n");
     }
 
     offset += sprintf(offset, "\n");

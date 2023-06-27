@@ -250,7 +250,7 @@ int main()
     sleep(1); /* Wait until apps are ready... */
     send_config_msgs(sctx);
 
-    sleep(100);
+    sleep(200);
     TLOGI("Finish\n");
 
     delete_simulator_context(sctx);
