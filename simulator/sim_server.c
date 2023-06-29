@@ -12,20 +12,52 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "cJSON.h"
+
 #include "log.h"
 #include "sim_server.h"
 
 extern void app_exit(int signo);
 
+static void process_json(char *jsonstr)
+{
+    /* Get type from json */
+    cJSON *json = cJSON_Parse(jsonstr);
+    cJSON *type = cJSON_GetObjectItem(json, "type");
+    if (type == NULL) {
+        TLOGE("Can't find type in json\n");
+        return;
+    }
+    if (cJSON_IsString(type)){
+        TLOGD("type: %s\n", type->valuestring);
+    }
+}
+
+void parse_client_json(SimulatorServerCtx *ssctx)
+{
+    size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
+    uint16_t jsonlen;
+    if (canread >= 2){
+        RingBuffer_read(ssctx->recvq, &jsonlen, 2);
+        jsonlen = ntohs(jsonlen);
+
+        uint16_t tmp;
+        if (canread >= 2 + jsonlen){
+            RingBuffer_pop(ssctx->recvq, &tmp, 2);
+            char *json = malloc(jsonlen + 1);
+            RingBuffer_pop(ssctx->recvq, json, jsonlen);
+            json[jsonlen] = '\0';
+            process_json(json);
+            free(json);
+        }
+    }
+
+}
+
 static void *do_server(void *arg)
 {
     SimulatorServerCtx *ssctx = arg;
 
-    if (ssctx->recvq == NULL)
-        ssctx->recvq = RingBuffer_new(10240);
-
-    if (ssctx->sendq == NULL)
-        ssctx->sendq = RingBuffer_new(10240);
 
     /* Block SIGINT signal */
     sigset_t sigset;
@@ -44,6 +76,10 @@ static void *do_server(void *arg)
     addr.sin_family = AF_INET;
     addr.sin_port = htons(12123);
     addr.sin_addr.s_addr = INADDR_ANY;
+
+    /* Add reuseaddr option */
+    int optval = 1;
+    setsockopt(tcp_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
     if (bind(tcp_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         TLOGE("Can't bind TCP socket\n");
@@ -87,9 +123,8 @@ static void *do_server(void *arg)
             } else {
                 last_recv = currtime;
                 buf[len] = '\0';
-                TLOGD("Recv: %s\n", buf);
+                // TLOGD("Recv %ld bytes\n", len);
                 RingBuffer_push(ssctx->recvq, buf, len);
-                RingBuffer_push(ssctx->sendq, buf, len);
             }
 
             /* Send data to USER */
@@ -117,6 +152,12 @@ out:
 
 void start_server(SimulatorServerCtx *ssctx)
 {
+    if (ssctx->recvq == NULL)
+        ssctx->recvq = RingBuffer_new(10240);
+
+    if (ssctx->sendq == NULL)
+        ssctx->sendq = RingBuffer_new(10240);
+
     pthread_t tcp_thread;
     pthread_create(&tcp_thread, NULL, (void *)do_server, ssctx);
 }

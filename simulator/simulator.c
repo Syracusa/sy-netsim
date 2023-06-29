@@ -86,7 +86,7 @@ static SimulatorCtx *create_simulator_context()
 
 static void delete_simulator_context()
 {
-    if (g_sctx){
+    if (g_sctx) {
         server_end(&g_sctx->server_ctx);
         free(g_sctx);
     }
@@ -242,7 +242,7 @@ void app_exit(int signo)
     reenter = 1;
 
     TLOGF("Exit simulator...\n");
-    if (g_sctx){
+    if (g_sctx) {
         g_sctx->server_ctx.stop = 1;
         usleep(10 * 1000);
         delete_simulator_context();
@@ -251,10 +251,11 @@ void app_exit(int signo)
     }
 }
 
-static void mainloop()
+static void mainloop(SimulatorCtx *sctx)
 {
-    while (1) {
-        usleep(1000);
+    while(1) {
+        parse_client_json(&sctx->server_ctx);
+        usleep(100 * 1000);
     }
 }
 
@@ -267,18 +268,21 @@ int main()
     g_sctx = sctx;
     signal(SIGINT, &app_exit);
 
-    parse_config(sctx);
     init_mq(sctx);
 
-    start_server(&sctx->server_ctx);
+    int SERVER_MODE = 1;
+    if (SERVER_MODE) {
+        start_server(&sctx->server_ctx);    
+        mainloop(sctx);
+    } else {
+        parse_config(sctx);
+        start_simulate(sctx);
+        sleep(1); /* Wait until apps are ready... */
+        send_config_msgs(sctx);
+    }
 
-    start_simulate(sctx);
-    sleep(1); /* Wait until apps are ready... */
-    send_config_msgs(sctx);
-
-    sleep(3600);
     TLOGI("Finish\n");
-
+    sleep(3600);
     delete_simulator_context();
     return 0;
 }
