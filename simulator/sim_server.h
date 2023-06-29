@@ -5,5 +5,4 @@
 
 void start_server(SimulatorServerCtx *ssctx);
 void server_end(SimulatorServerCtx *ssctx);
-void parse_client_json(SimulatorServerCtx *ssctx);
 #endif

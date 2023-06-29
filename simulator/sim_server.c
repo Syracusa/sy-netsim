@@ -19,41 +19,6 @@
 
 extern void app_exit(int signo);
 
-static void process_json(char *jsonstr)
-{
-    /* Get type from json */
-    cJSON *json = cJSON_Parse(jsonstr);
-    cJSON *type = cJSON_GetObjectItem(json, "type");
-    if (type == NULL) {
-        TLOGE("Can't find type in json\n");
-        return;
-    }
-    if (cJSON_IsString(type)){
-        TLOGD("type: %s\n", type->valuestring);
-    }
-}
-
-void parse_client_json(SimulatorServerCtx *ssctx)
-{
-    size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
-    uint16_t jsonlen;
-    if (canread >= 2){
-        RingBuffer_read(ssctx->recvq, &jsonlen, 2);
-        jsonlen = ntohs(jsonlen);
-
-        uint16_t tmp;
-        if (canread >= 2 + jsonlen){
-            RingBuffer_pop(ssctx->recvq, &tmp, 2);
-            char *json = malloc(jsonlen + 1);
-            RingBuffer_pop(ssctx->recvq, json, jsonlen);
-            json[jsonlen] = '\0';
-            process_json(json);
-            free(json);
-        }
-    }
-
-}
-
 static void *do_server(void *arg)
 {
     SimulatorServerCtx *ssctx = arg;

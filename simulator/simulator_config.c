@@ -71,7 +71,7 @@ void parse_config(SimulatorCtx *sctx)
             double lon = 0.0;
             double alt = 0.0;
 
-            if (node_json) {
+            if (nodepos_json) {
                 lat = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lat")->valuedouble;
                 lon = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lon")->valuedouble;
                 alt = cJSON_GetObjectItemCaseSensitive(nodepos_json, "alt")->valuedouble;

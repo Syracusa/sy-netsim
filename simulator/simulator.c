@@ -22,6 +22,7 @@
 #include "simulator.h"
 #include "simulator_config.h"
 #include "sim_server.h"
+#include "cJSON.h"
 
 char dbgname[10];
 FILE *dbgfile;
@@ -231,6 +232,52 @@ static void send_config_msgs(SimulatorCtx *sctx)
 {
     send_dummystream_config_msgs(sctx);
     send_link_config_msgs(sctx);
+}
+
+static void process_json(char *jsonstr)
+{
+    SimulatorCtx *sctx = g_sctx;
+
+    /* Get type from json */
+    cJSON *json = cJSON_Parse(jsonstr);
+    cJSON *type = cJSON_GetObjectItem(json, "type");
+    if (type == NULL) {
+        TLOGE("Can't find type in json\n");
+        return;
+    }
+    if (cJSON_IsString(type)){
+        char *typestr = type->valuestring;
+        TLOGD("type: %s\n", typestr);
+        if (strcmp(typestr, "Status") == 0){
+            char buf[1000];
+            sprintf(buf, "{\"type\":\"Status\",\"status\":\"OK\"}");
+            uint16_t len = strlen(buf);
+            len = htons(len);
+            RingBuffer_push(sctx->server_ctx.sendq, &len, 2);
+            RingBuffer_push(sctx->server_ctx.sendq, buf, strlen(buf));
+        }
+    }
+}
+
+void parse_client_json(SimulatorServerCtx *ssctx)
+{
+    size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
+    uint16_t jsonlen;
+    if (canread >= 2){
+        RingBuffer_read(ssctx->recvq, &jsonlen, 2);
+        jsonlen = ntohs(jsonlen);
+
+        uint16_t tmp;
+        if (canread >= 2 + jsonlen){
+            RingBuffer_pop(ssctx->recvq, &tmp, 2);
+            char *json = malloc(jsonlen + 1);
+            RingBuffer_pop(ssctx->recvq, json, jsonlen);
+            json[jsonlen] = '\0';
+            process_json(json);
+            free(json);
+        }
+    }
+
 }
 
 void app_exit(int signo)

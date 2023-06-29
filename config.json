@@ -1,6 +1,4 @@
 {
-    "websocket_port" : 8000,
-    "simulator_port" : 3222,
     "nodes" : [
          {"id" : 0, "pos" : {"lat" : 36.37, "lon" : 127.37, "alt" : 1.2}}
          ,{"id" : 1, "pos" : {"lat" : 36.37, "lon" : 127.87, "alt" : 1.2}}
