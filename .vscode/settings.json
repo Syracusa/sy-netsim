@@ -34,7 +34,11 @@
         "math.h": "c",
         "olsr_tc.h": "c",
         "signal.h": "c",
-        "sigset_t.h": "c"
+        "sigset_t.h": "c",
+        "socket.h": "c",
+        "types.h": "c",
+        "stdlib.h": "c",
+        "string.h": "c"
     },
     "cmake.configureOnOpen": true,
     "C_Cpp.errorSquiggles": "enabled"

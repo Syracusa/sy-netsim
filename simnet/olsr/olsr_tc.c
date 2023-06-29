@@ -169,7 +169,7 @@ void process_olsr_tc(OlsrContext *ctx,
 
     int obsoluted = remove_obsolute_advertised_neighbor(telem);
     if (obsoluted){
-        TLOGD("Obsoluted %d advertised neighbor(s) removed", obsoluted);
+        TLOGD("Obsoluted %d advertised neighbor(s) removed\n", obsoluted);
         info_changed = 1;
     }
     /* Check for topology change,

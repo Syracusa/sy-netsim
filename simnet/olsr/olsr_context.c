@@ -75,7 +75,7 @@ void dump_olsr_context()
 {
     OlsrContext *ctx = &g_olsr_ctx;
 
-    char logbuf[1000];
+    char logbuf[10000];
     char *offset = logbuf;
 
     offset += sprintf(offset, "\n==== Context of %-14s ====\n",

@@ -23,7 +23,6 @@ static void *do_server(void *arg)
 {
     SimulatorServerCtx *ssctx = arg;
 
-
     /* Block SIGINT signal */
     sigset_t sigset;
     sigemptyset(&sigset);

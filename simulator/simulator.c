@@ -5,14 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <pthread.h>
-
-#include <sys/types.h> 
-#include <sys/prctl.h>
-#include <sys/socket.h>
 
 #include <netinet/in.h>
-#include <arpa/inet.h>
 
 #include "log.h"
 #include "params.h"
@@ -22,6 +16,9 @@
 #include "simulator.h"
 #include "simulator_config.h"
 #include "sim_server.h"
+#include "sim_remote_conf.h"
+#include "sim_childproc.h"
+
 #include "cJSON.h"
 
 char dbgname[10];
@@ -94,69 +91,8 @@ static void delete_simulator_context()
     g_sctx = NULL;
 }
 
-static void start_net(int node_id)
-{
-    pid_t pid = fork();
-    if (pid == -1) {
-        fprintf(stderr, "Fork failed!\n");
-    }
-    if (pid == 0) {
-        /* Kill child process when simulator die */
-        int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
-        if (r == -1)
-            fprintf(stderr, "prctl() failed!\n");
-        printf("Simnet %d start with PID%d\n", node_id, (int)getpid());
-        const char *file = "./bin/simnet";
-        char nid_str[10];
-        sprintf(nid_str, "%d", node_id);
-        execl(file, file, nid_str, NULL);
-    }
-}
 
-static void start_mac(int node_id)
-{
-    pid_t pid = fork();
-    if (pid == -1) {
-        fprintf(stderr, "Fork failed!\n");
-    }
-    if (pid == 0) {
-        /* Kill child process when simulator die */
-        int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
-        if (r == -1)
-            fprintf(stderr, "prctl() failed!\n");
-        printf("Simmac %d start with PID%d\n", node_id, (int)getpid());
-        const char *file = "./bin/simmac";
-        char nid_str[10];
-        sprintf(nid_str, "%d", node_id);
-        execl(file, file, nid_str, NULL);
-    }
-}
-
-static void start_phy()
-{
-    pid_t pid = fork();
-    if (pid == -1) {
-        fprintf(stderr, "Fork failed!\n");
-    }
-    if (pid == 0) {
-        /* Kill child process when simulator die */
-        int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
-        if (r == -1)
-            fprintf(stderr, "prctl() failed!\n");
-        printf("Simphy start with PID%d\n", (int)getpid());
-        const char *file = "./bin/simphy";
-        execl(file, file, NULL);
-    }
-}
-
-static void start_simnode(int node_id)
-{
-    printf("Start simnode id %d\n", node_id);
-    start_mac(node_id);
-    start_net(node_id);
-}
-
-static void start_simulate(SimulatorCtx *sctx)
+static void start_simulate_local(SimulatorCtx *sctx)
 {
     start_phy();
 
@@ -234,31 +170,6 @@ static void send_config_msgs(SimulatorCtx *sctx)
     send_link_config_msgs(sctx);
 }
 
-static void process_json(char *jsonstr)
-{
-    SimulatorCtx *sctx = g_sctx;
-
-    /* Get type from json */
-    cJSON *json = cJSON_Parse(jsonstr);
-    cJSON *type = cJSON_GetObjectItem(json, "type");
-    if (type == NULL) {
-        TLOGE("Can't find type in json\n");
-        return;
-    }
-    if (cJSON_IsString(type)){
-        char *typestr = type->valuestring;
-        TLOGD("type: %s\n", typestr);
-        if (strcmp(typestr, "Status") == 0){
-            char buf[1000];
-            sprintf(buf, "{\"type\":\"Status\",\"status\":\"OK\"}");
-            uint16_t len = strlen(buf);
-            len = htons(len);
-            RingBuffer_push(sctx->server_ctx.sendq, &len, 2);
-            RingBuffer_push(sctx->server_ctx.sendq, buf, strlen(buf));
-        }
-    }
-}
-
 void parse_client_json(SimulatorServerCtx *ssctx)
 {
     size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
@@ -270,14 +181,13 @@ void parse_client_json(SimulatorServerCtx *ssctx)
         uint16_t tmp;
         if (canread >= 2 + jsonlen){
             RingBuffer_pop(ssctx->recvq, &tmp, 2);
-            char *json = malloc(jsonlen + 1);
-            RingBuffer_pop(ssctx->recvq, json, jsonlen);
-            json[jsonlen] = '\0';
-            process_json(json);
-            free(json);
+            char *jsonstr = malloc(jsonlen + 1);
+            RingBuffer_pop(ssctx->recvq, jsonstr, jsonlen);
+            jsonstr[jsonlen] = '\0';
+            handle_remote_conf_msg(g_sctx, jsonstr);
+            free(jsonstr);
         }
     }
-
 }
 
 void app_exit(int signo)
@@ -323,7 +233,7 @@ int main()
         mainloop(sctx);
     } else {
         parse_config(sctx);
-        start_simulate(sctx);
+        start_simulate_local(sctx);
         sleep(1); /* Wait until apps are ready... */
         send_config_msgs(sctx);
     }
