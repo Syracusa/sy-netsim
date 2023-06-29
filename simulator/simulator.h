@@ -3,8 +3,9 @@
 
 #include "params.h"
 #include "config_msg.h"
+#include "ringbuffer.h"
 
-typedef struct NodePositionGps{
+typedef struct NodePositionGps {
     double latitude;
     double longitude;
     double altitude;
@@ -34,6 +35,12 @@ typedef struct {
 } SimulatorConfig;
 
 typedef struct {
+    RingBuffer *recvq;
+    RingBuffer *sendq;
+    int stop;
+} SimulatorServerCtx;
+
+typedef struct {
     int time_elapsed;
 
     int mqid_phy_command;
@@ -41,6 +48,8 @@ typedef struct {
 
     SimulatorConfig conf;
     SimNode nodes[MAX_NODE_ID];
+
+    SimulatorServerCtx server_ctx;
 } SimulatorCtx;
 
 #endif

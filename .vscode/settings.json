@@ -32,7 +32,10 @@
         "olsr_route.h": "c",
         "olsr_mantissa.h": "c",
         "math.h": "c",
-        "olsr_tc.h": "c"
+        "olsr_tc.h": "c",
+        "signal.h": "c",
+        "sigset_t.h": "c"
     },
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "C_Cpp.errorSquiggles": "enabled"
 }

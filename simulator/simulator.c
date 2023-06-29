@@ -5,24 +5,26 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <pthread.h>
 
 #include <sys/types.h> 
 #include <sys/prctl.h>
+#include <sys/socket.h>
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "log.h"
+#include "params.h"
+#include "mq.h"
+#include "config_msg.h"
 
 #include "simulator.h"
 #include "simulator_config.h"
-
-#include "params.h"
-#include "mq.h"
-
-#include "config_msg.h"
-
-#include "httpserver.h"
+#include "sim_server.h"
 
 char dbgname[10];
-FILE* dbgfile;
+FILE *dbgfile;
 
 SimulatorCtx *g_sctx = NULL;
 
@@ -82,9 +84,13 @@ static SimulatorCtx *create_simulator_context()
     return sctx;
 }
 
-static void delete_simulator_context(SimulatorCtx *sctx)
+static void delete_simulator_context()
 {
-    free(sctx);
+    if (g_sctx){
+        server_end(&g_sctx->server_ctx);
+        free(g_sctx);
+    }
+    g_sctx = NULL;
 }
 
 static void start_net(int node_id)
@@ -227,10 +233,29 @@ static void send_config_msgs(SimulatorCtx *sctx)
     send_link_config_msgs(sctx);
 }
 
-static void app_exit(int signo)
+void app_exit(int signo)
 {
-    if (g_sctx)
-        delete_simulator_context(g_sctx);
+    static int reenter = 0;
+
+    if (reenter)
+        return;
+    reenter = 1;
+
+    TLOGF("Exit simulator...\n");
+    if (g_sctx){
+        g_sctx->server_ctx.stop = 1;
+        usleep(10 * 1000);
+        delete_simulator_context();
+    } else {
+        TLOGF("Context is null\n");
+    }
+}
+
+static void mainloop()
+{
+    while (1) {
+        usleep(1000);
+    }
 }
 
 int main()
@@ -239,20 +264,21 @@ int main()
     TLOGI("Start simulator...\n");
 
     SimulatorCtx *sctx = create_simulator_context();
+    g_sctx = sctx;
     signal(SIGINT, &app_exit);
 
     parse_config(sctx);
     init_mq(sctx);
 
-    init_http_server();
+    start_server(&sctx->server_ctx);
 
     start_simulate(sctx);
     sleep(1); /* Wait until apps are ready... */
     send_config_msgs(sctx);
 
-    sleep(200);
+    sleep(3600);
     TLOGI("Finish\n");
 
-    delete_simulator_context(sctx);
+    delete_simulator_context();
     return 0;
 }

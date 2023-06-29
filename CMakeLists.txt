@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(netsim)
+project(netsim
+    VERSION 0.1
+    DESCRIPTION "A network simulator"
+    LANGUAGES C)
 
 set(CMAKE_BUILD_TYPE Debug)
 

@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define RB_DEBUG_LOG 1
+#define RB_DEBUG_LOG 0
 #define RB_VERBOSE_LOG 0
 
 #define RB_DBG(...) \
