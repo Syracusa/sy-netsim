@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "./include/net_statistics.h"
 #include "../util/netutil.h"
 
 typedef void (*route_send_data)(void *data, size_t len);
@@ -13,6 +14,7 @@ typedef struct CommonRouteConfig
     route_send_data send_remote;
     route_send_data send_local;
     in_addr_t own_ip;
+    NetStats *stat;
 } CommonRouteConfig;
 
 typedef void (*route_handle_pkt)(void *data, size_t len);

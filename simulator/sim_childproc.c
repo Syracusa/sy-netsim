@@ -6,12 +6,15 @@
 #include <sys/types.h> 
 #include <sys/prctl.h>
 
-void start_net(int node_id)
+#include "simulator.h"
+
+pid_t start_net(int node_id)
 {
     pid_t pid = fork();
     if (pid == -1) {
         fprintf(stderr, "Fork failed!\n");
     }
+
     if (pid == 0) {
         /* Kill child process when simulator die */
         int r = prctl(PR_SET_PDEATHSIG, SIGTERM);
@@ -23,9 +26,11 @@ void start_net(int node_id)
         sprintf(nid_str, "%d", node_id);
         execl(file, file, nid_str, NULL);
     }
+
+    return pid;
 }
 
-void start_mac(int node_id)
+pid_t start_mac(int node_id)
 {
     pid_t pid = fork();
     if (pid == -1) {
@@ -42,9 +47,11 @@ void start_mac(int node_id)
         sprintf(nid_str, "%d", node_id);
         execl(file, file, nid_str, NULL);
     }
+
+    return pid;
 }
 
-void start_phy()
+pid_t start_phy()
 {
     pid_t pid = fork();
     if (pid == -1) {
@@ -59,11 +66,13 @@ void start_phy()
         const char *file = "./bin/simphy";
         execl(file, file, NULL);
     }
+
+    return pid;
 }
 
-void start_simnode(int node_id)
+void start_simnode(SimulatorCtx* sctx, int node_id)
 {
     printf("Start simnode id %d\n", node_id);
-    start_mac(node_id);
-    start_net(node_id);
+    sctx->nodes[node_id].mac_pid = start_mac(node_id);
+    sctx->nodes[node_id].net_pid = start_net(node_id);
 }

@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <signal.h>
 #include <netinet/in.h>
 
 #include "log.h"
@@ -7,12 +7,39 @@
 #include "sim_childproc.h"
 #include "sim_remote_conf.h"
 
+
+static void kill_all_process(SimulatorCtx *sctx)
+{
+    /* Kill all processes before start */
+
+    int killnum = 0;
+
+    if (sctx->phy_pid > 0) {
+        kill(sctx->phy_pid, SIGINT);
+        killnum++;
+    }
+
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        if (sctx->nodes[i].net_pid > 0) {
+            kill(sctx->nodes[i].net_pid, SIGINT);
+            killnum++;
+        }
+        if (sctx->nodes[i].mac_pid > 0) {
+            kill(sctx->nodes[i].mac_pid, SIGINT);
+            killnum++;
+        }
+    }
+
+    TLOGD("%d processes terminated\n", killnum);
+}
+
 static void start_simulate_remote(SimulatorCtx *sctx, int nodenum)
 {
+    kill_all_process(sctx);
+    
     start_phy();
-
     for (int i = 0; i < nodenum; i++) {
-        start_simnode(i);
+        start_simnode(sctx, i);
     }
 }
 

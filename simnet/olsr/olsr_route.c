@@ -52,10 +52,11 @@ void olsr_send_from_queue_cb(void *arg)
     }
 }
 
-static void dump_olsr_context_cb(void *arg)
+static void dump_debuginfo_cb(void *arg)
 {
     (void)arg;
     dump_olsr_context();
+    dump_statistics();
 }
 
 void olsr_start_timer(OlsrContext *ctx)
@@ -100,11 +101,11 @@ void olsr_start_timer(OlsrContext *ctx)
         debug_timer = timerqueue_new_timer();
 
     debug_timer->arg = NULL;
-    debug_timer->callback = dump_olsr_context_cb;
+    debug_timer->callback = dump_debuginfo_cb;
     debug_timer->use_once = 0;
     debug_timer->interval_us = 2000 * 1000;
     debug_timer->max_jitter = 100 * 1000;
-    sprintf(debug_timer->debug_name, "dump_olsr_context_cb");
+    sprintf(debug_timer->debug_name, "dump_debuginfo_cb");
     timerqueue_register_timer(ctx->timerqueue, debug_timer);
 }
 

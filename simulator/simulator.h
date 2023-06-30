@@ -3,6 +3,7 @@
 
 #include "params.h"
 #include "config_msg.h"
+#include "report_msg.h"
 #include "ringbuffer.h"
 
 typedef struct NodePositionGps {
@@ -21,12 +22,15 @@ typedef struct {
 
     int mqid_net_report;
     int mqid_mac_report;
+
+    pid_t mac_pid;
+    pid_t net_pid;
 } SimNode;
 
 #define MAX_DUMMYSTREAM_CONF_NUM 100
 
 #define MAX_SIMLINK_CONF_NUM 1000
-typedef struct {
+typedef struct SimulatorConfig {
     int dummystream_conf_num;
     NetDummyTrafficConfig dummy_stream_info[MAX_DUMMYSTREAM_CONF_NUM];
 
@@ -34,17 +38,20 @@ typedef struct {
     PhyLinkConfig linkconfs[MAX_SIMLINK_CONF_NUM];
 } SimulatorConfig;
 
-typedef struct {
+typedef struct SimulatorServerCtx {
     RingBuffer *recvq;
     RingBuffer *sendq;
     int stop;
 } SimulatorServerCtx;
 
-typedef struct {
+typedef struct SimulatorCtx {
+    int started;
     int time_elapsed;
 
     int mqid_phy_command;
     int mqid_phy_report;
+
+    pid_t phy_pid;
 
     SimulatorConfig conf;
     SimNode nodes[MAX_NODE_ID];

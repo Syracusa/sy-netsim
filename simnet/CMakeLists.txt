@@ -1,6 +1,8 @@
 add_subdirectory(olsr)
 add_subdirectory(aodv)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 add_executable(simnet  
                 "simnet.c"
                 "dummy.c"

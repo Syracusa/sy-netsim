@@ -12,6 +12,7 @@
 #include "util.h"
 
 #include "config_msg.h"
+#include "report_msg.h"
 
 char dbgname[10];
 FILE* dbgfile;

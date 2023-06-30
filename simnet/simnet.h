@@ -16,6 +16,7 @@
 #include "params.h"
 
 #include "config_msg.h"
+#include "report_msg.h"
 
 #include "log.h"
 #include "route_iface.h"

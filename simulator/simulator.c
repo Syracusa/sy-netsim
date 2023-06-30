@@ -94,7 +94,7 @@ static void delete_simulator_context()
 
 static void start_simulate_local(SimulatorCtx *sctx)
 {
-    start_phy();
+    sctx->phy_pid = start_phy();
 
     for (int i = 0; i < MAX_NODE_ID; i++) {
         for (int j = i + 1; j < MAX_NODE_ID; j++) {
@@ -112,7 +112,7 @@ static void start_simulate_local(SimulatorCtx *sctx)
 
     for (int i = 0; i < MAX_NODE_ID; i++) {
         if (sctx->nodes[i].active == 1) {
-            start_simnode(i);
+            start_simnode(sctx, i);
         }
     }
 }
@@ -172,14 +172,17 @@ static void send_config_msgs(SimulatorCtx *sctx)
 
 void parse_client_json(SimulatorServerCtx *ssctx)
 {
+    if (!ssctx->recvq)
+        return;
+
     size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
     uint16_t jsonlen;
-    if (canread >= 2){
+    if (canread >= 2) {
         RingBuffer_read(ssctx->recvq, &jsonlen, 2);
         jsonlen = ntohs(jsonlen);
 
         uint16_t tmp;
-        if (canread >= 2 + jsonlen){
+        if (canread >= 2 + jsonlen) {
             RingBuffer_pop(ssctx->recvq, &tmp, 2);
             char *jsonstr = malloc(jsonlen + 1);
             RingBuffer_pop(ssctx->recvq, jsonstr, jsonlen);
@@ -208,11 +211,86 @@ void app_exit(int signo)
     }
 }
 
+
+static void recv_phy_report(SimulatorCtx *sctx)
+{
+    MqMsgbuf msg;
+    while (1) {
+        ssize_t ret = msgrcv(sctx->mqid_phy_report, &msg,
+                         MQ_MAX_DATA_LEN, 0, IPC_NOWAIT);
+        if (ret == 0) {
+            break;
+        } else if (ret > 0) {
+            TLOGD("Recv phy report: type : %ld, length : %ld\n",
+                  msg.type, ret);
+        } else {
+            if (errno != ENOMSG) {
+                TLOGF("Can't receive message from phy mqid: %d(%s)\n",
+                      sctx->mqid_phy_report, strerror(errno));
+            }
+            break;
+        }
+    }
+}
+
+static void recv_mac_report(SimulatorCtx *sctx)
+{
+    MqMsgbuf msg;
+
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        while (1) {
+            ssize_t ret = msgrcv(sctx->nodes[i].mqid_mac_report, &msg,
+                             MQ_MAX_DATA_LEN, 0, IPC_NOWAIT);
+            if (ret == 0) {
+                break;
+            } else if (ret > 0) {
+                TLOGD("Recv mac report: type : %ld, length : %ld\n",
+                      msg.type, ret);
+            } else {
+                if (errno != ENOMSG) {
+                    TLOGF("Can't receive message from mac mqid: %d(%s)\n",
+                          sctx->nodes[i].mqid_mac_report, strerror(errno));
+                }
+                break;
+            }
+        }
+    }
+}
+
+static void recv_net_report(SimulatorCtx *sctx)
+{
+    MqMsgbuf msg;
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        ssize_t ret = msgrcv(sctx->nodes[i].mqid_net_report, &msg,
+                         MQ_MAX_DATA_LEN, 0, IPC_NOWAIT);
+        if (ret == 0) {
+            break;
+        } else if (ret > 0) {
+            TLOGD("Recv net report: type : %ld, length : %ld\n",
+                  msg.type, ret);
+        } else {
+            if (errno != ENOMSG) {
+                TLOGF("Can't receive message from net mqid: %d(%s)\n",
+                      sctx->nodes[i].mqid_net_report, strerror(errno));
+            }
+            break;
+        }
+    }
+}
+
+static void recv_mq(SimulatorCtx *sctx)
+{
+    recv_phy_report(sctx);
+    recv_mac_report(sctx);
+    recv_net_report(sctx);
+}
+
 static void mainloop(SimulatorCtx *sctx)
 {
-    while(1) {
+    while (1) {
         parse_client_json(&sctx->server_ctx);
-        usleep(100 * 1000);
+        recv_mq(sctx);
+        usleep(10 * 1000);
     }
 }
 
@@ -229,7 +307,7 @@ int main()
 
     int SERVER_MODE = 1;
     if (SERVER_MODE) {
-        start_server(&sctx->server_ctx);    
+        start_server(&sctx->server_ctx);
         mainloop(sctx);
     } else {
         parse_config(sctx);

@@ -51,6 +51,8 @@ void init_olsr_context(CommonRouteConfig *config)
     g_olsr_ctx.topology_tree = rbtree_create(rbtree_compare_by_inetaddr);
     g_olsr_ctx.dup_tree = rbtree_create(rbtree_compare_by_dupkey);
     g_olsr_ctx.routing_table = rbtree_create(rbtree_compare_by_inetaddr);
+
+    g_olsr_ctx.node_stat_tree = rbtree_create(rbtree_compare_by_inetaddr);
 }
 
 void finalize_olsr_context()
@@ -69,6 +71,28 @@ void finalize_olsr_context()
     free(g_olsr_ctx.dup_tree);
     traverse_postorder(g_olsr_ctx.routing_table, free_arg, NULL);
     free(g_olsr_ctx.routing_table);
+}
+
+void dump_statistics()
+{
+    OlsrContext *ctx = &g_olsr_ctx;
+
+    char dumpbuf[10240];
+    char *offset = dumpbuf;
+
+    offset += sprintf(offset, "Statistics:\n");
+
+    int entrynum = ctx->conf.stat->node_stats_num;
+    for (int i = 0; i < entrynum; i++) {
+        NeighborInfo *info_elem = &ctx->conf.stat->node_info[i];
+        offset += sprintf(offset, "> To Node %s: %d bytes, %d pkts\n",
+                          ip2str(info_elem->addr),
+                          info_elem->traffic.tx_bytes,
+                          info_elem->traffic.tx_pkts);
+    }
+    offset += sprintf(offset, "\n");
+
+    TLOGD("%s", dumpbuf);
 }
 
 void dump_olsr_context()

@@ -8,7 +8,7 @@
 
 SimNetCtx *g_snctx = NULL;
 char dbgname[10];
-FILE* dbgfile;
+FILE *dbgfile;
 
 void init_mq(SimNetCtx *snctx)
 {
@@ -83,13 +83,22 @@ void mainloop(SimNetCtx *snctx)
     }
 }
 
+static int rbtree_compare_by_inetaddr(const void *k1,
+                                      const void *k2)
+{
+    in_addr_t *n1 = (in_addr_t *)k1;
+    in_addr_t *n2 = (in_addr_t *)k2;
+
+    return *n1 - *n2;
+}
+
 static SimNetCtx *create_simnet_context()
 {
     SimNetCtx *snctx = malloc(sizeof(SimNetCtx));
     memset(snctx, 0x00, sizeof(SimNetCtx));
 
     snctx->timerqueue = create_timerqueue();
-
+    
     return snctx;
 }
 
@@ -143,13 +152,13 @@ int main(int argc, char *argv[])
 
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
     dbgfile = stderr;
-    
+
     char logfile[100];
     sprintf(logfile, "/tmp/viewlog/n%d", snctx->node_id);
-    FILE* f = fopen(logfile, "w+");
+    FILE *f = fopen(logfile, "w+");
     if (f)
         dbgfile = f;
-    
+
     /* Initiate message queue */
     init_mq(snctx);
 
@@ -158,7 +167,8 @@ int main(int argc, char *argv[])
     CommonRouteConfig rconf = {
         .own_ip = myip,
         .send_remote = remote_send,
-        .send_local = local_send
+        .send_local = local_send,
+        .stat = &snctx->stat
     };
     snctx->route = &olsr_iface;
     snctx->route->start(&rconf);

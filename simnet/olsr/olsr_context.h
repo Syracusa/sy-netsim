@@ -3,6 +3,7 @@
 
 #include <netinet/in.h>
 
+#include "../include/net_statistics.h"
 #include "timerqueue.h"
 #include "ringbuffer.h"
 #include "olsr_route_iface.h"
@@ -117,6 +118,13 @@ typedef struct RoutingEntry
     CllHead route;
 } RoutingEntry;
 
+typedef struct NodeStatElem
+{
+    rbnode_type rbn;
+    in_addr_t addr; /* Rbtree Key */
+    NeighborInfo* info;
+} NodeStatElem;
+
 typedef struct OlsrContext
 {
     CommonRouteConfig conf;
@@ -127,6 +135,8 @@ typedef struct OlsrContext
 
     uint16_t msg_seq;
     uint16_t ansn; /* Advertised Neighbor Sequence Number */
+
+    rbtree_type *node_stat_tree; /* Tree of NodeStatElem */
 
     rbtree_type *local_iface_tree; /* Tree of LocalNetIfaceElem */
     rbtree_type *neighbor_tree; /* Tree of NeighborElem */
@@ -144,4 +154,5 @@ void finalize_olsr_context();
 
 int rbtree_compare_by_inetaddr(const void *k1, const void *k2);
 void dump_olsr_context();
+void dump_statistics();
 #endif

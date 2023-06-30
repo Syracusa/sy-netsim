@@ -128,9 +128,13 @@ void start_server(SimulatorServerCtx *ssctx)
 
 void server_end(SimulatorServerCtx *ssctx)
 {
-    if (ssctx->recvq != NULL)
+    if (ssctx->recvq != NULL){
         RingBuffer_destroy(ssctx->recvq);
+        ssctx->recvq = NULL;
+    }
 
-    if (ssctx->sendq != NULL)
+    if (ssctx->sendq != NULL){
         RingBuffer_destroy(ssctx->sendq);
+        ssctx->sendq = NULL;
+    }
 }

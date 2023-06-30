@@ -3,6 +3,7 @@
 #include "olsr_route_iface.h"
 #include "timerqueue.h"
 #include "olsr.h"
+#include "olsr_context.h"
 
 #define OLSR_ROUTE_IFACE_VERBOSE 0
 
@@ -20,6 +21,45 @@ void olsr_handle_local_pkt(void *data, size_t len)
         TLOGD("olsr_handle_local_pkt() called\n");
 }
 
+static void statistics_update(PktBuf *buf)
+{
+    OlsrContext *ctx = &g_olsr_ctx;
+    NodeStatElem *stat_elem = (NodeStatElem *)
+        rbtree_search(ctx->node_stat_tree, &buf->iph.daddr);
+
+    if (stat_elem == NULL) {
+        stat_elem = (NodeStatElem *)malloc(sizeof(NodeStatElem));
+        memset(stat_elem, 0, sizeof(NodeStatElem));
+        stat_elem->addr = buf->iph.daddr;
+        stat_elem->rbn.key = &stat_elem->addr;
+
+        int find = 0;
+        int entrynum = ctx->conf.stat->node_stats_num;
+        for (int i = 0; i < entrynum; i++) {
+            NeighborInfo *info_elem = &ctx->conf.stat->node_info[i];
+            if (info_elem->addr == stat_elem->addr) {
+                stat_elem->info = info_elem;
+                find = 1;
+                break;
+            }
+        }
+
+        if (!find) {
+            int num = ctx->conf.stat->node_stats_num;
+            NeighborInfo *info_elem = &ctx->conf.stat->node_info[num];
+            stat_elem->info = info_elem;
+            info_elem->addr = stat_elem->addr;
+            ctx->conf.stat->node_stats_num++;
+        }
+
+        rbtree_insert(ctx->node_stat_tree, (rbnode_type *)stat_elem);
+    }
+
+    NeighborInfo *info = stat_elem->info;
+    info->traffic.tx_bytes += ntohs(buf->iph.tot_len);
+    info->traffic.tx_pkts++;
+}
+
 void olsr_handle_remote_pkt(void *data, size_t len)
 {
     if (OLSR_ROUTE_IFACE_VERBOSE)
@@ -27,6 +67,7 @@ void olsr_handle_remote_pkt(void *data, size_t len)
 
     PktBuf buf;
     ippkt_unpack(&buf, data, len);
+    statistics_update(&buf);
 
     if (buf.iph.protocol == IPPROTO_UDP) {
         uint16_t port = ntohs(buf.udph.dest);
@@ -66,6 +107,6 @@ void olsr_end()
 {
     if (OLSR_ROUTE_IFACE_VERBOSE)
         printf("olsr_end() called\n");
-        
+
     finalize_olsr_context();
 }
