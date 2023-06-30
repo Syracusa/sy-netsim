@@ -58,6 +58,7 @@ static void statistics_update(PktBuf *buf)
     NeighborInfo *info = stat_elem->info;
     info->traffic.tx_bytes += ntohs(buf->iph.tot_len);
     info->traffic.tx_pkts++;
+    info->traffic.dirty = 1;
 }
 
 void olsr_handle_remote_pkt(void *data, size_t len)

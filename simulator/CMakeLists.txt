@@ -7,6 +7,8 @@ add_executable(simulator
                 sim_server.c
                 sim_remote_conf.c
                 sim_childproc.c
+                sim_hdlreport.c
+                ../util/netutil.c
                 ../util/mq.c
                 ../util/ringbuffer.c)
 find_package(PkgConfig REQUIRED) 

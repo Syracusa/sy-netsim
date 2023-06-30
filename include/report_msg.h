@@ -3,14 +3,20 @@
 
 #include <stdint.h>
 
-#define REPORT_MSG_NET_TRX           1
+#include <netinet/in.h>
 
-typedef struct NetTrxReport {
+#define REPORT_MSG_NET_TRX                  1
+#define REPORT_MSG_NET_LOCAL_TRX            2
+
+typedef struct NetLocalTrxReport {
     uint32_t tx;
     uint32_t rx;
+} __attribute__((packed)) NetLocalTrxReport;
 
-    uint32_t local_tx;
-    uint32_t local_rx;
+typedef struct NetTrxReport {
+    in_addr_t peer_addr;
+    uint32_t tx;
+    uint32_t rx;
 }__attribute__((packed)) NetTrxReport;
 
 #endif

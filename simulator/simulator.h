@@ -5,6 +5,7 @@
 #include "config_msg.h"
 #include "report_msg.h"
 #include "ringbuffer.h"
+#include "pthread.h"
 
 typedef struct NodePositionGps {
     double latitude;
@@ -42,6 +43,8 @@ typedef struct SimulatorServerCtx {
     RingBuffer *recvq;
     RingBuffer *sendq;
     int stop;
+
+    pthread_t tcp_thread;
 } SimulatorServerCtx;
 
 typedef struct SimulatorCtx {

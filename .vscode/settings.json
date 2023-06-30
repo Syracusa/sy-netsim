@@ -39,7 +39,8 @@
         "types.h": "c",
         "stdlib.h": "c",
         "string.h": "c",
-        "route_iface.h": "c"
+        "route_iface.h": "c",
+        "sim_hdlreport.h": "c"
     },
     "cmake.configureOnOpen": true,
     "C_Cpp.errorSquiggles": "enabled"

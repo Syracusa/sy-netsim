@@ -18,6 +18,7 @@
 #include "sim_server.h"
 
 extern void app_exit(int signo);
+extern int g_exit;
 
 static void *do_server(void *arg)
 {
@@ -76,6 +77,7 @@ static void *do_server(void *arg)
 
             /* Recv data from USER */
             ssize_t len = recv(client_sock, buf, 1024, 0);
+            
             if (len < 0) {
                 TLOGE("Recv error\n");
                 break;
@@ -109,7 +111,7 @@ static void *do_server(void *arg)
     }
 
 out:
-    TLOGE("SERVER ERROR!!");
+    TLOGE("SERVER ERROR!!\n");
     server_end(ssctx);
     return NULL;
 }
@@ -122,8 +124,7 @@ void start_server(SimulatorServerCtx *ssctx)
     if (ssctx->sendq == NULL)
         ssctx->sendq = RingBuffer_new(10240);
 
-    pthread_t tcp_thread;
-    pthread_create(&tcp_thread, NULL, (void *)do_server, ssctx);
+    pthread_create(&ssctx->tcp_thread, NULL, (void *)do_server, ssctx);
 }
 
 void server_end(SimulatorServerCtx *ssctx)

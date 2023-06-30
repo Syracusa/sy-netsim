@@ -12,11 +12,13 @@ typedef struct TrafficCountElem
     uint32_t rx_bytes;
     uint32_t tx_pkts;
     uint32_t rx_pkts;
+    int dirty;
 } TrafficCountElem;
 
 typedef struct RoutingInfoElem
 {
     in_addr_t path[10];
+    int dirty;
 } RoutingInfoElem;
 
 typedef struct NeighborInfo
