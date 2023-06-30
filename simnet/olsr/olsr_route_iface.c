@@ -24,37 +24,7 @@ void olsr_handle_local_pkt(void *data, size_t len)
 static void statistics_update(PktBuf *buf)
 {
     OlsrContext *ctx = &g_olsr_ctx;
-    NodeStatElem *stat_elem = (NodeStatElem *)
-        rbtree_search(ctx->node_stat_tree, &buf->iph.daddr);
-
-    if (stat_elem == NULL) {
-        stat_elem = (NodeStatElem *)malloc(sizeof(NodeStatElem));
-        memset(stat_elem, 0, sizeof(NodeStatElem));
-        stat_elem->addr = buf->iph.daddr;
-        stat_elem->rbn.key = &stat_elem->addr;
-
-        int find = 0;
-        int entrynum = ctx->conf.stat->node_stats_num;
-        for (int i = 0; i < entrynum; i++) {
-            NeighborInfo *info_elem = &ctx->conf.stat->node_info[i];
-            if (info_elem->addr == stat_elem->addr) {
-                stat_elem->info = info_elem;
-                find = 1;
-                break;
-            }
-        }
-
-        if (!find) {
-            int num = ctx->conf.stat->node_stats_num;
-            NeighborInfo *info_elem = &ctx->conf.stat->node_info[num];
-            stat_elem->info = info_elem;
-            info_elem->addr = stat_elem->addr;
-            ctx->conf.stat->node_stats_num++;
-        }
-
-        rbtree_insert(ctx->node_stat_tree, (rbnode_type *)stat_elem);
-    }
-
+    NeighborStatInfo *stat_elem = get_neighborstat_buf(ctx, buf->iph.daddr);
     NeighborInfo *info = stat_elem->info;
     info->traffic.tx_bytes += ntohs(buf->iph.tot_len);
     info->traffic.tx_pkts++;

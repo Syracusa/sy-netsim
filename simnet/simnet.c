@@ -3,6 +3,7 @@
 #include "simnet.h"
 #include "dummy.h"
 #include "mac_connection.h"
+#include "net_report.h"
 
 #include "olsr/olsr_route_iface.h"
 
@@ -140,61 +141,6 @@ static void remote_send(void *data, size_t len)
 static void local_send(void *data, size_t len)
 {
     /* TODO */
-}
-
-static void send_report(SimNetCtx *snctx,
-                        int mqid,
-                        void *data,
-                        size_t len,
-                        long type)
-{
-    MqMsgbuf msg;
-    msg.type = type;
-
-    if (len > MQ_MAX_DATA_LEN) {
-        TLOGE("Can't send data with length %lu\n", len);
-    }
-    memcpy(msg.text, data, len);
-    int ret = msgsnd(mqid, &msg, len, IPC_NOWAIT);
-    if (ret < 0) {
-        if (errno == EAGAIN) {
-            TLOGE("Message queue full!\n");
-        } else {
-            TLOGE("Can't send report. mqid: %d len: %lu(%s)\n",
-                  mqid, len, strerror(errno));
-        }
-    }
-}
-
-void send_net_report_cb(void *arg)
-{
-    SimNetCtx *snctx = arg;
-    NetStats *stat = &snctx->stat;
-
-    for (int i = 0; i < stat->node_stats_num; i++) {
-        NeighborInfo *info = &stat->node_info[i];
-        in_addr_t neighbor_addr = info->addr;
-        if (info->traffic.dirty) {
-            TrafficCountElem *traffic = &info->traffic;
-            traffic->dirty = 0;
-            NetTrxReport report;
-            report.peer_addr = neighbor_addr;
-            report.tx = traffic->tx_bytes;
-            report.rx = traffic->rx_bytes;
-            send_report(snctx, snctx->mqid_send_report,
-                        &report, sizeof(report),
-                        REPORT_MSG_NET_TRX);
-        }
-    }
-}
-
-void start_report_job(SimNetCtx *snctx)
-{
-    TimerqueueElem *elem = timerqueue_new_timer();
-    elem->callback = send_net_report_cb;
-    elem->arg = snctx;
-    elem->interval_us = 1000 * 100;
-    timerqueue_register_timer(snctx->timerqueue, elem);
 }
 
 int main(int argc, char *argv[])

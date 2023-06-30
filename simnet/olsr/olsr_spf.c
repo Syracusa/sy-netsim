@@ -36,6 +36,77 @@ typedef struct VisitQueueElem {
     RoutingEntry *route_entry;
 } VisitQueueElem;
 
+
+static void update_route_info_disconncted(OlsrContext *ctx,
+                                          rbtree_type *old_table,
+                                          rbtree_type *new_table)
+{
+    RoutingEntry *old_entry;
+    RBTREE_FOR(old_entry, RoutingEntry *, old_table)
+    {
+        /* If entry is not in new_table then disconnected */
+        RoutingEntry *new_entry = (RoutingEntry *)
+            rbtree_search(new_table, &old_entry->dest_addr);
+        if (!new_entry) {
+            NeighborStatInfo *nstat = get_neighborstat_buf(ctx, old_entry->dest_addr);
+            RoutingInfo *rinfo = &nstat->info->routing;
+            rinfo->hop_count = 0; /* Disconnected */
+            rinfo->dirty = 1;
+        }
+    }
+}
+
+static void update_route_info_changed(OlsrContext *ctx,
+                                      rbtree_type *old_table,
+                                      rbtree_type *new_table)
+{
+    RoutingEntry *new_entry;
+    RBTREE_FOR(new_entry, RoutingEntry *, new_table)
+    {
+        RoutingEntry *old_entry = (RoutingEntry *)
+            rbtree_search(old_table, &new_entry->dest_addr);
+
+        if (old_entry) {
+            AddrListElem *new_route = (AddrListElem *)new_entry->route.next;
+            AddrListElem *old_route = (AddrListElem *)old_entry->route.next;
+
+            int changed = 0;
+            for (int i = 0; i < new_entry->hop_count; i++) {
+                if (new_route->addr != old_route->addr) {
+                    changed = 1;
+                    break;
+                }
+                new_route = (AddrListElem *)new_route->elem.next;
+                old_route = (AddrListElem *)old_route->elem.next;
+            }
+
+            if (!changed)
+                continue;
+        }
+
+        NeighborStatInfo *nstat = get_neighborstat_buf(ctx, new_entry->dest_addr);
+        RoutingInfo *rinfo = &nstat->info->routing;
+        rinfo->hop_count = new_entry->hop_count;
+        rinfo->dirty = 1;
+
+        CllHead *elem;
+        int entry_idx = 0;
+        cll_foreach(elem, &new_entry->route)
+        {
+            AddrListElem *addr_elem = (AddrListElem *)elem;
+            rinfo->path[entry_idx++] = addr_elem->addr;
+        }
+    }
+}
+
+static void update_route_info(OlsrContext *ctx,
+                              rbtree_type *old_table,
+                              rbtree_type *new_table)
+{
+    update_route_info_disconncted(ctx, old_table, new_table);
+    update_route_info_changed(ctx, old_table, new_table);
+}
+
 static void routing_table_add_one_hop_neigh(OlsrContext *ctx, CllHead *visit_queue)
 {
     VisitQueueElem *vqelem;
@@ -62,10 +133,10 @@ static void routing_table_add_one_hop_neigh(OlsrContext *ctx, CllHead *visit_que
     }
 }
 
-static void drop_routing_table(OlsrContext *ctx)
+static void drop_routing_table(rbtree_type *routing_table)
 {
-    RoutingEntry* entry;
-    RBTREE_FOR(entry, RoutingEntry *, ctx->routing_table)
+    RoutingEntry *entry;
+    RBTREE_FOR(entry, RoutingEntry *, routing_table)
     {
         AddrListElem *elem;
         while (!cll_no_entry(&entry->route)) {
@@ -73,9 +144,8 @@ static void drop_routing_table(OlsrContext *ctx)
             free(elem);
         }
     }
-    traverse_postorder(ctx->routing_table, free_arg, NULL);
-    free(ctx->routing_table);
-    ctx->routing_table = rbtree_create(rbtree_compare_by_inetaddr);
+    traverse_postorder(routing_table, free_arg, NULL);
+    free(routing_table);
 }
 
 /* Calculate routing table form collected information */
@@ -83,8 +153,8 @@ void calc_routing_table(OlsrContext *ctx)
 {
     TLOGI("Calculate routing table\n");
 
-    drop_routing_table(ctx);
-
+    rbtree_type *old_table = ctx->routing_table;
+    ctx->routing_table = rbtree_create(rbtree_compare_by_inetaddr);
     /* Advertised neighbor info might include only
        one-way as it can advertise MPR selector nodes only..
        So we duplicate's one neighbor info to oppnent node's data
@@ -171,6 +241,6 @@ void calc_routing_table(OlsrContext *ctx)
             }
         }
     }
-
-
+    update_route_info(ctx, old_table, ctx->routing_table);
+    drop_routing_table(old_table);
 }

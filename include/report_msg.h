@@ -7,6 +7,7 @@
 
 #define REPORT_MSG_NET_TRX                  1
 #define REPORT_MSG_NET_LOCAL_TRX            2
+#define REPORT_MSG_NET_ROUTING              3
 
 typedef struct NetLocalTrxReport {
     uint32_t tx;
@@ -18,5 +19,10 @@ typedef struct NetTrxReport {
     uint32_t tx;
     uint32_t rx;
 }__attribute__((packed)) NetTrxReport;
+
+typedef struct NetRoutingReport {
+    uint32_t visit_num;
+    in_addr_t path[];
+}__attribute__((packed)) NetRoutingReport;
 
 #endif

@@ -7,6 +7,7 @@ add_executable(simnet
                 "simnet.c"
                 "dummy.c"
                 "mac_connection.c"
+                "net_report.c"
                 "../util/util.c"
                 "../util/mq.c"
                 "../util/netutil.c"

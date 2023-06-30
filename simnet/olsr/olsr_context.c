@@ -89,6 +89,15 @@ void dump_statistics()
                           ip2str(info_elem->addr),
                           info_elem->traffic.tx_bytes,
                           info_elem->traffic.tx_pkts);
+
+
+        offset += sprintf(offset, "Route to %s\n", ip2str(info_elem->addr));
+        for (int rcnt = 0; rcnt < info_elem->routing.hop_count; rcnt++) {
+            offset += sprintf(offset, "=> %s",
+                              ip2str(info_elem->routing.path[rcnt]));
+        }
+        offset += sprintf(offset, "\n");
+
     }
     offset += sprintf(offset, "\n");
 
@@ -208,4 +217,41 @@ void dump_olsr_context()
     offset += sprintf(offset, "\n");
 
     TLOGD("%s", logbuf);
+}
+
+
+NeighborStatInfo *get_neighborstat_buf(OlsrContext *ctx, in_addr_t dest)
+{
+    NeighborStatInfo *stat_elem = (NeighborStatInfo *)
+        rbtree_search(ctx->node_stat_tree, &dest);
+
+    if (stat_elem == NULL) {
+        stat_elem = (NeighborStatInfo *)malloc(sizeof(NeighborStatInfo));
+        memset(stat_elem, 0, sizeof(NeighborStatInfo));
+        stat_elem->addr = dest;
+        stat_elem->rbn.key = &stat_elem->addr;
+
+        int find = 0;
+        int entrynum = ctx->conf.stat->node_stats_num;
+        for (int i = 0; i < entrynum; i++) {
+            NeighborInfo *info_elem = &ctx->conf.stat->node_info[i];
+            if (info_elem->addr == stat_elem->addr) {
+                stat_elem->info = info_elem;
+                find = 1;
+                break;
+            }
+        }
+
+        if (!find) {
+            int num = ctx->conf.stat->node_stats_num;
+            NeighborInfo *info_elem = &ctx->conf.stat->node_info[num];
+            stat_elem->info = info_elem;
+            info_elem->addr = stat_elem->addr;
+            ctx->conf.stat->node_stats_num++;
+        }
+
+        rbtree_insert(ctx->node_stat_tree, (rbnode_type *)stat_elem);
+    }
+
+    return stat_elem;
 }

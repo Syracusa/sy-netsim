@@ -6,26 +6,27 @@
 
 #define MAX_NODE_COUNT 50
 
-typedef struct TrafficCountElem
+typedef struct TrafficCountInfo
 {
     uint32_t tx_bytes;
     uint32_t rx_bytes;
     uint32_t tx_pkts;
     uint32_t rx_pkts;
     int dirty;
-} TrafficCountElem;
+} TrafficCountInfo;
 
-typedef struct RoutingInfoElem
+typedef struct RoutingInfo
 {
+    int hop_count;
     in_addr_t path[10];
     int dirty;
-} RoutingInfoElem;
+} RoutingInfo;
 
 typedef struct NeighborInfo
 {
     in_addr_t addr;
-    TrafficCountElem traffic;
-    RoutingInfoElem routing;
+    TrafficCountInfo traffic;
+    RoutingInfo routing;
 } NeighborInfo;
 
 typedef struct NetStats
