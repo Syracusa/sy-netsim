@@ -111,7 +111,6 @@ static void *do_server(void *arg)
     }
 
 out:
-    TLOGE("SERVER ERROR!!\n");
     server_end(ssctx);
     return NULL;
 }

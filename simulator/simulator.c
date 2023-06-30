@@ -206,14 +206,19 @@ void app_exit(int signo)
         return;
     reenter = 1;
 
-    TLOGF("Exit simulator...\n");
+    TLOGF("SIGINT\n");
+
     if (g_sctx) {
         g_sctx->server_ctx.stop = 1;
         pthread_join(g_sctx->server_ctx.tcp_thread, NULL);
         delete_simulator_context();
+        TLOGF("Exit simulator...\n");
+        exit(2);
     } else {
         TLOGF("Context is null\n");
     }
+
+
 }
 
 static void mainloop(SimulatorCtx *sctx)
