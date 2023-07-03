@@ -51,7 +51,7 @@ static void process_net_route_report(SimulatorCtx *sctx,
                       report_node, report->visit_num);
 
     for (int i = 0; i < report->visit_num; i++) {
-        offset += sprintf(offset, "\"%s\"", ip2str(report->path[i]));
+        offset += sprintf(offset, "%u", ((uint8_t *)(&report->path[i]))[2]);
         if (i != report->visit_num - 1)
             offset += sprintf(offset, ", ");
     }

@@ -20,7 +20,7 @@
 extern void app_exit(int signo);
 extern int g_exit;
 
-#define TCP_BUF_SIZE 100000
+#define TCP_BUF_SIZE 10240
 static void *do_server(void *arg)
 {
     SimulatorServerCtx *ssctx = arg;
@@ -120,10 +120,10 @@ out:
 void start_server(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq == NULL)
-        ssctx->recvq = RingBuffer_new(1024000);
+        ssctx->recvq = RingBuffer_new(102400);
 
     if (ssctx->sendq == NULL)
-        ssctx->sendq = RingBuffer_new(1024000);
+        ssctx->sendq = RingBuffer_new(102400);
 
     pthread_create(&ssctx->tcp_thread, NULL, (void *)do_server, ssctx);
 }
