@@ -71,6 +71,7 @@ typedef struct AdvertisedNeighElem
     rbnode_type rbn;
     in_addr_t last_addr; /* Rbtree Key */
     int obsolete;
+    int duplicated;
 } AdvertisedNeighElem;
 
 typedef struct TopologyInfoElem

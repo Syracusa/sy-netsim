@@ -59,7 +59,14 @@ typedef struct SimulatorCtx {
     SimulatorConfig conf;
     SimNode nodes[MAX_NODE_ID];
 
+    PhyLinkConfig link[MAX_NODE_ID][MAX_NODE_ID];
     SimulatorServerCtx server_ctx;
 } SimulatorCtx;
+
+void send_config(SimulatorCtx *sctx,
+                 int mqid,
+                 void *data,
+                 size_t len,
+                 long type);
 
 #endif

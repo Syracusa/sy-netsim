@@ -80,6 +80,16 @@ static SimulatorCtx *create_simulator_context()
     SimulatorCtx *sctx = malloc(sizeof(SimulatorCtx));
     memset(sctx, 0x00, sizeof(SimulatorCtx));
 
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        for (int j = 0; j < MAX_NODE_ID; j++) {
+            PhyLinkConfig *link = &sctx->link[i][j];
+            link->node_id_1 = i;
+            link->node_id_2 = j;
+            link->los = 1;
+            link->pathloss_x100 = 0;
+        }
+    }
+
     return sctx;
 }
 
@@ -203,6 +213,34 @@ void parse_client_json(SimulatorServerCtx *ssctx)
 
 int g_exit = 0;
 
+static void kill_all_process(SimulatorCtx *sctx)
+{
+    /* Kill all processes before start */
+
+    int killnum = 0;
+
+    if (sctx->phy_pid > 0) {
+        kill(sctx->phy_pid, SIGKILL);
+        killnum++;
+        sctx->phy_pid = 0;
+    }
+
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        if (sctx->nodes[i].net_pid > 0) {
+            kill(sctx->nodes[i].net_pid, SIGKILL);
+            killnum++;
+            sctx->nodes[i].net_pid = 0;
+        }
+        if (sctx->nodes[i].mac_pid > 0) {
+            kill(sctx->nodes[i].mac_pid, SIGKILL);
+            killnum++;
+            sctx->nodes[i].mac_pid = 0;
+        }
+    }
+
+    TLOGD("%d processes terminated\n", killnum);
+}
+
 void app_exit(int signo)
 {
     g_exit = 1;
@@ -215,16 +253,15 @@ void app_exit(int signo)
     TLOGF("SIGINT\n");
 
     if (g_sctx) {
+        kill_all_process(g_sctx);
         g_sctx->server_ctx.stop = 1;
         pthread_join(g_sctx->server_ctx.tcp_thread, NULL);
         delete_simulator_context();
         TLOGF("Exit simulator...\n");
-        exit(2);
+        exit(SIGKILL);
     } else {
         TLOGF("Context is null\n");
     }
-
-
 }
 
 static void mainloop(SimulatorCtx *sctx)

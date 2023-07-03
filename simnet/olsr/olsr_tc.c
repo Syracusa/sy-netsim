@@ -78,7 +78,11 @@ static int remove_obsolute_advertised_neighbor(TopologyInfoElem *telem)
     }
 
     for (int i = 0; i < obsolutes_num; i++) {
-        rbtree_delete(telem->an_tree, &obsolutes[i]);
+        if (!rbtree_delete(telem->an_tree, &obsolutes[i])){
+            TLOGE("Failed to delete obsolete advertised neighbor %s from %s\n",
+                  ip2str(obsolutes[i]),
+                  ip2str(telem->dest_addr));
+        }
     }
 
     return obsolutes_num;
@@ -123,7 +127,7 @@ void process_olsr_tc(OlsrContext *ctx,
         rbtree_insert(ctx->topology_tree, (rbnode_type *)telem);
     }
 
-    if (ansn < telem->seq){   
+    if (ansn < telem->seq) {
         TLOGD("Ignore TC from %s (old seqno)", ip2str(orig));
         return;
     }
@@ -151,13 +155,13 @@ void process_olsr_tc(OlsrContext *ctx,
         anelem->rbn.key = &anelem->last_addr;
         anelem->last_addr = ana;
         anelem->obsolete = 0;
-
+        anelem->duplicated = 0;
 
         if (rbtree_insert(telem->an_tree, (rbnode_type *)anelem)) {
             /* This mean new neighbor is added to TC */
             info_changed = 1;
-            TLOGD("New advertised neighbor %s from %s\n", 
-                    ip2str(ana), ip2str(telem->dest_addr));
+            TLOGD("New advertised neighbor %s from %s\n",
+                  ip2str(ana), ip2str(telem->dest_addr));
         } else {
             /* Neighbor keep exist in TC. Just unmark obsolete flag */
             free(anelem);
@@ -168,7 +172,7 @@ void process_olsr_tc(OlsrContext *ctx,
     }
 
     int obsoluted = remove_obsolute_advertised_neighbor(telem);
-    if (obsoluted){
+    if (obsoluted) {
         TLOGD("Obsoluted %d advertised neighbor(s) removed\n", obsoluted);
         info_changed = 1;
     }

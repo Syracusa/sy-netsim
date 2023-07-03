@@ -103,7 +103,7 @@ void olsr_start_timer(OlsrContext *ctx)
     debug_timer->arg = NULL;
     debug_timer->callback = dump_debuginfo_cb;
     debug_timer->use_once = 0;
-    debug_timer->interval_us = 2000 * 1000;
+    debug_timer->interval_us = 6000 * 1000;
     debug_timer->max_jitter = 100 * 1000;
     sprintf(debug_timer->debug_name, "dump_debuginfo_cb");
     timerqueue_register_timer(ctx->timerqueue, debug_timer);
@@ -118,7 +118,7 @@ void olsr_hello_timer_cb(void *olsr_ctx)
 
     OlsrMsgHeader *msghdr = (OlsrMsgHeader *)buf;
     msghdr->olsr_msgtype = MSG_TYPE_HELLO;
-    msghdr->olsr_vtime = reltime_to_me(DEF_TC_VTIME);
+    msghdr->olsr_vtime = reltime_to_me(DEF_HELLO_VTIME);
     msghdr->originator = ctx->conf.own_ip;
     msghdr->ttl = 1;
     msghdr->hopcnt = 0;
@@ -217,6 +217,10 @@ static void handle_olsr_msg(OlsrMsgHeader *msg,
 
     if (msg->ttl > 1)
         olsr_msg_forwarding(ctx, msg, src);
+#if 0
+    else
+        TLOGD("Drop by TTL (src: %s)\n", ip2str(src));
+#endif
 }
 
 void handle_route_pkt(PktBuf *pkt)

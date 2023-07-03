@@ -15,7 +15,7 @@
 #include "report_msg.h"
 
 char dbgname[10];
-FILE* dbgfile;
+FILE *dbgfile;
 
 void init_mq(SimPhyCtx *spctx)
 {
@@ -155,9 +155,11 @@ static void handle_link_config_command(SimPhyCtx *spctx,
     l1->los = l2->los = lmsg->los;
     l1->pathloss_x100 = l2->pathloss_x100 = lmsg->pathloss_x100;
 
-    TLOGI("Link %u <=> %u  LOS %u  PASSLOSS %u\n",
-          lmsg->node_id_1, lmsg->node_id_2,
-          lmsg->los, lmsg->pathloss_x100);
+    if (DEBUG_LINK)
+        TLOGI("Link %u <=> %u  LOS %u  PASSLOSS %u\n",
+              lmsg->node_id_1, lmsg->node_id_2,
+              lmsg->los, lmsg->pathloss_x100);
+
 }
 
 static void recv_command(SimPhyCtx *spctx)

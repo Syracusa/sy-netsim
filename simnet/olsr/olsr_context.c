@@ -93,7 +93,7 @@ void dump_statistics()
 
         offset += sprintf(offset, "Route to %s\n", ip2str(info_elem->addr));
         for (int rcnt = 0; rcnt < info_elem->routing.hop_count; rcnt++) {
-            offset += sprintf(offset, "=> %s",
+            offset += sprintf(offset, " => %s",
                               ip2str(info_elem->routing.path[rcnt]));
         }
         offset += sprintf(offset, "\n");

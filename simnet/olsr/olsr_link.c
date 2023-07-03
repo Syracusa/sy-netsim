@@ -5,19 +5,28 @@ void set_link_status(LinkElem *link, uint8_t status)
 {
     uint8_t old = link->status;
     if (old != status) {
+        link->status = status;
         TLOGW("Link to %s  %s -> %s\n",
               ip2str(link->neighbor_iface_addr),
               link_status_str(old),
               link_status_str(status));
-        link->status = status;
     }
+}
+
+void update_neighbor_state_by_link_change(LinkElem *link)
+{
+    OlsrContext *ctx = &g_olsr_ctx;
+    NeighborElem *neigh =
+        (NeighborElem *)rbtree_search(ctx->neighbor_tree,
+                                      &link->neighbor_iface_addr);
+    update_neighbor_status(ctx, neigh);
 }
 
 void link_timer_expire(void *arg)
 {
     LinkElem *link = arg;
     if (LOG_LINK_TIMER)
-        TLOGD("ASYM Link timer expired(To %s)\n",
+        TLOGF("Link timer expired(To %s)\n",
               ip2str(link->neighbor_iface_addr));
 
     OlsrContext *ctx = &g_olsr_ctx;
@@ -37,6 +46,8 @@ void link_timer_expire(void *arg)
 
     /* Detach & Free itself */
     rbtree_delete(iface->iface_link_tree, &link->neighbor_iface_addr);
+    update_neighbor_state_by_link_change(link);
+
     free(link);
 }
 
@@ -44,22 +55,26 @@ void asym_link_timer_expire(void *arg)
 {
     LinkElem *link = arg;
     if (LOG_LINK_TIMER)
-        TLOGD("ASYM Link timer expired(To %s)\n",
+        TLOGF("ASYM Link timer expired(To %s)\n",
               ip2str(link->neighbor_iface_addr));
     set_link_status(link, LOST_LINK);
+
+    update_neighbor_state_by_link_change(link);
 }
 
 void sym_link_timer_expire(void *arg)
 {
     LinkElem *link = arg;
     if (LOG_LINK_TIMER)
-        TLOGD("SYM Link timer expired(To %s)\n",
+        TLOGF("SYM Link timer expired(To %s)\n",
               ip2str(link->neighbor_iface_addr));
     if (link->asym_timer->active == 1) {
         set_link_status(link, ASYM_LINK);
     } else {
         set_link_status(link, LOST_LINK);
     }
+
+    update_neighbor_state_by_link_change(link);
 }
 
 void link_elem_expire_timer_set(OlsrContext *ctx,
@@ -67,7 +82,9 @@ void link_elem_expire_timer_set(OlsrContext *ctx,
                                 olsr_reltime vtime)
 {
     if (LOG_LINK_TIMER)
-        TLOGD("Link timer set\n");
+        TLOGD("Link timer set(%s), vtime : %u\n",
+              ip2str(link->neighbor_iface_addr), vtime);
+
     if (link->expire_timer == NULL) {
         link->expire_timer = timerqueue_new_timer();
 
@@ -88,7 +105,7 @@ void link_elem_asym_timer_set(OlsrContext *ctx,
                               olsr_reltime vtime)
 {
     if (LOG_LINK_TIMER)
-        TLOGD("ASYM link timer set\n");
+        TLOGD("ASYM link timer set(%s)\n", ip2str(link->neighbor_iface_addr));
     if (link->status != SYM_LINK) {
         set_link_status(link, ASYM_LINK);
     }
@@ -113,8 +130,8 @@ void link_elem_sym_timer_set(OlsrContext *ctx,
                              olsr_reltime vtime)
 {
     if (LOG_LINK_TIMER)
-        TLOGD("SYM link timer set\n");
-    
+        TLOGD("SYM link timer set(%s)\n", ip2str(link->neighbor_iface_addr));
+
     set_link_status(link, SYM_LINK);
 
     if (link->sym_timer == NULL) {

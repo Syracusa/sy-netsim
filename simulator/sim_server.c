@@ -109,9 +109,10 @@ static void *do_server(void *arg)
         TLOGE("Disconnected... Wait for new connection\n");
         close(client_sock);
     }
-
 out:
+    close(tcp_sock);
     server_end(ssctx);
+    TLOGE("TCP Connection end\n");
     return NULL;
 }
 

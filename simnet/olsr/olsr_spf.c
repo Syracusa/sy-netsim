@@ -1,5 +1,30 @@
 #include "olsr.h"
 
+
+static void unduplicate_neigh_info(OlsrContext *ctx)
+{
+    TopologyInfoElem *telem;
+    RBTREE_FOR(telem, TopologyInfoElem *, ctx->topology_tree)
+    {
+        AdvertisedNeighElem *duplicates[50];
+        int dup_count = 0;
+        AdvertisedNeighElem *aelem;
+        RBTREE_FOR(aelem, AdvertisedNeighElem *, telem->an_tree)
+        {
+            if (aelem->duplicated == 1){
+                duplicates[dup_count] = aelem;
+                dup_count++;
+            }
+        }
+
+        for (int i = 0; i < dup_count; i++ ){
+            rbtree_delete(telem->an_tree, &duplicates[i]->last_addr);
+            free(duplicates[i]);
+        }
+    }
+}
+
+
 static void duplicate_neigh_info(OlsrContext *ctx)
 {
     /* Duplicate neighbor info to each node */
@@ -24,6 +49,7 @@ static void duplicate_neigh_info(OlsrContext *ctx)
             aelem2->last_addr = telem->dest_addr;
             aelem2->rbn.key = &aelem2->last_addr;
             aelem2->obsolete = 0;
+            aelem2->duplicated = 1;
 
             if (!rbtree_insert(peer->an_tree, (rbnode_type *)aelem2))
                 free(aelem2);
@@ -241,6 +267,8 @@ void calc_routing_table(OlsrContext *ctx)
             }
         }
     }
+
+    unduplicate_neigh_info(ctx);
     update_route_info(ctx, old_table, ctx->routing_table);
     drop_routing_table(old_table);
 }
