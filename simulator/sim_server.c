@@ -20,9 +20,11 @@
 extern void app_exit(int signo);
 extern int g_exit;
 
+#define TCP_BUF_SIZE 100000
 static void *do_server(void *arg)
 {
     SimulatorServerCtx *ssctx = arg;
+    uint8_t buf[TCP_BUF_SIZE];
 
     /* Block SIGINT signal */
     sigset_t sigset;
@@ -70,13 +72,12 @@ static void *do_server(void *arg)
 
         int last_recv = time(NULL);
 
-        char buf[1025];
         while (!ssctx->stop) {
             usleep(1000);
             int currtime = time(NULL);
 
             /* Recv data from USER */
-            ssize_t len = recv(client_sock, buf, 1024, 0);
+            ssize_t len = recv(client_sock, buf, TCP_BUF_SIZE, 0);
             
             if (len < 0) {
                 TLOGE("Recv error\n");
@@ -98,8 +99,8 @@ static void *do_server(void *arg)
             if (readable == 0)
                 continue;
 
-            if (readable > 1024)
-                readable = 1024;
+            if (readable > TCP_BUF_SIZE)
+                readable = TCP_BUF_SIZE;
 
             RingBuffer_pop(ssctx->sendq, buf, readable);
             send(client_sock, buf, readable, 0);
@@ -119,10 +120,10 @@ out:
 void start_server(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq == NULL)
-        ssctx->recvq = RingBuffer_new(10240);
+        ssctx->recvq = RingBuffer_new(1024000);
 
     if (ssctx->sendq == NULL)
-        ssctx->sendq = RingBuffer_new(10240);
+        ssctx->sendq = RingBuffer_new(1024000);
 
     pthread_create(&ssctx->tcp_thread, NULL, (void *)do_server, ssctx);
 }
