@@ -14,19 +14,19 @@ static void kill_all_process(SimulatorCtx *sctx)
     int killnum = 0;
 
     if (sctx->phy_pid > 0) {
-        kill(sctx->phy_pid, SIGKILL);
+        kill(sctx->phy_pid, SIGINT);
         killnum++;
         sctx->phy_pid = 0;
     }
 
     for (int i = 0; i < MAX_NODE_ID; i++) {
         if (sctx->nodes[i].net_pid > 0) {
-            kill(sctx->nodes[i].net_pid, SIGKILL);
+            kill(sctx->nodes[i].net_pid, SIGINT);
             killnum++;
             sctx->nodes[i].net_pid = 0;
         }
         if (sctx->nodes[i].mac_pid > 0) {
-            kill(sctx->nodes[i].mac_pid, SIGKILL);
+            kill(sctx->nodes[i].mac_pid, SIGINT);
             killnum++;
             sctx->nodes[i].mac_pid = 0;
         }
@@ -39,7 +39,7 @@ static void start_simulate_remote(SimulatorCtx *sctx, int nodenum)
 {
     kill_all_process(sctx);
 
-    start_phy();
+    sctx->phy_pid = start_phy();
     for (int i = 0; i < nodenum; i++) {
         start_simnode(sctx, i);
     }
