@@ -21,7 +21,8 @@ typedef struct NetTrxReport {
 }__attribute__((packed)) NetTrxReport;
 
 typedef struct NetRoutingReport {
-    uint32_t visit_num;
+    uint16_t visit_num;
+    uint16_t target;
     in_addr_t path[];
 }__attribute__((packed)) NetRoutingReport;
 

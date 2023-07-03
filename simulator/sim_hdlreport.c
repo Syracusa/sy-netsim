@@ -46,9 +46,9 @@ static void process_net_route_report(SimulatorCtx *sctx,
     char *offset = route_report_json_buf;
 
     offset += sprintf(offset,
-                      "{\"type\": \"Route\", \"node\": %d, "
+                      "{\"type\": \"Route\", \"node\": %d, \"target\": %d,"
                       "\"hopcount\": %d, \"path\" : [",
-                      report_node, report->visit_num);
+                      report_node, report->target, report->visit_num);
 
     for (int i = 0; i < report->visit_num; i++) {
         offset += sprintf(offset, "%u", ((uint8_t *)(&report->path[i]))[2]);

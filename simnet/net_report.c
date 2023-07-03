@@ -33,6 +33,7 @@ static void send_route_report(SimNetCtx *snctx,
     RoutingInfo* rinfo = &info->routing;
 
     NetRoutingReport *report = (NetRoutingReport *)msgbuf;
+    report->target = ((uint8_t *)(&neighbor_addr))[2];
     report->visit_num = rinfo->hop_count;
     memcpy(report->path, rinfo->path, sizeof(in_addr_t) * rinfo->hop_count);
 

@@ -58,6 +58,8 @@ void topology_info_timer_expire_cb(void *arg)
     free(telem->an_tree);
     timerqueue_free_timer(telem->expire_timer);
     free(telem);
+
+    calc_routing_table(ctx);
 }
 
 static int remove_obsolute_advertised_neighbor(TopologyInfoElem *telem)

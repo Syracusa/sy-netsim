@@ -22,6 +22,8 @@ void set_neighbor_status(NeighborElem *neighbor, uint8_t status)
               neighbor_status_str(old),
               neighbor_status_str(status));
         neighbor->status = status;
+
+        calc_routing_table(&g_olsr_ctx);
     }
 }
 
