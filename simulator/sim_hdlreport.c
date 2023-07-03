@@ -12,9 +12,9 @@ static void process_net_trx_report(SimulatorCtx *sctx,
                                    int len)
 {
     NetTrxReport *report = (NetTrxReport *)data;
-    TLOGD("NetTrxReport(%d->%s) : Tx %d  Rx %d\n",
-          report_node, ip2str(report->peer_addr),
-          report->tx, report->rx);
+    // TLOGD("NetTrxReport(%d->%s) : Tx %d  Rx %d\n",
+    //       report_node, ip2str(report->peer_addr),
+    //       report->tx, report->rx);
 
     char trx_report_json_buf[1024];
     uint16_t jsonlen = sprintf(trx_report_json_buf,

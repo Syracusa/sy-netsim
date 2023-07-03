@@ -176,20 +176,26 @@ void parse_client_json(SimulatorServerCtx *ssctx)
     if (!ssctx->recvq)
         return;
 
-    size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
-    uint16_t jsonlen;
-    if (canread >= 2) {
-        RingBuffer_read(ssctx->recvq, &jsonlen, 2);
-        jsonlen = ntohs(jsonlen);
+    while (1) {
+        size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
+        uint16_t jsonlen;
+        if (canread >= 2) {
+            RingBuffer_read(ssctx->recvq, &jsonlen, 2);
+            jsonlen = ntohs(jsonlen);
 
-        uint16_t tmp;
-        if (canread >= 2 + jsonlen) {
-            RingBuffer_pop(ssctx->recvq, &tmp, 2);
-            char *jsonstr = malloc(jsonlen + 1);
-            RingBuffer_pop(ssctx->recvq, jsonstr, jsonlen);
-            jsonstr[jsonlen] = '\0';
-            handle_remote_conf_msg(g_sctx, jsonstr);
-            free(jsonstr);
+            uint16_t tmp;
+            if (canread >= 2 + jsonlen) {
+                RingBuffer_pop(ssctx->recvq, &tmp, 2);
+                char *jsonstr = malloc(jsonlen + 1);
+                RingBuffer_pop(ssctx->recvq, jsonstr, jsonlen);
+                jsonstr[jsonlen] = '\0';
+                handle_remote_conf_msg(g_sctx, jsonstr);
+                free(jsonstr);
+            } else {
+                break;
+            }
+        } else {
+            break;
         }
     }
 }
@@ -201,7 +207,7 @@ void app_exit(int signo)
 {
     g_exit = 1;
     static int reenter = 0;
-    
+
     if (reenter)
         return;
     reenter = 1;

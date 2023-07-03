@@ -56,6 +56,30 @@ static void handle_start_simulation_msg(SimulatorCtx *sctx, cJSON *json)
     }
 }
 
+static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
+{
+    cJSON *type = cJSON_GetObjectItem(json, "links");
+    if (cJSON_IsArray(type)) {
+        cJSON *links = NULL;
+        int node1 = 0;
+        cJSON_ArrayForEach(links, type)
+        {
+            int node2 = node1 + 1;
+            cJSON *link = NULL;
+            cJSON_ArrayForEach(link, links)
+            {
+                if (cJSON_IsNumber(link)) {
+                    double linkval = link->valuedouble;
+                    TLOGD("link %d <-> %d : %lf\n",
+                          node1, node2, linkval);
+                }
+                node2++;
+            }
+            node1++;
+        }
+    }
+}
+
 void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
 {
     /* Get type from json */
@@ -77,6 +101,8 @@ void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
             RingBuffer_push(sctx->server_ctx.sendq, buf, strlen(buf));
         } else if (strcmp(typestr, "Start") == 0) {
             handle_start_simulation_msg(sctx, json);
+        } else if (strcmp(typestr, "LinkInfo") == 0) {
+            handle_link_info_msg(sctx, json);
         } else {
             TLOGE("Unknown type: %s\n", typestr);
         }
