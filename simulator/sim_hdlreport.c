@@ -60,7 +60,7 @@ static void process_net_route_report(SimulatorCtx *sctx,
 
     uint16_t jsonlen = htons(offset - route_report_json_buf);
 
-    TLOGI("route_report_json_buf : %s\n", route_report_json_buf);
+    // TLOGI("route_report_json_buf : %s\n", route_report_json_buf);
 
     RingBuffer_push(sctx->server_ctx.sendq,
                     &jsonlen, 2);

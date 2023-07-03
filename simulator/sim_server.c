@@ -10,6 +10,7 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 
 #include "cJSON.h"
@@ -44,9 +45,13 @@ static void *do_server(void *arg)
     addr.sin_port = htons(12123);
     addr.sin_addr.s_addr = INADDR_ANY;
 
-    /* Add reuseaddr option */
+    /* Use REUSEADDR option */
     int optval = 1;
     setsockopt(tcp_sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+    /* Use TCP_NODELAY option */
+    optval = 1;
+    setsockopt(tcp_sock, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval));
 
     if (bind(tcp_sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
         TLOGE("Can't bind TCP socket\n");
