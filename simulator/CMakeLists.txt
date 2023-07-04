@@ -13,5 +13,6 @@ add_executable(simulator
                 ../util/ringbuffer.c)
 find_package(PkgConfig REQUIRED) 
 
-target_link_libraries(simulator m) # Math library
-target_link_libraries(simulator cjson)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(simulator Threads::Threads m cjson)
