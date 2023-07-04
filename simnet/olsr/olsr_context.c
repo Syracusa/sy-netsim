@@ -77,7 +77,7 @@ void dump_statistics()
 {
     OlsrContext *ctx = &g_olsr_ctx;
 
-    char dumpbuf[10240];
+    char dumpbuf[102400];
     char *offset = dumpbuf;
 
     offset += sprintf(offset, "Statistics:\n");
@@ -108,7 +108,7 @@ void dump_olsr_context()
 {
     OlsrContext *ctx = &g_olsr_ctx;
 
-    char logbuf[10000];
+    char logbuf[102400];
     char *offset = logbuf;
 
     offset += sprintf(offset, "\n==== Context of %-14s ====\n",
