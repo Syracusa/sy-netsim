@@ -5,6 +5,7 @@
 #include "netinet/in.h"
 
 #define MAX_NODE_COUNT 50
+#define MAX_HOP_COUNT   50
 
 typedef struct TrafficCountInfo
 {
@@ -18,7 +19,7 @@ typedef struct TrafficCountInfo
 typedef struct RoutingInfo
 {
     int hop_count;
-    in_addr_t path[10];
+    in_addr_t path[MAX_HOP_COUNT];
     int dirty;
 } RoutingInfo;
 
