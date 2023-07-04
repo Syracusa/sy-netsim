@@ -251,7 +251,7 @@ NeighborStatInfo *get_neighborstat_buf(OlsrContext *ctx, in_addr_t dest)
         }
 
         rbtree_insert(ctx->node_stat_tree, (rbnode_type *)stat_elem);
-    }
+    }   
 
     return stat_elem;
 }
