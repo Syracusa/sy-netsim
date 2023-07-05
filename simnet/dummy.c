@@ -29,7 +29,7 @@ static void send_dummy_packet(void *arg)
     }
     size_t len = MAX_IPPKT_SIZE;
     ippkt_pack(&pkb, dummybuf, &len);
-    sendto_mac(snctx, dummybuf, len, MESSAGE_TYPE_DATA);
+    snctx->route->handle_local_pkt(dummybuf, len);
 }
 
 static void dummypkt_send_job_detach_cb(void *arg)

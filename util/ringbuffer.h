@@ -30,6 +30,8 @@ typedef struct
 
 RingBuffer* RingBuffer_new(size_t size);
 
+void RingBuffer_drop_buffer(RingBuffer* ringbuf);
+
 void RingBuffer_destroy(RingBuffer* ringbuf);
 
 ssize_t RingBuffer_push(RingBuffer* ringbuf, void* data, int len);

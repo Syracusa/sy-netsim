@@ -71,6 +71,8 @@ static void *do_server(void *arg)
         int client_sock = accept(tcp_sock, NULL, NULL);
         if (client_sock < 0) {
             TLOGE("Can't accept TCP socket\n");
+            RingBuffer_drop_buffer(ssctx->recvq);
+            RingBuffer_drop_buffer(ssctx->sendq);
             sleep(1);
             continue;
         }
@@ -78,16 +80,17 @@ static void *do_server(void *arg)
         int last_recv = time(NULL);
 
         while (!ssctx->stop) {
-            usleep(1000);
+            /* Make client sock nonblocking */
+            int flags = fcntl(client_sock, F_GETFL, 0);
+            fcntl(client_sock, F_SETFL, flags | O_NONBLOCK);
+
+            usleep(10000);
             int currtime = time(NULL);
 
             /* Recv data from USER */
             ssize_t len = recv(client_sock, buf, TCP_BUF_SIZE, 0);
-            
-            if (len < 0) {
-                TLOGE("Recv error\n");
-                break;
-            } else if (len == 0) {
+
+            if (len <= 0) {
                 if (currtime - last_recv > 5) {
                     TLOGE("Recv timeout\n");
                     break; /* Timeout */
@@ -100,17 +103,28 @@ static void *do_server(void *arg)
             }
 
             /* Send data to USER */
-            size_t readable = RingBuffer_get_readable_bufsize(ssctx->sendq);
-            if (readable == 0)
-                continue;
 
-            if (readable > TCP_BUF_SIZE)
-                readable = TCP_BUF_SIZE;
+            int keep_send;
+            do {
+                keep_send = 0;
 
-            RingBuffer_pop(ssctx->sendq, buf, readable);
-            send(client_sock, buf, readable, 0);
-            TLOGD("Send %ld bytes\n", readable);
+                size_t readable = RingBuffer_get_readable_bufsize(ssctx->sendq);
+                if (readable == 0)
+                    continue;
+
+                if (readable > TCP_BUF_SIZE){
+                    readable = TCP_BUF_SIZE;
+                    keep_send = 1;
+                }
+
+                RingBuffer_pop(ssctx->sendq, buf, readable);
+                send(client_sock, buf, readable, 0);
+                TLOGD("Send %ld bytes\n", readable);
+            } while (keep_send);
         }
+
+        RingBuffer_drop_buffer(ssctx->recvq);
+        RingBuffer_drop_buffer(ssctx->sendq);
 
         TLOGE("Disconnected... Wait for new connection\n");
         close(client_sock);
@@ -125,22 +139,22 @@ out:
 void start_server(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq == NULL)
-        ssctx->recvq = RingBuffer_new(102400);
+        ssctx->recvq = RingBuffer_new(819200);
 
     if (ssctx->sendq == NULL)
-        ssctx->sendq = RingBuffer_new(102400);
+        ssctx->sendq = RingBuffer_new(819200);
 
     pthread_create(&ssctx->tcp_thread, NULL, (void *)do_server, ssctx);
 }
 
 void server_end(SimulatorServerCtx *ssctx)
 {
-    if (ssctx->recvq != NULL){
+    if (ssctx->recvq != NULL) {
         RingBuffer_destroy(ssctx->recvq);
         ssctx->recvq = NULL;
     }
 
-    if (ssctx->sendq != NULL){
+    if (ssctx->sendq != NULL) {
         RingBuffer_destroy(ssctx->sendq);
         ssctx->sendq = NULL;
     }

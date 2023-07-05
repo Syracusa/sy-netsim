@@ -20,6 +20,13 @@ RingBuffer* RingBuffer_new(size_t size)
     return ringbuf;
 }
 
+void RingBuffer_drop_buffer(RingBuffer* ringbuf)
+{
+    ringbuf->head = 0;
+    ringbuf->tail = 0;
+    RB_DBG("RingBuffer dropped.\n");
+}
+
 void RingBuffer_destroy(RingBuffer* ringbuf)
 {
     if (ringbuf)
