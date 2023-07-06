@@ -1,4 +1,6 @@
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "simnet.h"
 #include "dummy.h"
@@ -143,14 +145,10 @@ static void local_send(void *data, size_t len)
     /* TODO */
 }
 
-int main(int argc, char *argv[])
+static void init_log(SimNetCtx *snctx)
 {
-    SimNetCtx *snctx = create_simnet_context();
-    g_snctx = snctx;
-    parse_arg(snctx, argc, argv);
-    printf("Simnet start with nodeid %d\n", snctx->node_id);
-    srand(time(NULL) + snctx->node_id);
-
+    mkdir("/tmp/viewlog", 0777);
+    
     sprintf(dbgname, "NET-%-2d", snctx->node_id);
     dbgfile = stderr;
 
@@ -159,6 +157,17 @@ int main(int argc, char *argv[])
     FILE *f = fopen(logfile, "w+");
     if (f)
         dbgfile = f;
+}
+
+int main(int argc, char *argv[])
+{
+    SimNetCtx *snctx = create_simnet_context();
+    g_snctx = snctx;
+    parse_arg(snctx, argc, argv);
+    printf("Simnet start with nodeid %d\n", snctx->node_id);
+    srand(time(NULL) + snctx->node_id);
+
+    init_log(snctx);
 
     /* Initiate message queue */
     init_mq(snctx);
