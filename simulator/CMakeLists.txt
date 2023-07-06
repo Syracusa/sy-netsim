@@ -1,6 +1,3 @@
-
-find_package(Libwebsockets REQUIRED CONFIG)
-
 add_executable(simulator  
                 simulator.c
                 simulator_config.c
@@ -11,7 +8,6 @@ add_executable(simulator
                 ../util/netutil.c
                 ../util/mq.c
                 ../util/ringbuffer.c)
-find_package(PkgConfig REQUIRED) 
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
