@@ -88,7 +88,7 @@ static void *do_server(void *arg)
             int currtime = time(NULL);
 
             /* Recv data from USER */
-            ssize_t len = recv(client_sock, buf, TCP_BUF_SIZE, 0);
+            ssize_t len = recv(client_sock, buf, TCP_BUF_SIZE - 1, 0);
 
             if (len <= 0) {
                 if (currtime - last_recv > 5) {
@@ -119,7 +119,7 @@ static void *do_server(void *arg)
 
                 RingBuffer_pop(ssctx->sendq, buf, readable);
                 send(client_sock, buf, readable, 0);
-                TLOGD("Send %ld bytes\n", readable);
+                // TLOGD("Send %ld bytes\n", readable);
             } while (keep_send);
         }
 
