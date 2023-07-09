@@ -5,7 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-
+#include <sys/wait.h>
+#include <sys/types.h> 
 #include <netinet/in.h>
 
 #include "log.h"
@@ -273,6 +274,30 @@ static void mainloop(SimulatorCtx *sctx)
     }
 }
 
+void handle_sigchld(int signo)
+{
+    int status;
+    pid_t pid;
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        TLOGD("Child process %d terminated\n", pid);
+    }
+}
+
+static void handle_signal()
+{
+    signal(SIGINT, &app_exit);
+    if (HANDLE_SIGCHLD)
+        signal(SIGCHLD, handle_sigchld);
+}
+
+static void start_local(SimulatorCtx* sctx)
+{
+    parse_config(sctx);
+    start_simulate_local(sctx);
+    sleep(1); /* Wait until apps are ready... */
+    send_config_msgs(sctx);
+}
+
 int main()
 {
     dbgfile = stderr;
@@ -280,7 +305,8 @@ int main()
 
     SimulatorCtx *sctx = create_simulator_context();
     g_sctx = sctx;
-    signal(SIGINT, &app_exit);
+
+    handle_signal();
 
     init_mq(sctx);
 
@@ -289,10 +315,7 @@ int main()
         start_server(&sctx->server_ctx);
         mainloop(sctx);
     } else {
-        parse_config(sctx);
-        start_simulate_local(sctx);
-        sleep(1); /* Wait until apps are ready... */
-        send_config_msgs(sctx);
+        start_local(sctx);
     }
 
     TLOGI("Finish\n");

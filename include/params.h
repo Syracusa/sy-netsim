@@ -30,5 +30,6 @@
 #define DEBUG_PHY_TRX 0
 #define DEBUG_PHY_DROP 0
 #define DEBUG_LINK 0
+#define HANDLE_SIGCHLD 0
 
 #endif
