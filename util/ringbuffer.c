@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "ringbuffer.h"
 
@@ -71,7 +72,7 @@ ssize_t RingBuffer_push(RingBuffer* ringbuf, void* data, int len)
     if (len > remain)
     {
         RB_DBG("Buffer full. remain %d requested %d\n", remain, len);
-        return PIUTIL_BUFFER_FULL;
+        return RB_BUFFER_FULL;
     }
 
     int cont_remain = ringbuf->max_offset - ringbuf->tail + 1;
@@ -108,7 +109,7 @@ static ssize_t RingBuffer_read_internal(RingBuffer* ringbuf,
 
     if (readlen > readable)
     {
-        return PIUTIL_BUFFER_DATA_NOT_ENOUGH;
+        return RB_BUFFER_DATA_NOT_ENOUGH;
     }
 
     int cont_readable = ringbuf->max_offset - ringbuf->head + 1;

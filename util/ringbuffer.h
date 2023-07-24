@@ -14,8 +14,8 @@
 #define RB_VERBOSE(...) \
     do { if (RB_VERBOSE_LOG) fprintf(stderr, ##__VA_ARGS__); } while (0)
 
-#define PIUTIL_BUFFER_FULL -1
-#define PIUTIL_BUFFER_DATA_NOT_ENOUGH -2
+#define RB_BUFFER_FULL -1
+#define RB_BUFFER_DATA_NOT_ENOUGH -2
 
 typedef struct
 {
