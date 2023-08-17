@@ -1,6 +1,6 @@
 #include "net_report.h"
 
-
+/* [NET -> Simulator] Status Report */
 static void send_report_to_simulator(SimNetCtx *snctx,
                                      int mqid,
                                      void *data,
@@ -25,6 +25,7 @@ static void send_report_to_simulator(SimNetCtx *snctx,
     }
 }
 
+/* [NET -> Simulator] Route Path Report */
 static void send_route_report(SimNetCtx *snctx,
                               NeighborInfo *info,
                               in_addr_t neighbor_addr)
@@ -43,6 +44,7 @@ static void send_route_report(SimNetCtx *snctx,
         REPORT_MSG_NET_ROUTING);
 }
 
+/* [NET -> Simulator] Traffic Statistics Report */
 static void send_traffic_report(SimNetCtx *snctx,
                                 NeighborInfo *info,
                                 in_addr_t neighbor_addr)
@@ -58,7 +60,8 @@ static void send_traffic_report(SimNetCtx *snctx,
                              REPORT_MSG_NET_TRX);
 }
 
-void send_net_report_cb(void *arg)
+/* [NET -> Simulator] Periodic report callback */
+static void send_net_report_cb(void *arg)
 {
     SimNetCtx *snctx = arg;
     NetStats *stat = &snctx->stat;
@@ -66,11 +69,14 @@ void send_net_report_cb(void *arg)
     for (int i = 0; i < stat->node_stats_num; i++) {
         NeighborInfo *info = &stat->node_info[i];
         in_addr_t neighbor_addr = info->addr;
+
+        /* Send traffic report if changed */
         if (info->traffic.dirty) {
             send_traffic_report(snctx, info, neighbor_addr);
             info->traffic.dirty = 0;
         }
 
+        /* Send routing report if changed */
         if (info->routing.dirty) {
             TLOGD("Send routing report to %s\n", ip2str(neighbor_addr));
             send_route_report(snctx, info, neighbor_addr);
@@ -79,6 +85,7 @@ void send_net_report_cb(void *arg)
     }
 }
 
+/* [NET -> Simulator] Register periodic report callback */
 void start_report_job(SimNetCtx *snctx)
 {
     TimerqueueElem *elem = timerqueue_new_timer();
