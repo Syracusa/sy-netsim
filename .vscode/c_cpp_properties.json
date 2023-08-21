@@ -3,15 +3,13 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/usr/include/linux/**"
             ],
-            "defines": [
-            ],
+            "defines": [ "_GNU_SOURCE" ],            
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
-            "intelliSenseMode": "linux-gcc-x64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
-            "configurationProvider": "ms-vscode.cmake-tools"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

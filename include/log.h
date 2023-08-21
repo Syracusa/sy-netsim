@@ -9,7 +9,7 @@
 #include <time.h>
 
 extern char dbgname[10];
-extern FILE* dbgfile;
+extern FILE *dbgfile;
 
 #ifndef LOG_LEVEL
 #define LOG_LEVEL (7)
@@ -56,11 +56,6 @@ extern FILE* dbgfile;
 #define NOTICE_LOGCOLOR COLOR_CYAN
 #define INFO_LOGCOLOR COLOR_GREEN
 #define DEBUG_LOGCOLOR COLOR_GRAY
-
-/* Disable annoying vscode error squiggle */
-#ifndef CLOCK_REALTIME
-#define CLOCK_REALTIME 0
-#endif
 
 #define _GET_CURRTIME(_tbuf) do{\
     struct timespec _ts;\
