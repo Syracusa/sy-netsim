@@ -106,7 +106,7 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
     }
 }
 
-static void handle_traffic_config_msg(SimulatorCtx *sctx, cJSON *json)
+static void handle_traffic_control_msg(SimulatorCtx *sctx, cJSON *json)
 {
     NetDummyTrafficConfig msg;
     cJSON *senderJson = cJSON_GetObjectItem(json, "sender");
