@@ -71,14 +71,15 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
             cJSON *link = NULL;
             cJSON_ArrayForEach(link, links)
             {
-                PhyLinkConfig* old = &sctx->link[node1][node2];
+                PhyLinkConfig *old = &sctx->link[node1][node2];
                 if (cJSON_IsNumber(link)) {
                     double linkval = link->valuedouble;
-                    // TLOGD("link %d <-> %d : %lf\n",
-                    //       node1, node2, linkval);
+#if 0
+                    TLOGD("link %d <-> %d : %lf\n", node1, node2, linkval);
+#endif
                     msg.node_id_1 = node1;
                     msg.node_id_2 = node2;
-                    if (linkval > 15.0){
+                    if (linkval > 1000.0) {
                         msg.los = 0;
                     } else {
                         msg.los = 1;
@@ -94,14 +95,55 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
 
                 send_config(sctx, sctx->mqid_phy_command,
                             &msg, sizeof(msg), CONF_MSG_TYPE_PHY_LINK_CONFIG);
-                
-                // TLOGD("UPDATE %d <=> %d\n", node1, node2);
 
+#if 0
+                TLOGD("UPDATE %d <=> %d\n", node1, node2);
+#endif
                 node2++;
             }
             node1++;
         }
     }
+}
+
+static void handle_traffic_config_msg(SimulatorCtx *sctx, cJSON *json)
+{
+    NetDummyTrafficConfig msg;
+    cJSON *senderJson = cJSON_GetObjectItem(json, "sender");
+    if (cJSON_IsNumber(senderJson)) {
+        msg.src_id = senderJson->valueint;
+    } else {
+        TLOGE("Can't find sender in json\n");
+        return;
+    }
+
+    cJSON *receiverJson = cJSON_GetObjectItem(json, "receiver");
+    if (cJSON_IsNumber(receiverJson)) {
+        msg.dst_id = receiverJson->valueint;
+    } else {
+        TLOGE("Can't find receiver in json\n");
+        return;
+    }
+
+    cJSON *payloadJson = cJSON_GetObjectItem(json, "payload");
+    if (cJSON_IsNumber(payloadJson)) {
+        msg.payload_size = payloadJson->valueint;
+    } else {
+        TLOGE("Can't find payload in json\n");
+        return;
+    }
+
+    cJSON *intervalJson = cJSON_GetObjectItem(json, "interval");
+    if (cJSON_IsNumber(intervalJson)) {
+        msg.interval_ms = intervalJson->valueint;
+    } else {
+        TLOGE("Can't find interval in json\n");
+        return;
+    }
+
+    send_config(sctx, sctx->nodes[msg.src_id].mqid_net_command,
+                &msg, sizeof(NetDummyTrafficConfig),
+                CONF_MSG_TYPE_NET_DUMMY_TRAFFIC);
 }
 
 void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
@@ -113,9 +155,13 @@ void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
         TLOGE("Can't find type in json(%s)\n", jsonstr);
         goto out;
     }
+
     if (cJSON_IsString(type)) {
         char *typestr = type->valuestring;
-        // TLOGD("type: %s\n", typestr);
+
+#if 0
+        TLOGD("type: %s\n", typestr);
+#endif
         if (strcmp(typestr, "Status") == 0) {
             char buf[1000];
             sprintf(buf, "{\"type\":\"Status\",\"status\":\"OK\"}");
@@ -127,6 +173,8 @@ void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
             handle_start_simulation_msg(sctx, json);
         } else if (strcmp(typestr, "LinkInfo") == 0) {
             handle_link_info_msg(sctx, json);
+        } else if (strcmp(typestr, "TrafficControl")) {
+            handle_traffic_control_msg(sctx, json);
         } else {
             TLOGE("Unknown type: %s\n", typestr);
         }
