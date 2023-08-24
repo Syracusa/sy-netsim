@@ -33,7 +33,7 @@ typedef struct {
 #define MAX_SIMLINK_CONF_NUM 1000
 typedef struct SimulatorConfig {
     int dummystream_conf_num;
-    NetDummyTrafficConfig dummy_stream_info[MAX_DUMMYSTREAM_CONF_NUM];
+    NetSetDummyTrafficConfig dummy_stream_info[MAX_DUMMYSTREAM_CONF_NUM];
 
     int simlink_conf_num;
     PhyLinkConfig linkconfs[MAX_SIMLINK_CONF_NUM];

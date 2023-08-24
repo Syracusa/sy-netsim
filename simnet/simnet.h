@@ -22,6 +22,8 @@
 #include "route_iface.h"
 #include "net_statistics.h"
 
+#define MAX_DUMMY_STREAMS 1000 /* Global dummy traffic id max */
+
 typedef struct
 {
     TimerqueueContext *timerqueue;
@@ -34,6 +36,7 @@ typedef struct
     int mqid_send_report;
 
     RouteFunctions *route;
+    TimerqueueElem *dummy_traffic_timers[MAX_DUMMY_STREAMS];
 
     NetStats stat;
 } SimNetCtx;

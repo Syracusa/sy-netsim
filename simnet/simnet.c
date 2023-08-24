@@ -37,8 +37,17 @@ void init_mq(SimNetCtx *snctx)
 static void process_command(SimNetCtx *snctx, void *data, int len, long type)
 {
     switch (type) {
-        case CONF_MSG_TYPE_NET_DUMMY_TRAFFIC:
-            TLOGI("CONF_MSG_TYPE_NET_DUMMY_TRAFFIC Length : %d\n", len);
+        case CONF_MSG_TYPE_NET_SET_DUMMY_TRAFFIC:
+            TLOGI("CONF_MSG_TYPE_NET_SET_DUMMY_TRAFFIC Length : %d\n", len);
+            register_dummypkt_send_job(snctx, data);
+            break;
+        case CONF_MSG_TYPE_NET_UNSET_DUMMY_TRAFFIC:
+            TLOGI("CONF_MSG_TYPE_NET_UNSET_DUMMY_TRAFFIC Length : %d\n", len);
+            unregister_dummypkt_send_job(snctx, data);
+            break;
+        case CONF_MSG_TYPE_NET_UPDATE_DUMMY_TRAFFIC:
+            TLOGI("CONF_MSG_TYPE_NET_UPDATE_DUMMY_TRAFFIC Length : %d\n", len);
+            unregister_dummypkt_send_job(snctx, data);
             register_dummypkt_send_job(snctx, data);
             break;
         default:

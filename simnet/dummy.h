@@ -4,6 +4,9 @@
 #include "simnet.h"
 
 void register_dummypkt_send_job(SimNetCtx *snctx,
-                                NetDummyTrafficConfig *conf);
+                                NetSetDummyTrafficConfig *conf);
+
+void unregister_dummypkt_send_job(SimNetCtx *snctx,
+                                  NetUnsetDummyTrafficConfig *conf);
 
 #endif

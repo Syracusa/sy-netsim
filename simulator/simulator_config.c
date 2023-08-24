@@ -141,7 +141,7 @@ void parse_config(SimulatorCtx *sctx)
             So we can't send config message right now.
             */
 
-            NetDummyTrafficConfig *stream_info =
+            NetSetDummyTrafficConfig *stream_info =
                 &(sctx->conf.dummy_stream_info[sctx->conf.dummystream_conf_num]);
 
             stream_info->src_id = src_id;

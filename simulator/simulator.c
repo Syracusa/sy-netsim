@@ -159,11 +159,11 @@ static void send_dummystream_config_msgs(SimulatorCtx *sctx)
 
     /* Dummy stream config */
     for (int i = 0; i < conf->dummystream_conf_num; i++) {
-        NetDummyTrafficConfig *info = &(conf->dummy_stream_info[i]);
+        NetSetDummyTrafficConfig *info = &(conf->dummy_stream_info[i]);
 
         send_config(sctx, sctx->nodes[info->src_id].mqid_net_command,
-                    info, sizeof(NetDummyTrafficConfig),
-                    CONF_MSG_TYPE_NET_DUMMY_TRAFFIC);
+                    info, sizeof(NetSetDummyTrafficConfig),
+                    CONF_MSG_TYPE_NET_SET_DUMMY_TRAFFIC);
     }
 }
 

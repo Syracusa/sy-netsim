@@ -3,7 +3,7 @@
 
 static void send_dummy_packet(void *arg)
 {
-    NetDummyTrafficConfig *conf = arg;
+    NetSetDummyTrafficConfig *conf = arg;
     SimNetCtx *snctx = g_snctx;
     static uint8_t dummybuf[MAX_IPPKT_SIZE];
 
@@ -34,20 +34,25 @@ static void send_dummy_packet(void *arg)
 
 static void dummypkt_send_job_detach_cb(void *arg)
 {
-    NetDummyTrafficConfig *conf = arg;
+    NetSetDummyTrafficConfig *conf = arg;
     free(conf);
 }
 
 void register_dummypkt_send_job(SimNetCtx *snctx,
-                                NetDummyTrafficConfig *conf)
+                                NetSetDummyTrafficConfig *conf)
 {
-    NetDummyTrafficConfig *copy_conf = malloc(sizeof(NetDummyTrafficConfig));
-    memcpy(copy_conf, conf, sizeof(NetDummyTrafficConfig));
+    NetSetDummyTrafficConfig *copy_conf = malloc(sizeof(NetSetDummyTrafficConfig));
+    memcpy(copy_conf, conf, sizeof(NetSetDummyTrafficConfig));
 
-    TLOGI("DUMMY STREAM Dst:%u, Src: %u, Interval: %u, Payload size: %u\n",
-          conf->dst_id, conf->src_id, conf->interval_ms, conf->payload_size);
+    TLOGI("DUMMY STREAM ConfID:%u Dst:%u, Src: %u,"
+          " Interval: %u, Payload size: %u\n",
+          conf->conf_id, conf->dst_id, conf->src_id,
+          conf->interval_ms, conf->payload_size);
 
-    TimerqueueElem *dummy_pkt_gen = timerqueue_new_timer();
+    if (!snctx->dummy_traffic_timers[conf->conf_id])
+        snctx->dummy_traffic_timers[conf->conf_id] = timerqueue_new_timer();
+
+    TimerqueueElem *dummy_pkt_gen = snctx->dummy_traffic_timers[conf->conf_id];
 
     dummy_pkt_gen->arg = copy_conf;
     dummy_pkt_gen->callback = send_dummy_packet;
@@ -57,4 +62,16 @@ void register_dummypkt_send_job(SimNetCtx *snctx,
     dummy_pkt_gen->free_on_detach = 1;
 
     timerqueue_register_timer(snctx->timerqueue, dummy_pkt_gen);
+}
+
+void unregister_dummypkt_send_job(SimNetCtx *snctx,
+                                  NetUnsetDummyTrafficConfig *conf)
+{
+    TLOGI("DUMMY STREAM ConfID:%u Stop\n", conf->conf_id);
+    if (!snctx->dummy_traffic_timers[conf->conf_id]) {
+        TLOGE("DUMMY STREAM ConfID:%u Not registered\n", conf->conf_id);
+        return;
+    }
+    snctx->dummy_traffic_timers[conf->conf_id]->active = 0;
+    snctx->dummy_traffic_timers[conf->conf_id] = NULL;
 }
