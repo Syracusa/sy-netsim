@@ -14,6 +14,14 @@
 #define MAX_PKT_PAYLOAD 1500
 #define MAX_ETHER_HEADER_MARGIN 50
 
+
+#define IPUDP_HDRLEN (sizeof(struct iphdr) + sizeof(struct udphdr))
+
+#define MAKE_BE32_IP(ipb, o1, o2, o3, o4) in_addr_t ipb; do {\
+    uint8_t* _pt = (uint8_t *)(&ipb);\
+    _pt[0] = (o1); _pt[1] = (o2); _pt[2] = (o3); _pt[3] = (o4);\
+} while (0); 
+
 typedef struct PktBuf
 {
     /* Packet itself */
@@ -28,12 +36,18 @@ typedef struct PktBuf
     ssize_t payload_len;
 }__attribute__((packed)) PktBuf;
 
-#define IPUDP_HDRLEN (sizeof(struct iphdr) + sizeof(struct udphdr))
 
-#define MAKE_BE32_IP(ipb, o1, o2, o3, o4) in_addr_t ipb; do {\
-    uint8_t* _pt = (uint8_t *)(&ipb);\
-    _pt[0] = (o1); _pt[1] = (o2); _pt[2] = (o3); _pt[3] = (o4);\
-} while (0); 
+#define IPPROTO_MOBILE 55 
+
+typedef struct MinMipHdr
+{
+    uint8_t ipproto;
+    uint8_t recv:7;
+    uint8_t is_mip:1;
+    uint16_t checksum;
+    uint32_t dst_ip;
+    uint32_t src_ip;
+}__attribute__((packed)) MinMipHdr;
 
 char *ip2str(in_addr_t addr);
 

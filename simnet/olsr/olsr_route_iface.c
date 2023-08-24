@@ -17,8 +17,20 @@ RouteFunctions olsr_iface = {
 
 void olsr_handle_local_pkt(void *data, size_t len)
 {
-    if (OLSR_ROUTE_IFACE_VERBOSE)
-        TLOGD("olsr_handle_local_pkt() called\n");
+    OlsrContext *ctx = &g_olsr_ctx;
+    if (!ctx)
+        return;
+
+    PktBuf buf;
+    ippkt_unpack(&buf, data, len);
+
+    /* Get nexthop */
+
+    /* If onehop, just send to mac */
+
+    /* If multihop, modify header and send to mac */
+
+
 }
 
 static void statistics_update(PktBuf *buf)
@@ -39,6 +51,8 @@ void olsr_handle_remote_pkt(void *data, size_t len)
     PktBuf buf;
     ippkt_unpack(&buf, data, len);
     statistics_update(&buf);
+
+    /* TODO : Check Mobile IP*/
 
     if (buf.iph.protocol == IPPROTO_UDP) {
         uint16_t port = ntohs(buf.udph.dest);

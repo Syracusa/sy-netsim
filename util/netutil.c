@@ -114,3 +114,12 @@ void ippkt_unpack(PktBuf *pktbuf, void *buf, size_t len)
     memcpy(&pktbuf->payload, ptr, pktbuf->payload_len);
     ptr += pktbuf->payload_len;
 }
+
+/* Minimal IP Encapsulation RFC 2004 */
+// void minimal_mip_encap(void* ippkt, ) {
+
+// }
+
+// void minimal_mip_decap() {
+
+// }
