@@ -25,13 +25,12 @@ static pid_t execute_simulation_component_binary(char *bin_path, int node_id)
             printf("%s start with PID%d\n", bin_path, (int)getpid());
             execl(bin_path, bin_path, NULL);
         } else {
+            char nid_str[10];
+            sprintf(nid_str, "%d", node_id);
             printf("%s with id %d start with PID%d\n", bin_path, node_id, (int)getpid());
-            execl(bin_path, bin_path, node_id, NULL);
+            execl(bin_path, bin_path, nid_str, NULL);
         }
-        printf("Simnode %d start with PID%d\n", node_id, (int)getpid());
-        execl(bin_path, bin_path, NULL);
     }
-
     return pid;
 }
 
@@ -47,7 +46,6 @@ static pid_t start_mac(int node_id)
     return execute_simulation_component_binary(SIMMAC_BINARY_PATH, node_id);
 }
 
-/** Execute simphy */
 pid_t start_simphy()
 {
     return execute_simulation_component_binary(SIMPHY_BINARY_PATH, -1);
