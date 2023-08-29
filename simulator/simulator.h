@@ -15,23 +15,31 @@
 
 /** Information of one node */
 typedef struct {
+    /** Simulator => SimNet command message queue id */
     int mqid_net_command;
+
+    /** Simulator => SimMAC command message queue id */
     int mqid_mac_command;
 
+    /** SimNet => Simulator report message queue id */
     int mqid_net_report;
+
+    /** SimMAC => Simulator report message queue id */
     int mqid_mac_report;
 
+    /** Dummy mac process id */
     pid_t mac_pid;
+
+    /** SimNet SW process id */
     pid_t net_pid;
 } SimNode;
 
-
+/** Simulator server context */
 typedef struct SimulatorServerCtx {
-    RingBuffer *recvq;
-    RingBuffer *sendq;
-    int stop;
-
-    pthread_t tcp_thread;
+    RingBuffer *recvq; /** TCP receive buffering queue */
+    RingBuffer *sendq; /** TCP send buffering queue */
+    int stop; /** if 1, stop TCP server */
+    pthread_t tcp_thread; /** TCP server thread */
 } SimulatorServerCtx;
 
 /** Simulator program context */
@@ -62,15 +70,7 @@ void delete_simulator_context();
 /** Kill all process that spawned by simulator */
 void simulator_kill_all_process(SimulatorCtx *sctx);
 
-
-/** */
+/** Start simulator from config file */
 void simulator_start_local(SimulatorCtx* sctx);
-
-/** */
-void send_config(SimulatorCtx *sctx,
-                 int mqid,
-                 void *data,
-                 size_t len,
-                 long type);
 
 #endif

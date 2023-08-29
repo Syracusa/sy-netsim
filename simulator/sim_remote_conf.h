@@ -3,6 +3,7 @@
 
 #include "simulator.h"
 
+/** Handle JSON msg received from frontend */
 void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr);
 
 #endif

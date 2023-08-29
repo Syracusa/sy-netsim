@@ -6,35 +6,47 @@
 #include "report_msg.h"
 #include "netutil.h"
 
+#define REPORT_MSG_VERBOSE 0
+
+static void send_json_to_front(SimulatorCtx *sctx, char *json)
+{
+    /* Push to tcp send queue(json len, 2byte) */
+    uint16_t jsonlen = htons(strlen(json));
+    RingBuffer_push(sctx->server_ctx.sendq,
+                    &jsonlen, 2);
+
+    /* Push to tcp send queue(json itself) */
+    RingBuffer_push(sctx->server_ctx.sendq,
+                    json, strlen(json));
+}
+
+/** Recv trx report from simnet ==> Send to front */
 static void process_net_trx_report(SimulatorCtx *sctx,
                                    int report_node,
                                    void *data,
                                    int len)
 {
     NetTrxReport *report = (NetTrxReport *)data;
-    // TLOGD("NetTrxReport(%d->%s) : Tx %d  Rx %d\n",
-    //       report_node, ip2str(report->peer_addr),
-    //       report->tx, report->rx);
+    if (REPORT_MSG_VERBOSE)
+        TLOGD("NetTrxReport(%d->%s) : Tx %d  Rx %d\n",
+              report_node, ip2str(report->peer_addr),
+              report->tx, report->rx);
 
+    /* Convert to JSON */
     char trx_report_json_buf[1024];
-    uint16_t jsonlen = sprintf(trx_report_json_buf,
-                               "{\"type\": \"TRx\", \"node\": %d, "
-                               "\"peer\": %u,"
-                               "\"tx\": %d, \"rx\": %d}",
-                               report_node,
-                               ((uint8_t *)(&report->peer_addr))[3],
-                               report->tx,
-                               report->rx);
+    sprintf(trx_report_json_buf,
+           "{\"type\": \"TRx\", \"node\": %d, "
+           "\"peer\": %u,"
+           "\"tx\": %d, \"rx\": %d}",
+           report_node,
+           ((uint8_t *)(&report->peer_addr))[3],
+           report->tx,
+           report->rx);
 
-    jsonlen = htons(jsonlen);
-    RingBuffer_push(sctx->server_ctx.sendq,
-                    &jsonlen, 2);
-
-    RingBuffer_push(sctx->server_ctx.sendq,
-                    trx_report_json_buf,
-                    strlen(trx_report_json_buf));
+    send_json_to_front(sctx, trx_report_json_buf);
 }
 
+/** Recv route report from simnet ==> Send to front */
 static void process_net_route_report(SimulatorCtx *sctx,
                                      int report_node,
                                      void *data,
@@ -58,18 +70,13 @@ static void process_net_route_report(SimulatorCtx *sctx,
 
     offset += sprintf(offset, "]}");
 
-    uint16_t jsonlen = htons(offset - route_report_json_buf);
+    if (REPORT_MSG_VERBOSE)
+        TLOGI("route_report_json_buf : %s\n", route_report_json_buf);
 
-    // TLOGI("route_report_json_buf : %s\n", route_report_json_buf);
-
-    RingBuffer_push(sctx->server_ctx.sendq,
-                    &jsonlen, 2);
-
-    RingBuffer_push(sctx->server_ctx.sendq,
-                    route_report_json_buf,
-                    strlen(route_report_json_buf));
+    send_json_to_front(sctx, route_report_json_buf);
 }
 
+/** Parse simnet report msg type and connect to appropriate handler */
 static void handle_net_report(SimulatorCtx *sctx,
                               int report_node,
                               long type,
@@ -89,6 +96,7 @@ static void handle_net_report(SimulatorCtx *sctx,
     }
 }
 
+/** Handle simphy report but currently no msg defined */
 static void recv_phy_report(SimulatorCtx *sctx)
 {
     MqMsgbuf msg;
@@ -110,6 +118,7 @@ static void recv_phy_report(SimulatorCtx *sctx)
     }
 }
 
+/** Handle simmac report but currently no msg defined */
 static void recv_mac_report(SimulatorCtx *sctx)
 {
     MqMsgbuf msg;
@@ -134,6 +143,7 @@ static void recv_mac_report(SimulatorCtx *sctx)
     }
 }
 
+/** Receive simnet report msg form message queue and call handler */
 static void recv_net_report(SimulatorCtx *sctx)
 {
     MqMsgbuf msg;
@@ -143,8 +153,9 @@ static void recv_net_report(SimulatorCtx *sctx)
         if (ret == 0) {
             break;
         } else if (ret > 0) {
-            // TLOGD("Recv net report: type : %ld, length : %ld\n",
-            //       msg.type, ret);
+            if (REPORT_MSG_VERBOSE)
+                TLOGD("Recv net report: type : %ld, length : %ld\n",
+                      msg.type, ret);
             handle_net_report(sctx, i, msg.type, msg.text, ret);
         } else {
             if (errno != ENOMSG) {
@@ -156,6 +167,7 @@ static void recv_net_report(SimulatorCtx *sctx)
     }
 }
 
+/* Receive any kind of report msg from message queues */
 void recv_report(SimulatorCtx *sctx)
 {
     recv_phy_report(sctx);

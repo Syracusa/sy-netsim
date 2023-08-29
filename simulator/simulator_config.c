@@ -39,7 +39,7 @@ static char *read_file(const char *filename)
 
 void parse_config(SimulatorConfig *conf)
 {
-    char *config_string = read_file("../config.json");
+    char *config_string = read_file(SIMULATOR_CONFIG_FILE);
     cJSON *json = cJSON_Parse(config_string);
     if (json == NULL) {
         const char *error_ptr = cJSON_GetErrorPtr();

@@ -100,30 +100,6 @@ static void start_simulate_local(SimulatorCtx *sctx)
     }
 }
 
-void send_config(SimulatorCtx *sctx,
-                 int mqid,
-                 void *data,
-                 size_t len,
-                 long type)
-{
-    MqMsgbuf msg;
-    msg.type = type;
-
-    if (len > MQ_MAX_DATA_LEN) {
-        TLOGE("Can't send data with length %lu\n", len);
-    }
-    memcpy(msg.text, data, len);
-    int ret = msgsnd(mqid, &msg, len, IPC_NOWAIT);
-    if (ret < 0) {
-        if (errno == EAGAIN) {
-            TLOGE("Message queue full!\n");
-        } else {
-            TLOGE("Can't send config. mqid: %d len: %lu(%s)\n",
-                  mqid, len, strerror(errno));
-        }
-    }
-}
-
 static void send_dummystream_config_msgs(SimulatorCtx *sctx)
 {
     SimulatorConfig *conf = &(sctx->conf);
