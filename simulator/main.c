@@ -9,13 +9,13 @@
 #include "sim_server.h"
 #include "log.h"
 
-extern int flag_mainloop_exit;
+extern int g_flag_server_mainloop_exit;
 char dbgname[10];
 FILE *dbgfile;
 
 static void app_exit(int signo)
 {
-    flag_mainloop_exit = 1;
+    g_flag_server_mainloop_exit = 1;
     static int reenter = 0;
 
     if (reenter)
@@ -67,7 +67,7 @@ int main()
     int SERVER_MODE = 1;
     if (SERVER_MODE) {
         simulator_start_server(&sctx->server_ctx);
-        simulator_mainloop(sctx);
+        simulator_server_mainloop(sctx);
     } else {
         simulator_start_local(sctx);
     }

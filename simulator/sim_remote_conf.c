@@ -2,42 +2,17 @@
 #include <signal.h>
 #include <netinet/in.h>
 
+#include "mq.h"
 #include "log.h"
 #include "cJSON.h"
 #include "sim_childproc.h"
 #include "sim_remote_conf.h"
 
-static void kill_all_process(SimulatorCtx *sctx)
-{
-    /* Kill all processes before start */
-
-    int killnum = 0;
-
-    if (sctx->phy_pid > 0) {
-        kill(sctx->phy_pid, SIGINT);
-        killnum++;
-        sctx->phy_pid = 0;
-    }
-
-    for (int i = 0; i < MAX_NODE_ID; i++) {
-        if (sctx->nodes[i].net_pid > 0) {
-            kill(sctx->nodes[i].net_pid, SIGINT);
-            killnum++;
-            sctx->nodes[i].net_pid = 0;
-        }
-        if (sctx->nodes[i].mac_pid > 0) {
-            kill(sctx->nodes[i].mac_pid, SIGINT);
-            killnum++;
-            sctx->nodes[i].mac_pid = 0;
-        }
-    }
-
-    TLOGD("%d processes terminated\n", killnum);
-}
+#define REMOTE_CONF_VERBOSE 0
 
 static void start_simulate_remote(SimulatorCtx *sctx, int nodenum)
 {
-    kill_all_process(sctx);
+    simulator_kill_all_process(sctx);
 
     sctx->phy_pid = start_phy();
     for (int i = 0; i < nodenum; i++) {
@@ -74,9 +49,10 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
                 PhyLinkConfig *old = &sctx->link[node1][node2];
                 if (cJSON_IsNumber(link)) {
                     double linkval = link->valuedouble;
-#if 0
-                    TLOGD("link %d <-> %d : %lf\n", node1, node2, linkval);
-#endif
+
+                    if (REMOTE_CONF_VERBOSE)
+                        TLOGD("link %d <-> %d : %lf\n", node1, node2, linkval);
+
                     msg.node_id_1 = node1;
                     msg.node_id_2 = node2;
                     if (linkval > 1000.0) {
@@ -93,12 +69,12 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
                     }
                 }
 
-                send_config(sctx, sctx->mqid_phy_command,
-                            &msg, sizeof(msg), CONF_MSG_TYPE_PHY_LINK_CONFIG);
+                send_mq(sctx->mqid_phy_command,
+                        &msg, sizeof(msg), CONF_MSG_TYPE_PHY_LINK_CONFIG);
 
-#if 0
-                TLOGD("UPDATE %d <=> %d\n", node1, node2);
-#endif
+                if (REMOTE_CONF_VERBOSE)
+                    TLOGD("UPDATE %d <=> %d\n", node1, node2);
+
                 node2++;
             }
             node1++;
@@ -157,8 +133,8 @@ static void handle_start_dummy_traffic(SimulatorCtx *sctx, cJSON *json, int is_u
     if (is_update)
         code = CONF_MSG_TYPE_NET_UPDATE_DUMMY_TRAFFIC;
 
-    send_config(sctx, sctx->nodes[msg->src_id].mqid_net_command,
-                msg, sizeof(NetSetDummyTrafficConfig), code);
+    send_mq(sctx->nodes[msg->src_id].mqid_net_command,
+            msg, sizeof(NetSetDummyTrafficConfig), code);
 }
 
 static void handle_stop_dummy_traffic(SimulatorCtx *sctx, cJSON *json)
@@ -175,9 +151,9 @@ static void handle_stop_dummy_traffic(SimulatorCtx *sctx, cJSON *json)
     NetSetDummyTrafficConfig *stream_info =
         &(sctx->conf.dummy_stream_info[msg.conf_id]);
 
-    send_config(sctx, sctx->nodes[stream_info->src_id].mqid_net_command,
-                &msg, sizeof(NetUnsetDummyTrafficConfig),
-                CONF_MSG_TYPE_NET_UNSET_DUMMY_TRAFFIC);
+    send_mq(sctx->nodes[stream_info->src_id].mqid_net_command,
+            &msg, sizeof(NetUnsetDummyTrafficConfig),
+            CONF_MSG_TYPE_NET_UNSET_DUMMY_TRAFFIC);
 }
 
 void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
@@ -193,9 +169,9 @@ void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
     if (cJSON_IsString(type)) {
         char *typestr = type->valuestring;
 
-#if 1
-        TLOGD("type: %s\n", typestr);
-#endif
+        if (REMOTE_CONF_VERBOSE)
+            TLOGD("type: %s\n", typestr);
+
         if (strcmp(typestr, "Status") == 0) {
             char buf[1000];
             sprintf(buf, "{\"type\":\"Status\",\"status\":\"OK\"}");

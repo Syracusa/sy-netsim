@@ -15,8 +15,14 @@
 
 #include "log.h"
 #include "sim_server.h"
+#include "sim_remote_conf.h"
+#include "sim_hdlreport.h"
 
+#define TRX_VERBOSE 0
 #define TCP_BUF_SIZE 10240
+
+int g_flag_server_mainloop_exit = 0;
+
 static void *do_server(void *arg)
 {
     SimulatorServerCtx *ssctx = arg;
@@ -93,7 +99,8 @@ static void *do_server(void *arg)
             } else {
                 last_recv = currtime;
                 buf[len] = '\0';
-                // TLOGD("Recv %ld bytes\n", len);
+                if (TRX_VERBOSE)
+                    TLOGD("Recv %ld bytes\n", len);
                 RingBuffer_push(ssctx->recvq, buf, len);
             }
 
@@ -114,7 +121,8 @@ static void *do_server(void *arg)
 
                 RingBuffer_pop(ssctx->sendq, buf, readable);
                 send(client_sock, buf, readable, 0);
-                // TLOGD("Send %ld bytes\n", readable);
+                if (TRX_VERBOSE)
+                    TLOGD("Send %ld bytes\n", readable);
             } while (keep_send);
         }
 
@@ -152,5 +160,43 @@ void simulator_stop_server(SimulatorServerCtx *ssctx)
     if (ssctx->sendq != NULL) {
         RingBuffer_destroy(ssctx->sendq);
         ssctx->sendq = NULL;
+    }
+}
+
+static void parse_client_json(SimulatorServerCtx *ssctx)
+{
+    if (!ssctx->recvq)
+        return;
+
+    while (1) {
+        size_t canread = RingBuffer_get_readable_bufsize(ssctx->recvq);
+        uint16_t jsonlen;
+        if (canread >= 2) {
+            RingBuffer_read(ssctx->recvq, &jsonlen, 2);
+            jsonlen = ntohs(jsonlen);
+
+            uint16_t tmp;
+            if (canread >= 2 + jsonlen) {
+                RingBuffer_pop(ssctx->recvq, &tmp, 2);
+                char *jsonstr = malloc(jsonlen + 1);
+                RingBuffer_pop(ssctx->recvq, jsonstr, jsonlen);
+                jsonstr[jsonlen] = '\0';
+                handle_remote_conf_msg(get_simulator_context(), jsonstr);
+                free(jsonstr);
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+}
+
+void simulator_server_mainloop(SimulatorCtx *sctx)
+{
+    while (!g_flag_server_mainloop_exit) {
+        parse_client_json(&sctx->server_ctx);
+        recv_report(sctx);
+        usleep(10 * 1000);
     }
 }

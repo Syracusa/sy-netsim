@@ -73,8 +73,6 @@ void delete_simulator_context();
 /** Kill all process that spawned by simulator */
 void simulator_kill_all_process(SimulatorCtx *sctx);
 
-/** Mainloop. Receive report, send configuration, and so on */
-void simulator_mainloop(SimulatorCtx *sctx);
 
 /** */
 void simulator_start_local(SimulatorCtx* sctx);
