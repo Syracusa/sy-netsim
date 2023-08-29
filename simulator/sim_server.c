@@ -142,7 +142,7 @@ out:
     return NULL;
 }
 
-/** Allocate buffer and start tcp server thread */
+
 void simulator_start_server(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq == NULL)
@@ -154,7 +154,6 @@ void simulator_start_server(SimulatorServerCtx *ssctx)
     pthread_create(&ssctx->tcp_thread, NULL, (void *)do_server, ssctx);
 }
 
-/** Free buffers */
 void simulator_free_server_buffers(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq != NULL) {

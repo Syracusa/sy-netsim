@@ -8,10 +8,13 @@
 
 #include "simulator.h"
 
-/** Start TCP server to recv conf & send report */
+ /**
+  * @brief Start TCP server to recv conf & send report
+  * @details Allocate buffer and start tcp server thread
+ */
 void simulator_start_server(SimulatorServerCtx *ssctx);
 
-/** Stop TCP server */
+/** Free tcp buffers */
 void simulator_free_server_buffers(SimulatorServerCtx *ssctx);
 
 /** Server mode mainloop. Receive report, send configuration, and so on */
