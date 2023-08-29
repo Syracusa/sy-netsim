@@ -13,6 +13,7 @@
 
 #include "log.h"
 #include "simulator_config.h"
+#include "config_msg.h"
 
 static char *read_file(const char *filename)
 {
@@ -36,17 +37,7 @@ static char *read_file(const char *filename)
     return string;
 }
 
-static void activate_node(SimulatorCtx *sctx, int node_id)
-{
-    if (node_id < 0 && node_id >= MAX_NODE_ID) {
-        fprintf(stderr, "Unavailable node id : %d\n", node_id);
-        exit(2);
-    }
-    SimNode *node = &sctx->nodes[node_id];
-    node->active = 1;
-}
-
-void parse_config(SimulatorCtx *sctx)
+void parse_config(SimulatorConfig *conf)
 {
     char *config_string = read_file("../config.json");
     cJSON *json = cJSON_Parse(config_string);
@@ -69,7 +60,7 @@ void parse_config(SimulatorCtx *sctx)
         {
             int nid = cJSON_GetObjectItemCaseSensitive(node_json, "id")->valueint;
             printf("Node ID %d\n", nid);
-            activate_node(sctx, nid);
+            conf->active_node[nid] = 1;
         }
     } else {
         fprintf(stderr, "Can't get nodelist!");
@@ -82,7 +73,7 @@ void parse_config(SimulatorCtx *sctx)
         cJSON *link_json = NULL;
         cJSON_ArrayForEach(link_json, link_list_json)
         {
-            PhyLinkConfig *msg = &sctx->conf.linkconfs[sctx->conf.simlink_conf_num];
+            PhyLinkConfig *msg = &conf->linkconfs[conf->simlink_conf_num];
             msg->node_id_1 = cJSON_GetObjectItemCaseSensitive(link_json, "nid1")->valueint;
             msg->node_id_2 = cJSON_GetObjectItemCaseSensitive(link_json, "nid2")->valueint;
 
@@ -103,7 +94,7 @@ void parse_config(SimulatorCtx *sctx)
             } else {
                 msg->pathloss_x100 = 0; /* Default */
             }
-            sctx->conf.simlink_conf_num++;
+            conf->simlink_conf_num++;
         }
     }
 
@@ -113,7 +104,7 @@ void parse_config(SimulatorCtx *sctx)
         cJSON *dummy_traffic_conf = NULL;
         cJSON_ArrayForEach(dummy_traffic_conf, dummy_traffic_json)
         {
-            if (MAX_DUMMYSTREAM_CONF_NUM <= sctx->conf.dummystream_conf_num) {
+            if (MAX_DUMMYSTREAM_CONF_NUM <= conf->dummystream_conf_num) {
                 fprintf(stderr, "Dummystream number overflow! max : %d\n",
                         MAX_DUMMYSTREAM_CONF_NUM);
                 exit(2);
@@ -133,14 +124,14 @@ void parse_config(SimulatorCtx *sctx)
             */
 
             NetSetDummyTrafficConfig *stream_info =
-                &(sctx->conf.dummy_stream_info[sctx->conf.dummystream_conf_num]);
+                &(conf->dummy_stream_info[conf->dummystream_conf_num]);
 
             stream_info->src_id = src_id;
             stream_info->dst_id = dst_id;
             stream_info->payload_size = payload_size;
             stream_info->interval_ms = interval_ms;
 
-            sctx->conf.dummystream_conf_num++;
+            conf->dummystream_conf_num++;
         }
     }
 

@@ -94,7 +94,7 @@ static void start_simulate_local(SimulatorCtx *sctx)
     sctx->phy_pid = start_phy();
 
     for (int i = 0; i < MAX_NODE_ID; i++) {
-        if (sctx->nodes[i].active == 1) {
+        if (sctx->conf.active_node[i] == 1) {
             start_simnode(sctx, i);
         }
     }
@@ -182,7 +182,7 @@ void simulator_kill_all_process(SimulatorCtx *sctx)
 
 void simulator_start_local(SimulatorCtx *sctx)
 {
-    parse_config(sctx);
+    parse_config(&sctx->conf);
     start_simulate_local(sctx);
     sleep(1); /* Wait until apps are ready... */
     send_config_msgs(sctx);

@@ -6,16 +6,15 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
-#include "params.h"
+#include "sim_params.h"
 #include "config_msg.h"
 #include "report_msg.h"
 #include "ringbuffer.h"
 #include "pthread.h"
+#include "simulator_config.h"
 
 /** Information of one node */
 typedef struct {
-    int active;
-
     int mqid_net_command;
     int mqid_mac_command;
 
@@ -26,16 +25,6 @@ typedef struct {
     pid_t net_pid;
 } SimNode;
 
-#define MAX_DUMMYSTREAM_CONF_NUM 100
-#define MAX_SIMLINK_CONF_NUM 1000
-
-typedef struct SimulatorConfig {
-    int dummystream_conf_num;
-    NetSetDummyTrafficConfig dummy_stream_info[MAX_DUMMYSTREAM_CONF_NUM];
-
-    int simlink_conf_num;
-    PhyLinkConfig linkconfs[MAX_SIMLINK_CONF_NUM];
-} SimulatorConfig;
 
 typedef struct SimulatorServerCtx {
     RingBuffer *recvq;
