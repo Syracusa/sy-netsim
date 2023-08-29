@@ -1,8 +1,6 @@
 /**
  * @file simulator_config.c
- * @brief Parse json config and do some tasks.based on that config.
- * - Set siumlator context
- * - Send config message to each node
+ * @brief Parse json config to SimulatorConfig struct
  */
 
 #include <stdio.h>
@@ -15,6 +13,7 @@
 #include "simulator_config.h"
 #include "config_msg.h"
 
+/** Read whole file and return as a buffer(newly allocated in function) */
 static char *read_file(const char *filename)
 {
     FILE *f = fopen(filename, "r");

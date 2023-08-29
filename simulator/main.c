@@ -30,7 +30,7 @@ static void app_exit(int signo)
         simulator_kill_all_process(sctx);
         sctx->server_ctx.stop = 1;
         pthread_join(sctx->server_ctx.tcp_thread, NULL);
-        delete_simulator_context();
+        free_simulator_context();
         TLOGF("Exit simulator...\n");
         exit(SIGKILL);
     } else {
@@ -74,6 +74,6 @@ int main()
 
     TLOGI("Finish\n");
     sleep(3600);
-    delete_simulator_context();
+    free_simulator_context();
     return 0;
 }

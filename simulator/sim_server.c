@@ -19,14 +19,17 @@
 #include "sim_hdlreport.h"
 
 #define TRX_VERBOSE 0
-#define TCP_BUF_SIZE 10240
+#define TCP_IO_SIZE 10240
+#define TCP_BUFFER_SIZE 819200
 
+/** When simulator recv some signal then this flag will be 1 */
 int g_flag_server_mainloop_exit = 0;
 
+/** Thread for handle TCP IO. Recved data will be buffered and will be handled at main thread */
 static void *do_server(void *arg)
 {
     SimulatorServerCtx *ssctx = arg;
-    uint8_t buf[TCP_BUF_SIZE];
+    uint8_t buf[TCP_IO_SIZE];
 
     /* Block SIGINT signal */
     sigset_t sigset;
@@ -88,8 +91,8 @@ static void *do_server(void *arg)
             usleep(10000);
             int currtime = time(NULL);
 
-            /* Recv data from USER */
-            ssize_t len = recv(client_sock, buf, TCP_BUF_SIZE - 1, 0);
+            /* Recv data from frontend */
+            ssize_t len = recv(client_sock, buf, TCP_IO_SIZE - 1, 0);
 
             if (len <= 0) {
                 if (currtime - last_recv > 5) {
@@ -101,11 +104,12 @@ static void *do_server(void *arg)
                 buf[len] = '\0';
                 if (TRX_VERBOSE)
                     TLOGD("Recv %ld bytes\n", len);
+
+                /* Just push data to recvq. Main thread will handle it */
                 RingBuffer_push(ssctx->recvq, buf, len);
             }
 
-            /* Send data to USER */
-
+            /* Send buffered data to frontend. */
             int keep_send;
             do {
                 keep_send = 0;
@@ -114,8 +118,8 @@ static void *do_server(void *arg)
                 if (readable == 0)
                     continue;
 
-                if (readable > TCP_BUF_SIZE){
-                    readable = TCP_BUF_SIZE;
+                if (readable > TCP_IO_SIZE){
+                    readable = TCP_IO_SIZE;
                     keep_send = 1;
                 }
 
@@ -126,31 +130,32 @@ static void *do_server(void *arg)
             } while (keep_send);
         }
 
+        TLOGE("Disconnected... Wait for new connection\n");
         RingBuffer_drop_buffer(ssctx->recvq);
         RingBuffer_drop_buffer(ssctx->sendq);
-
-        TLOGE("Disconnected... Wait for new connection\n");
         close(client_sock);
     }
 out:
-    close(tcp_sock);
-    simulator_stop_server(ssctx);
     TLOGE("TCP Connection end\n");
+    close(tcp_sock);
+    simulator_free_server_buffers(ssctx);
     return NULL;
 }
 
+/** Allocate buffer and start tcp server thread */
 void simulator_start_server(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq == NULL)
-        ssctx->recvq = RingBuffer_new(819200);
+        ssctx->recvq = RingBuffer_new(TCP_BUFFER_SIZE);
 
     if (ssctx->sendq == NULL)
-        ssctx->sendq = RingBuffer_new(819200);
+        ssctx->sendq = RingBuffer_new(TCP_BUFFER_SIZE);
 
     pthread_create(&ssctx->tcp_thread, NULL, (void *)do_server, ssctx);
 }
 
-void simulator_stop_server(SimulatorServerCtx *ssctx)
+/** Free buffers */
+void simulator_free_server_buffers(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq != NULL) {
         RingBuffer_destroy(ssctx->recvq);
@@ -163,6 +168,12 @@ void simulator_stop_server(SimulatorServerCtx *ssctx)
     }
 }
 
+/**
+ * @brief Parse tcp stream from frontend. 
+ * All messages should be 2byte length header + json string.
+ * 
+ * @param ssctx 
+ */
 static void parse_client_json(SimulatorServerCtx *ssctx)
 {
     if (!ssctx->recvq)

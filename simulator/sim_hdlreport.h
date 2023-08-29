@@ -1,3 +1,8 @@
+/**
+ * @file sim_hdlreport.h
+ * @brief Handle report messages(from simnet/mac/phy)
+ */
+
 #ifndef SIM_HDLREPORT_H
 #define SIM_HDLREPORT_H
 

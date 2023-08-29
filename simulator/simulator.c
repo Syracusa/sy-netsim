@@ -1,4 +1,3 @@
-
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,9 +22,10 @@
 
 #include "cJSON.h"
 
+/** Global simulator context */
 SimulatorCtx *g_sctx = NULL;
 
-void init_mq(SimulatorCtx *sctx)
+void simulator_init_mq(SimulatorCtx *sctx)
 {
     for (int nid = 0; nid < MAX_NODE_ID; nid++) {
         int mqkey_net_command = MQ_KEY_NET_COMMAND + nid;
@@ -68,7 +68,7 @@ static SimulatorCtx *initialize_simulator_context()
             link->pathloss_x100 = 0;
         }
     }
-    init_mq(sctx);
+    simulator_init_mq(sctx);
     return sctx;
 }
 
@@ -80,10 +80,10 @@ SimulatorCtx *get_simulator_context()
     return g_sctx;
 }
 
-void delete_simulator_context()
+void free_simulator_context()
 {
     if (g_sctx) {
-        simulator_stop_server(&g_sctx->server_ctx);
+        simulator_free_server_buffers(&g_sctx->server_ctx);
         free(g_sctx);
     }
     g_sctx = NULL;
@@ -91,7 +91,7 @@ void delete_simulator_context()
 
 static void start_simulate_local(SimulatorCtx *sctx)
 {
-    sctx->phy_pid = start_phy();
+    sctx->phy_pid = start_simphy();
 
     for (int i = 0; i < MAX_NODE_ID; i++) {
         if (sctx->conf.active_node[i] == 1) {
@@ -131,7 +131,6 @@ static void send_config_msgs(SimulatorCtx *sctx)
 
 void simulator_kill_all_process(SimulatorCtx *sctx)
 {
-    /* Kill all processes before start */
     int killnum = 0;
 
     if (sctx->phy_pid > 0) {
@@ -160,6 +159,11 @@ void simulator_start_local(SimulatorCtx *sctx)
 {
     parse_config(&sctx->conf);
     start_simulate_local(sctx);
-    sleep(1); /* Wait until apps are ready... */
+
+    /* Wait until apps are ready.
+     Message queues will be flushed when each apps initiate themselves.
+     So we shouldn't send config before the apps complete initiating */
+    sleep(1); 
+
     send_config_msgs(sctx);
 }

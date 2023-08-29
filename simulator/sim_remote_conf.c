@@ -10,16 +10,18 @@
 
 #define REMOTE_CONF_VERBOSE 0
 
+/** Kill all current node's processes and start new nodes */
 static void start_simulate_remote(SimulatorCtx *sctx, int nodenum)
 {
     simulator_kill_all_process(sctx);
 
-    sctx->phy_pid = start_phy();
+    sctx->phy_pid = start_simphy();
     for (int i = 0; i < nodenum; i++) {
         start_simnode(sctx, i);
     }
 }
 
+/** Parse node number from start msg and restart */
 static void handle_start_simulation_msg(SimulatorCtx *sctx, cJSON *json)
 {
     cJSON *type = cJSON_GetObjectItem(json, "nodenum");
@@ -33,6 +35,18 @@ static void handle_start_simulation_msg(SimulatorCtx *sctx, cJSON *json)
     }
 }
 
+/**
+ * @brief Handle link info msg from frontend.
+ * 
+ * @param sctx Program context
+ * @param json Recved msg. It should be like this:
+ * {
+ *   "type": "LinkInfo",
+ *   "links": 2D array of number(indicate link quality)
+ * }
+ * 
+ * @note Currently, 1000 is used as threshold to determine whether link is available or not.
+ */
 static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
 {
     cJSON *type = cJSON_GetObjectItem(json, "links");
@@ -55,7 +69,7 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
 
                     msg.node_id_1 = node1;
                     msg.node_id_2 = node2;
-                    if (linkval > 1000.0) {
+                    if (linkval > 1000.0 /* TBD */ ) {
                         msg.los = 0;
                     } else {
                         msg.los = 1;
@@ -82,6 +96,7 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
     }
 }
 
+/** Handle StartDummyTraffic and UpdateDummyTrafficConf msg. These have same content */
 static void handle_start_dummy_traffic(SimulatorCtx *sctx, cJSON *json, int is_update)
 {
     int conf_id;
@@ -137,6 +152,7 @@ static void handle_start_dummy_traffic(SimulatorCtx *sctx, cJSON *json, int is_u
             msg, sizeof(NetSetDummyTrafficConfig), code);
 }
 
+/** Handle StopDummyTraffic and DeleteDummyTrafficConf msg. These have same content */
 static void handle_stop_dummy_traffic(SimulatorCtx *sctx, cJSON *json)
 {
     NetUnsetDummyTrafficConfig msg;
@@ -172,6 +188,7 @@ void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)
         if (REMOTE_CONF_VERBOSE)
             TLOGD("type: %s\n", typestr);
 
+        /* C can't switch with strings. Will this be performance bottleneck? */
         if (strcmp(typestr, "Status") == 0) {
             char buf[1000];
             sprintf(buf, "{\"type\":\"Status\",\"status\":\"OK\"}");

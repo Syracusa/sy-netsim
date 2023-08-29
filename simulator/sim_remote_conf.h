@@ -1,3 +1,8 @@
+/**
+ * @file sim_remote_conf.h
+ * @brief Handle remote configuration message from frontend
+ */
+
 #ifndef SIM_REMOTE_CONF_H
 #define SIM_REMOTE_CONF_H
 

@@ -8,6 +8,7 @@
 
 #define REPORT_MSG_VERBOSE 0
 
+/** Send json string with tcp(Send 2byte JSON length first and send json str) */
 static void send_json_to_front(SimulatorCtx *sctx, char *json)
 {
     /* Push to tcp send queue(json len, 2byte) */
@@ -54,9 +55,9 @@ static void process_net_route_report(SimulatorCtx *sctx,
 {
     NetRoutingReport *report = (NetRoutingReport *)data;
 
+    /* Convert to JSON */
     char route_report_json_buf[1024];
     char *offset = route_report_json_buf;
-
     offset += sprintf(offset,
                       "{\"type\": \"Route\", \"node\": %d, \"target\": %d,"
                       "\"hopcount\": %d, \"path\" : [",
@@ -167,7 +168,6 @@ static void recv_net_report(SimulatorCtx *sctx)
     }
 }
 
-/* Receive any kind of report msg from message queues */
 void recv_report(SimulatorCtx *sctx)
 {
     recv_phy_report(sctx);

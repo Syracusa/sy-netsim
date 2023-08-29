@@ -1,6 +1,6 @@
 /**
  * @file simulator_config.h
- * @brief Parse json config file and set simulator context
+ * @brief Parse json config file for simulator(only used in local mode).
  */
 
 #ifndef SIMULATOR_CONFIG_H
@@ -11,6 +11,7 @@
 
 /**
  * @brief Simulator configuration.
+ * Fields are initiated from parsing json config file.
  * Include active node list, dummy stream list, dummy link info list.
  */
 typedef struct SimulatorConfig {

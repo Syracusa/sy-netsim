@@ -38,7 +38,7 @@ typedef struct {
 typedef struct SimulatorServerCtx {
     RingBuffer *recvq; /** TCP receive buffering queue */
     RingBuffer *sendq; /** TCP send buffering queue */
-    int stop; /** if 1, stop TCP server */
+    int stop; /** if 1, Quit server mainloop */
     pthread_t tcp_thread; /** TCP server thread */
 } SimulatorServerCtx;
 
@@ -48,11 +48,11 @@ typedef struct SimulatorCtx {
     int mqid_phy_report; /** Phy simulator message queue id(SimPHY => Simulator) */
     pid_t phy_pid; /** Phy simulator process id */
 
-    SimulatorConfig conf; /**  */
-    SimNode nodes[MAX_NODE_ID];
+    SimulatorConfig conf; /** Config parsed from file. Not used if server mode */
+    SimNode nodes[MAX_NODE_ID]; /** Message queue id and process id of nodes */
 
-    PhyLinkConfig link[MAX_NODE_ID][MAX_NODE_ID];
-    SimulatorServerCtx server_ctx;
+    PhyLinkConfig link[MAX_NODE_ID][MAX_NODE_ID]; /** Link info between nodes */
+    SimulatorServerCtx server_ctx; /** Server context. Not used if local mode */
 } SimulatorCtx;
 
 /**
@@ -65,12 +65,17 @@ typedef struct SimulatorCtx {
 SimulatorCtx *get_simulator_context();
 
 /** Destroy singleton simulator context. */
-void delete_simulator_context();
+void free_simulator_context();
 
 /** Kill all process that spawned by simulator */
 void simulator_kill_all_process(SimulatorCtx *sctx);
 
-/** Start simulator from config file */
+/**
+ * @brief Start simulator from config file.
+ * This function will block 1 second to wait for all process to be ready.
+ * 
+ * @param sctx Simulator program context
+ */
 void simulator_start_local(SimulatorCtx* sctx);
 
 #endif
