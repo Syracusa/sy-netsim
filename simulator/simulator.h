@@ -1,3 +1,8 @@
+/**
+ * @file simulator.h
+ * @brief 
+ */
+
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
@@ -7,16 +12,9 @@
 #include "ringbuffer.h"
 #include "pthread.h"
 
-typedef struct NodePositionGps {
-    double latitude;
-    double longitude;
-    double altitude;
-} NodePositionGps;
-
+/** Information of one node */
 typedef struct {
     int active;
-
-    NodePositionGps pos;
 
     int mqid_net_command;
     int mqid_mac_command;
@@ -29,8 +27,8 @@ typedef struct {
 } SimNode;
 
 #define MAX_DUMMYSTREAM_CONF_NUM 100
-
 #define MAX_SIMLINK_CONF_NUM 1000
+
 typedef struct SimulatorConfig {
     int dummystream_conf_num;
     NetSetDummyTrafficConfig dummy_stream_info[MAX_DUMMYSTREAM_CONF_NUM];
@@ -47,22 +45,41 @@ typedef struct SimulatorServerCtx {
     pthread_t tcp_thread;
 } SimulatorServerCtx;
 
+/** Simulator program context */
 typedef struct SimulatorCtx {
-    int started;
-    int time_elapsed;
+    int mqid_phy_command; /** Phy simulator message queue id(Simulator => SimPHY) */
+    int mqid_phy_report; /** Phy simulator message queue id(SimPHY => Simulator) */
+    pid_t phy_pid; /** Phy simulator process id */
 
-    int mqid_phy_command;
-    int mqid_phy_report;
-
-    pid_t phy_pid;
-
-    SimulatorConfig conf;
+    SimulatorConfig conf; /**  */
     SimNode nodes[MAX_NODE_ID];
 
     PhyLinkConfig link[MAX_NODE_ID][MAX_NODE_ID];
     SimulatorServerCtx server_ctx;
 } SimulatorCtx;
 
+/**
+ * @brief 
+ * Get the singleton simulator context.
+ * If simulator context is not initialized, initialize it.
+ * 
+ * @return SimulatorCtx* Singleton simulator context
+ */
+SimulatorCtx *get_simulator_context();
+
+/** Destroy singleton simulator context. */
+void delete_simulator_context();
+
+/** Kill all process that spawned by simulator */
+void simulator_kill_all_process(SimulatorCtx *sctx);
+
+/** Mainloop. Receive report, send configuration, and so on */
+void simulator_mainloop(SimulatorCtx *sctx);
+
+/** */
+void simulator_start_local(SimulatorCtx* sctx);
+
+/** */
 void send_config(SimulatorCtx *sctx,
                  int mqid,
                  void *data,

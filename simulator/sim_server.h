@@ -3,6 +3,7 @@
 
 #include "simulator.h"
 
-void start_server(SimulatorServerCtx *ssctx);
-void server_end(SimulatorServerCtx *ssctx);
+void simulator_start_server(SimulatorServerCtx *ssctx);
+void simulator_stop_server(SimulatorServerCtx *ssctx);
+
 #endif

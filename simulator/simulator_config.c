@@ -1,3 +1,10 @@
+/**
+ * @file simulator_config.c
+ * @brief Parse json config and do some tasks.based on that config.
+ * - Set siumlator context
+ * - Send config message to each node
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -29,8 +36,7 @@ static char *read_file(const char *filename)
     return string;
 }
 
-static void activate_node(SimulatorCtx *sctx, int node_id,
-                          double lat, double lon, double alt)
+static void activate_node(SimulatorCtx *sctx, int node_id)
 {
     if (node_id < 0 && node_id >= MAX_NODE_ID) {
         fprintf(stderr, "Unavailable node id : %d\n", node_id);
@@ -38,9 +44,6 @@ static void activate_node(SimulatorCtx *sctx, int node_id,
     }
     SimNode *node = &sctx->nodes[node_id];
     node->active = 1;
-    node->pos.altitude = alt;
-    node->pos.latitude = lat;
-    node->pos.longitude = lon;
 }
 
 void parse_config(SimulatorCtx *sctx)
@@ -65,20 +68,8 @@ void parse_config(SimulatorCtx *sctx)
         cJSON_ArrayForEach(node_json, node_list_json)
         {
             int nid = cJSON_GetObjectItemCaseSensitive(node_json, "id")->valueint;
-            cJSON *nodepos_json = cJSON_GetObjectItemCaseSensitive(node_json, "pos");
-
-            double lat = 0.0;
-            double lon = 0.0;
-            double alt = 0.0;
-
-            if (nodepos_json) {
-                lat = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lat")->valuedouble;
-                lon = cJSON_GetObjectItemCaseSensitive(nodepos_json, "lon")->valuedouble;
-                alt = cJSON_GetObjectItemCaseSensitive(nodepos_json, "alt")->valuedouble;
-            }
-
-            printf("Node ID %d  lat %lf lon %lf alt %lf\n", nid, lat, lon, alt);
-            activate_node(sctx, nid, lat, lon, alt);
+            printf("Node ID %d\n", nid);
+            activate_node(sctx, nid);
         }
     } else {
         fprintf(stderr, "Can't get nodelist!");

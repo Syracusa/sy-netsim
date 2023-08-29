@@ -17,35 +17,15 @@
 #include "simulator.h"
 #include "simulator_config.h"
 #include "sim_server.h"
+
 #include "sim_remote_conf.h"
 #include "sim_childproc.h"
 #include "sim_hdlreport.h"
 
 #include "cJSON.h"
 
-char dbgname[10];
-FILE *dbgfile;
 
 SimulatorCtx *g_sctx = NULL;
-
-#define D2R(d) (d / 180.0 * 3.14159)
-
-double calc_node_distance(NodePositionGps *p1, NodePositionGps *p2)
-{
-    double earth_radius = 6371.0;
-    double x1 = (earth_radius + D2R(p1->altitude)) * cos(D2R(p1->latitude)) * cos(D2R(p1->longitude));
-    double y1 = (earth_radius + D2R(p1->altitude)) * cos(D2R(p1->latitude)) * sin(D2R(p1->longitude));
-    double z1 = (earth_radius + D2R(p1->altitude)) * sin(D2R(p1->latitude));
-    double x2 = (earth_radius + D2R(p2->altitude)) * cos(D2R(p2->latitude)) * cos(D2R(p2->longitude));
-    double y2 = (earth_radius + D2R(p2->altitude)) * cos(D2R(p2->latitude)) * sin(D2R(p2->longitude));
-    double z2 = (earth_radius + D2R(p2->altitude)) * sin(D2R(p2->latitude));
-
-    double xdiff = x2 - x1;
-    double ydiff = y2 - y1;
-    double zdiff = z2 - z1;
-
-    return sqrt(xdiff * xdiff + ydiff * ydiff + zdiff * zdiff);
-}
 
 void init_mq(SimulatorCtx *sctx)
 {
@@ -76,7 +56,7 @@ void init_mq(SimulatorCtx *sctx)
     mq_flush(sctx->mqid_phy_report);
 }
 
-static SimulatorCtx *create_simulator_context()
+static SimulatorCtx *initialize_simulator_context()
 {
     SimulatorCtx *sctx = malloc(sizeof(SimulatorCtx));
     memset(sctx, 0x00, sizeof(SimulatorCtx));
@@ -90,14 +70,22 @@ static SimulatorCtx *create_simulator_context()
             link->pathloss_x100 = 0;
         }
     }
-
+    init_mq(sctx);
     return sctx;
 }
 
-static void delete_simulator_context()
+SimulatorCtx *get_simulator_context()
+{
+    if (g_sctx == NULL) {
+        g_sctx = initialize_simulator_context();
+    }
+    return g_sctx;
+}
+
+void delete_simulator_context()
 {
     if (g_sctx) {
-        server_end(&g_sctx->server_ctx);
+        simulator_stop_server(&g_sctx->server_ctx);
         free(g_sctx);
     }
     g_sctx = NULL;
@@ -107,20 +95,6 @@ static void delete_simulator_context()
 static void start_simulate_local(SimulatorCtx *sctx)
 {
     sctx->phy_pid = start_phy();
-
-    for (int i = 0; i < MAX_NODE_ID; i++) {
-        for (int j = i + 1; j < MAX_NODE_ID; j++) {
-            SimNode *n1 = &sctx->nodes[i];
-            SimNode *n2 = &sctx->nodes[j];
-            if (n1->active != 1)
-                continue;
-            if (n2->active != 1)
-                continue;
-
-            double dist = calc_node_distance(&n1->pos, &n2->pos);
-            TLOGD("Dist between %d and %d  ==>  %lf\n", i, j, dist);
-        }
-    }
 
     for (int i = 0; i < MAX_NODE_ID; i++) {
         if (sctx->nodes[i].active == 1) {
@@ -212,9 +186,9 @@ void parse_client_json(SimulatorServerCtx *ssctx)
 }
 
 
-int g_exit = 0;
+int flag_mainloop_exit = 0;
 
-static void kill_all_process(SimulatorCtx *sctx)
+void simulator_kill_all_process(SimulatorCtx *sctx)
 {
     /* Kill all processes before start */
 
@@ -242,84 +216,19 @@ static void kill_all_process(SimulatorCtx *sctx)
     TLOGD("%d processes terminated\n", killnum);
 }
 
-void app_exit(int signo)
+void simulator_mainloop(SimulatorCtx *sctx)
 {
-    g_exit = 1;
-    static int reenter = 0;
-
-    if (reenter)
-        return;
-    reenter = 1;
-
-    TLOGF("SIGINT\n");
-
-    if (g_sctx) {
-        kill_all_process(g_sctx);
-        g_sctx->server_ctx.stop = 1;
-        pthread_join(g_sctx->server_ctx.tcp_thread, NULL);
-        delete_simulator_context();
-        TLOGF("Exit simulator...\n");
-        exit(SIGKILL);
-    } else {
-        TLOGF("Context is null\n");
-    }
-}
-
-static void mainloop(SimulatorCtx *sctx)
-{
-    while (!g_exit) {
+    while (!flag_mainloop_exit) {
         parse_client_json(&sctx->server_ctx);
         recv_report(sctx);
         usleep(10 * 1000);
     }
 }
 
-void handle_sigchld(int signo)
-{
-    int status;
-    pid_t pid;
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        TLOGD("Child process %d terminated\n", pid);
-    }
-}
-
-static void handle_signal()
-{
-    signal(SIGINT, &app_exit);
-    if (HANDLE_SIGCHLD)
-        signal(SIGCHLD, handle_sigchld);
-}
-
-static void start_local(SimulatorCtx* sctx)
+void simulator_start_local(SimulatorCtx *sctx)
 {
     parse_config(sctx);
     start_simulate_local(sctx);
     sleep(1); /* Wait until apps are ready... */
     send_config_msgs(sctx);
-}
-
-int main()
-{
-    dbgfile = stderr;
-    TLOGI("Start simulator...\n");
-
-    SimulatorCtx *sctx = create_simulator_context();
-    g_sctx = sctx;
-
-    handle_signal();
-
-    init_mq(sctx);
-
-    int SERVER_MODE = 1;
-    if (SERVER_MODE) {
-        start_server(&sctx->server_ctx);
-        mainloop(sctx);
-    } else {
-        start_local(sctx);
-    }
-
-    TLOGI("Finish\n");
-    sleep(3600);
-    delete_simulator_context();
-    return 0;
 }

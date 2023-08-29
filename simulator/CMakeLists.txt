@@ -1,4 +1,5 @@
 add_executable(simulator  
+                main.c
                 simulator.c
                 simulator_config.c
                 sim_server.c

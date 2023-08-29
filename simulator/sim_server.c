@@ -16,9 +16,6 @@
 #include "log.h"
 #include "sim_server.h"
 
-extern void app_exit(int signo);
-extern int g_exit;
-
 #define TCP_BUF_SIZE 10240
 static void *do_server(void *arg)
 {
@@ -129,12 +126,12 @@ static void *do_server(void *arg)
     }
 out:
     close(tcp_sock);
-    server_end(ssctx);
+    simulator_stop_server(ssctx);
     TLOGE("TCP Connection end\n");
     return NULL;
 }
 
-void start_server(SimulatorServerCtx *ssctx)
+void simulator_start_server(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq == NULL)
         ssctx->recvq = RingBuffer_new(819200);
@@ -145,7 +142,7 @@ void start_server(SimulatorServerCtx *ssctx)
     pthread_create(&ssctx->tcp_thread, NULL, (void *)do_server, ssctx);
 }
 
-void server_end(SimulatorServerCtx *ssctx)
+void simulator_stop_server(SimulatorServerCtx *ssctx)
 {
     if (ssctx->recvq != NULL) {
         RingBuffer_destroy(ssctx->recvq);
