@@ -1,0 +1,41 @@
+{
+    "nodes": [
+        {
+            "id": 0
+        },
+        {
+            "id": 1
+        },
+        {
+            "id": 2
+        },
+        {
+            "id": 3
+        }
+    ],
+    "links": [
+        {
+            "nid1": 0,
+            "nid2": 2,
+            "los": 0
+        },
+        {
+            "nid1": 1,
+            "nid2": 3,
+            "los": 0
+        },
+        {
+            "nid1": 0,
+            "nid2": 3,
+            "los": 0
+        }
+    ],
+    "dummy_traffic": [
+        {
+            "src_id": 0,
+            "dst_id": 1,
+            "payload_size": 100,
+            "interval_ms": 500
+        }
+    ]
+}

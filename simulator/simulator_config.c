@@ -117,11 +117,6 @@ void parse_config(SimulatorConfig *conf)
             TLOGI("Dummy traffic %d -> %d  payload %dbyte  interval %dms\n",
                   src_id, dst_id, payload_size, interval_ms);
 
-            /*
-            At this point, No netproto apps are excuted.
-            So we can't send config message right now.
-            */
-
             NetSetDummyTrafficConfig *stream_info =
                 &(conf->dummy_stream_info[conf->dummystream_conf_num]);
 

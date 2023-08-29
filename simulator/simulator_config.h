@@ -32,6 +32,7 @@ typedef struct SimulatorConfig {
 
 /**
  * @brief Parse json config file(SIMULATOR_CONFIG_FILE) and set simulator context
+ * Check sample file({project_root_dir}/config_sample.json})
  * 
  * @param sctx Program context
  */
