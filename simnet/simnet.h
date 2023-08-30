@@ -1,3 +1,8 @@
+/**
+ * @file simnet.h
+ * @brief Network layer simulator
+ */
+
 #ifndef SIMNET_H
 #define SIMNET_H
 
