@@ -64,28 +64,7 @@ static void send_to_local_mac(SimPhyCtx *spctx,
                               size_t len,
                               long type)
 {
-    /* The mtype field must have a strictly positive integer value. */
-    if (type < 1) {
-        TLOGE("Can't send meg with type %ld\n", type);
-        return;
-    }
-
-    MqMsgbuf msg;
-    msg.type = type;
-
-    if (len > MQ_MAX_DATA_LEN) {
-        TLOGE("Can't send data with length %lu\n", len);
-    }
-    memcpy(msg.text, data, len);
-    int ret = msgsnd(spctx->nodes[receiver_nid].mqid_send_mac, &msg, len, IPC_NOWAIT);
-    if (ret < 0) {
-        if (errno == EAGAIN) {
-            TLOGE("Message queue full!\n");
-        } else {
-            TLOGE("Can't send to mac. mqid: %d len: %lu(%s)\n",
-                  spctx->nodes[receiver_nid].mqid_send_mac, len, strerror(errno));
-        }
-    }
+    send_mq(spctx->nodes[receiver_nid].mqid_send_mac, data, len, type);
 }
 
 static void process_mac_frame(SimPhyCtx *spctx,
@@ -117,15 +96,10 @@ static void recv_from_local_mac(SimPhyCtx *spctx)
     for (int nid = 0; nid < MAX_NODE_ID; nid++) {
         MqMsgbuf msg;
         while (1) {
-            ssize_t res = msgrcv(spctx->nodes[nid].mqid_recv_mac,
-                                 &msg, sizeof(msg.text),
-                                 0, IPC_NOWAIT);
-            if (res < 0) {
-                if (errno != ENOMSG) {
-                    fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
-                }
+            ssize_t res = recv_mq(spctx->nodes[nid].mqid_recv_mac, &msg);
+            if (res < 0)
                 break;
-            }
+
             spctx->nodes[nid].alive = 1;
 
             switch (msg.type) {
@@ -166,15 +140,9 @@ static void recv_command(SimPhyCtx *spctx)
 {
     MqMsgbuf msg;
     while (1) {
-        ssize_t res = msgrcv(spctx->mqid_recv_command,
-                             &msg, sizeof(msg.text),
-                             0, IPC_NOWAIT);
-        if (res < 0) {
-            if (errno != ENOMSG) {
-                fprintf(stderr, "Msgrcv failed(err: %s)\n", strerror(errno));
-            }
+        ssize_t res = recv_mq(spctx->mqid_recv_command, &msg);
+        if (res < 0)
             break;
-        }
 
         switch (msg.type) {
             case CONF_MSG_TYPE_PHY_LINK_CONFIG:
@@ -184,7 +152,6 @@ static void recv_command(SimPhyCtx *spctx)
                 TLOGE("PHY Config Unknown msgtype %ld\n", msg.type);
                 break;
         }
-
     }
 }
 

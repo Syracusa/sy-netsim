@@ -10,8 +10,12 @@ typedef struct  {
 } MqMsgbuf;
 
 void mq_flush(int mqid);
+
 void send_mq(int mqid,
 			 void *data,
 			 size_t len,
 			 long type);
+
+ssize_t recv_mq(int mqid,
+                MqMsgbuf *msg);
 #endif

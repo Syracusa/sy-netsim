@@ -55,40 +55,12 @@ void init_mq(SimMacCtx *smctx)
 
 void sendto_net(SimMacCtx *smctx, void *data, size_t len, long type)
 {
-    MqMsgbuf msg;
-    msg.type = type;
-
-    if (len > MQ_MAX_DATA_LEN) {
-        TLOGE("Can't send data with length %lu\n", len);
-    }
-    memcpy(msg.text, data, len);
-    int ret = msgsnd(smctx->mqid_send_net, &msg, len, IPC_NOWAIT);
-    if (ret < 0) {
-        if (errno == EAGAIN) {
-            TLOGE("Message queue full!\n");
-        } else {
-            TLOGE("Can't send to net(%s)\n", strerror(errno));
-        }
-    }
+    send_mq(smctx->mqid_send_net, data, len, type);
 }
 
 void sendto_phy(SimMacCtx *smctx, void *data, size_t len, long type)
 {
-    MqMsgbuf msg;
-    msg.type = type;
-
-    if (len > MQ_MAX_DATA_LEN) {
-        TLOGE("Can't send data with length %lu\n", len);
-    }
-    memcpy(msg.text, data, len);
-    int ret = msgsnd(smctx->mqid_send_phy, &msg, len, IPC_NOWAIT);
-    if (ret < 0) {
-        if (errno == EAGAIN) {
-            TLOGE("Message queue full!\n");
-        } else {
-            TLOGE("Can't send to phy(%s)\n", strerror(errno));
-        }
-    }
+    send_mq(smctx->mqid_send_phy, data, len, type);
 }
 
 void process_net_msg(SimMacCtx *smctx, void *data, int len)
@@ -105,31 +77,25 @@ void process_phy_msg(SimMacCtx *smctx, void *data, int len)
     sendto_net(smctx, data, len, MESSAGE_TYPE_DATA);
 }
 
-void recv_mq(SimMacCtx *smctx)
+static void poll_mq(SimMacCtx *smctx)
 {
     MqMsgbuf msg;
 
     /* Receive from net */
     while (1) {
-        ssize_t res = msgrcv(smctx->mqid_recv_net, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
-        if (res < 0) {
-            if (errno != ENOMSG) {
-                TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
-            }
+        ssize_t res = recv_mq(smctx->mqid_recv_net, &msg);
+        if (res < 0) 
             break;
-        }
+        
         process_net_msg(smctx, msg.text, res);
     }
 
     /* Receive from phy */
     while (1) {
-        ssize_t res = msgrcv(smctx->mqid_recv_phy, &msg, sizeof(msg.text), 0, IPC_NOWAIT);
-        if (res < 0) {
-            if (errno != ENOMSG) {
-                TLOGE("Msgrcv failed(err: %s)\n", strerror(errno));
-            }
+        ssize_t res = recv_mq(smctx->mqid_recv_phy, &msg);
+        if (res < 0)
             break;
-        }
+            
         process_phy_msg(smctx, msg.text, res);
     }
 }
@@ -141,7 +107,7 @@ void mainloop(SimMacCtx *smctx)
     while (1) {
         clock_gettime(CLOCK_REALTIME, &before);
 
-        recv_mq(smctx);
+        poll_mq(smctx);
 
         clock_gettime(CLOCK_REALTIME, &after);
         timespec_sub(&after, &before, &diff);
