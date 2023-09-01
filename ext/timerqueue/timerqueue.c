@@ -45,6 +45,16 @@ static inline int check_expire(struct timespec *expiretime,
     return res;
 }
 
+/**
+ * @brief Compare two timerqueue elements
+ * 
+ * Compare two timerqueue elements. If two elements have same expire time,
+ * compare their pointer value to avoid key collision.
+ * 
+ * @param k1 TqKey*
+ * @param k2 TqKey*
+ * @return int 0 if k1 == k2, 1 if k1 > k2, -1 if k1 < k2
+ */
 static int compare_elem(const void *k1, const void *k2)
 {
     TqKey *n1 = (TqKey *)k1;
@@ -72,7 +82,7 @@ TimerqueueElem *timerqueue_new_timer()
     memset(elem, 0x00, sizeof(TimerqueueElem));
 
     elem->priv_rbk.ptr = elem;
-    elem->rbn.key = &elem->priv_rbk;
+    elem->priv_rbn.key = &elem->priv_rbk;
 
     return elem;
 }
@@ -100,7 +110,7 @@ void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 void timerqueue_reactivate_timer(TimerqueueContext *tq, TimerqueueElem *elem)
 {
     if (elem->attached == 1) {
-        rbtree_delete(tq->rbt, elem->rbn.key);
+        rbtree_delete(tq->rbt, elem->priv_rbn.key);
         elem->attached = 0;
     }
     timerqueue_register_timer(tq, elem);
@@ -117,7 +127,7 @@ void timerqueue_work(TimerqueueContext *tq)
     }
 
     while (check_expire(&(first->priv_rbk.expire), &currtime)) {
-        rbtree_delete(tq->rbt, first->rbn.key);
+        rbtree_delete(tq->rbt, first->priv_rbn.key);
         if (first->active) {
             if (!first->callback)
                 fprintf(stderr, "NULL callback! (%s)\n", first->debug_name);

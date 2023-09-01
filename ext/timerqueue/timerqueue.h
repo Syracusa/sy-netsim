@@ -23,18 +23,18 @@ typedef struct {
     rbtree_type *rbt; /** Rbtree elem = TimerqueueElem */
 } TimerqueueContext;
 
-/** Rbtree(TimerqueueContext) key - time + elem pointer(For avoid collision) */
+/** Rbtree(TimerqueueContext) key - time + elem pointer(to avoid collision) */
 typedef struct {
     struct timespec expire; /** The time that callback should executed */
     void *ptr; /** Prevent key collision */
 } TqKey;
 
 typedef struct {
-    rbnode_type rbn; /** Private */
-    TqKey priv_rbk; /** Private */
+    rbnode_type priv_rbn; /** Private - Rbnode */
+    TqKey priv_rbk; /** Private - Rbnode key */
 
     /** 
-     * Micro second scale jitter config 
+     * Microsecond scale jitter config 
      * User can set this value to make jitter.
     */
     int max_jitter;
