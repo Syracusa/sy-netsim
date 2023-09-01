@@ -25,7 +25,7 @@ static pid_t execute_simulation_component_binary(char *bin_path, int node_id)
             printf("%s start with PID%d\n", bin_path, (int)getpid());
             execl(bin_path, bin_path, NULL);
         } else {
-            char nid_str[10];
+            char nid_str[11];
             sprintf(nid_str, "%d", node_id);
             printf("%s with id %d start with PID%d\n", bin_path, node_id, (int)getpid());
             execl(bin_path, bin_path, nid_str, NULL);
