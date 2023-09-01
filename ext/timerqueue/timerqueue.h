@@ -4,7 +4,7 @@
  * User should call timerqueue_work() periodically to make this work.
  * 
  * @details
- * This timerqueue is based on red-black tree.
+ * This timerqueue is based on red-black tree(taken from freebsd sourcecode).
  * When user call timerqueue_work(), this will check the first element of 
  * rbtree. The rbtree's key is the expire time of the element so the first
  * element is the element that will be expired first.
