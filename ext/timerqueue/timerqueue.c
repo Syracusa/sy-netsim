@@ -145,6 +145,7 @@ void timerqueue_work(TimerqueueContext *tq)
                 free(first);
         }
 
+        /* Check next element */
         first = (TimerqueueElem *)rbtree_first(tq->rbt);
     }
 }

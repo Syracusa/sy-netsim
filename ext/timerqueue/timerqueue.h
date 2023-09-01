@@ -26,22 +26,34 @@ typedef struct {
 /** Rbtree(TimerqueueContext) key - time + elem pointer(For avoid collision) */
 typedef struct {
     struct timespec expire; /** The time that callback should executed */
-    void *ptr;
+    void *ptr; /** Prevent key collision */
 } TqKey;
 
 typedef struct {
     rbnode_type rbn; /** Private */
     TqKey priv_rbk; /** Private */
 
-    /** Micro second scale jitter config */
+    /** 
+     * Micro second scale jitter config 
+     * User can set this value to make jitter.
+    */
     int max_jitter;
 
-    /** if 0 then timerqueue will detach this node */
+    /** 
+     * if 0 then timerqueue will detach this node
+     * 
+     * User can read this value to check if this element is active 
+     * User can modify this value to 0. That will cause detach on expire.
+     * Modify this value to 1 from user code will cause undefined behavior. 
+     */
     int active;
 
     /**
      * If 0 then one can safely free this elem
      * If not, call free() to this elem will cause segfault
+     * 
+     * User can read this value to check if this element can be safely freed.
+     * User SHOULD NOT modify this value.
      */
     int attached;
 
@@ -49,18 +61,29 @@ typedef struct {
      * If 1, this elem will be automatically freed on detach
      * If user call another free() to this elem, that will cause a double free
      * error
+     * 
+     * User can modify this value(0 or 1).
      */
     int free_on_detach;
 
-    /** For debug purpose. Not used for now but maybe later */
+    /** For debug purpose. This will be printed when callback is null */
     char debug_name[50];
 
-    /** Callback execution interval */
+    /** 
+     * Callback execution interval 
+     * 
+     * If user change this value, The change will be applied after current 
+     * expire time.
+     * If user want to change this value immediately, user should call
+     * timerqueue_reactivate_timer()
+     */
     int interval_us;
 
     /**
      * If 1, this timer will be called only once.
      * (will be automatically deactived and detached)
+     * 
+     * User can modify this value(0 or 1).
      */
     int use_once;
 
