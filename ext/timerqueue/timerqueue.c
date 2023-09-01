@@ -6,6 +6,45 @@
 #include "rbtree.h"
 #include "timerqueue.h"
 
+#define timespec_sub(after, before, result)                         \
+  do {                                                              \
+    (result)->tv_sec = (after)->tv_sec - (before)->tv_sec;          \
+    (result)->tv_nsec = (after)->tv_nsec - (before)->tv_nsec;       \
+    if ((result)->tv_nsec < 0) {                                    \
+      --(result)->tv_sec;                                           \
+      (result)->tv_nsec += 1000000000;                              \
+    }                                                               \
+  } while (0)
+
+
+static inline int timespec_add_usec(struct timespec *t,
+                                    unsigned long usec)
+{
+    unsigned long long add;
+    int res = 0;
+
+    if (!t) {
+        res = -1;
+    } else {
+        add = t->tv_nsec + (usec * 1000);
+        t->tv_sec += add / 1000000000;
+        t->tv_nsec = add % 1000000000;
+    }
+
+    return res;
+}
+
+static inline int check_expire(struct timespec *expiretime,
+                               struct timespec *currtime)
+{
+    int res = 0;
+    if (expiretime->tv_sec == currtime->tv_sec)
+        res = expiretime->tv_nsec <= currtime->tv_nsec ? 1 : 0;
+    else
+        res = expiretime->tv_sec < currtime->tv_sec ? 1 : 0;
+    return res;
+}
+
 static int compare_elem(const void *k1, const void *k2)
 {
     TqKey *n1 = (TqKey *)k1;
@@ -38,13 +77,13 @@ TimerqueueElem *timerqueue_new_timer()
     return elem;
 }
 
-void timerqueue_free_timer(TimerqueueElem *timer)
+void timerqueue_free_timer(TimerqueueElem *elem)
 {
-    timer->active = 0;
-    if (timer->attached) {
-        timer->free_on_detach = 1;
+    elem->active = 0;
+    if (elem->attached) {
+        elem->free_on_detach = 1;
     } else {
-        free(timer);
+        free(elem);
     }
 }
 
@@ -115,9 +154,4 @@ TimerqueueContext *create_timerqueue()
     TimerqueueContext *tq = malloc(sizeof(TimerqueueContext));
     tq->rbt = rbtree_create(compare_elem);
     return tq;
-}
-
-void delete_timerqueue(TimerqueueContext *tq)
-{
-    free(tq);
 }

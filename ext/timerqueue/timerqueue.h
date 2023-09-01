@@ -1,6 +1,15 @@
 /**
  * @file timerqueue.h
- * @brief 
+ * @brief Timerqueue for single thread event loop
+ * User should call timerqueue_work() periodically to make this work.
+ * 
+ * @details
+ * This timerqueue is based on red-black tree.
+ * When user call timerqueue_work(), this will check the first element of 
+ * rbtree. The rbtree's key is the expire time of the element so the first
+ * element is the element that will be expired first.
+ * If the first element's expire time is passed, this will call the callback
+ * function and check the next element.
  */
 
 #ifndef TIMERQUEUE_H
@@ -9,19 +18,20 @@
 #include <time.h>
 #include "rbtree.h"
 
+ /** Rbtree that contains TimerqueueElem */
 typedef struct {
-    rbtree_type *rbt;
+    rbtree_type *rbt; /** Rbtree elem = TimerqueueElem */
 } TimerqueueContext;
 
+/** Rbtree(TimerqueueContext) key - time + elem pointer(For avoid collision) */
 typedef struct {
-    struct timespec expire;
+    struct timespec expire; /** The time that callback should executed */
     void *ptr;
 } TqKey;
 
 typedef struct {
-    /* Private - don't modify these members */
-    rbnode_type rbn;
-    TqKey priv_rbk;
+    rbnode_type rbn; /** Private */
+    TqKey priv_rbk; /** Private */
 
     /** Micro second scale jitter config */
     int max_jitter;
@@ -37,71 +47,78 @@ typedef struct {
 
     /**
      * If 1, this elem will be automatically freed on detach
-     * If user call another free() to this elem, that will cause a double free error
-    */
+     * If user call another free() to this elem, that will cause a double free
+     * error
+     */
     int free_on_detach;
 
+    /** For debug purpose. Not used for now but maybe later */
     char debug_name[50];
 
-    /* User should write these field */
+    /** Callback execution interval */
     int interval_us;
+
+    /**
+     * If 1, this timer will be called only once.
+     * (will be automatically deactived and detached)
+     */
     int use_once;
+
+    /** This pointer will be provided as param to callback function */
     void *arg;
+
+    /** Actual callback function */
     void (*callback)(void *arg);
+
+    /** This will be called when detached(if not null) */
     void (*detached_callback)(void *arg);
 } TimerqueueElem;
 
-#define timespec_sub(after, before, result)                         \
-  do {                                                              \
-    (result)->tv_sec = (after)->tv_sec - (before)->tv_sec;          \
-    (result)->tv_nsec = (after)->tv_nsec - (before)->tv_nsec;       \
-    if ((result)->tv_nsec < 0) {                                    \
-      --(result)->tv_sec;                                           \
-      (result)->tv_nsec += 1000000000;                              \
-    }                                                               \
-  } while (0)
 
-
-static inline int timespec_add_usec(struct timespec *t,
-                                    unsigned long usec)
-{
-    unsigned long long add;
-    int res = 0;
-
-    if (!t) {
-        res = -1;
-    } else {
-        add = t->tv_nsec + (usec * 1000);
-        t->tv_sec += add / 1000000000;
-        t->tv_nsec = add % 1000000000;
-    }
-
-    return res;
-}
-
-static inline int check_expire(struct timespec *expiretime,
-                               struct timespec *currtime)
-{
-    int res = 0;
-    if (expiretime->tv_sec == currtime->tv_sec)
-        res = expiretime->tv_nsec <= currtime->tv_nsec ? 1 : 0;
-    else
-        res = expiretime->tv_sec < currtime->tv_sec ? 1 : 0;
-    return res;
-}
-
-TimerqueueElem *timerqueue_new_timer();
-
-void timerqueue_free_timer(TimerqueueElem *timer);
-
-void timerqueue_reset_expire_time(TimerqueueElem *elem);
-
-void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem);
-
-void timerqueue_reactivate_timer(TimerqueueContext *tq, TimerqueueElem *elem);
-
+/**
+ * @brief Allocate new timerqueue context and initialize it.
+ * 
+ * @return TimerqueueContext* 
+ */
 TimerqueueContext *create_timerqueue();
 
+/**
+ * @brief Create new timerqueue element
+ * 
+ * @details This will allocate new TimerqueueElem and initialize key pointer.
+ * @return TimerqueueElem* A pointer to new TimerqueueElem
+ */
+TimerqueueElem *timerqueue_new_timer();
+
+/**
+ * @brief Register TimerqueueElem to timerqueue.
+ * 
+ * @param tq Timerqueue that element will be registered
+ * @param elem Element that will be registered
+ */
+void timerqueue_register_timer(TimerqueueContext *tq, TimerqueueElem *elem);
+
+/**
+ * @brief Check time and call callback function if needed.
+ * 
+ * @param tq Timerqueue that will be checked
+ */
 void timerqueue_work(TimerqueueContext *tq);
+
+/**
+ * @brief Reregister timer to timerqueue regardless of it's state.
+ * 
+ * @param tq Timerqueue that element is registered
+ * @param elem Element that will be registered
+ */
+void timerqueue_reactivate_timer(TimerqueueContext *tq, TimerqueueElem *elem);
+
+/**
+ * @brief Free timerqueue safely.
+ * 
+ * @param tq Timerqueue that will be freed
+ */
+void timerqueue_free_timer(TimerqueueElem *elem);
+
 
 #endif
