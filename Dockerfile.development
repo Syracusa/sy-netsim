@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1
+
+FROM gcc
+
+RUN apt-get update
+RUN apt-get install -y cmake
+
+WORKDIR /src
+
+CMD ["/bin/bash"]
+
+EXPOSE 12123
