@@ -1,6 +1,10 @@
+/**
+ * @file timerqueue.h
+ * @brief 
+ */
+
 #ifndef TIMERQUEUE_H
 #define TIMERQUEUE_H
-
 
 #include <time.h>
 #include "rbtree.h"
@@ -15,16 +19,26 @@ typedef struct {
 } TqKey;
 
 typedef struct {
-    /* Privates */
+    /* Private - don't modify these members */
     rbnode_type rbn;
     TqKey priv_rbk;
+
+    /** Micro second scale jitter config */
     int max_jitter;
 
-    /* if 0 then timerqueue will detatch this node */
+    /** if 0 then timerqueue will detach this node */
     int active;
 
-    /* If 0 then safely free this elem */
+    /**
+     * If 0 then one can safely free this elem
+     * If not, call free() to this elem will cause segfault
+     */
     int attached;
+
+    /**
+     * If 1, this elem will be automatically freed on detach
+     * If user call another free() to this elem, that will cause a double free error
+    */
     int free_on_detach;
 
     char debug_name[50];
