@@ -13,5 +13,5 @@
 ## Development build
 + docker build -t sy-netsim-dev . -f Dockerfile.development
 ## Development run
-+ docker run -p 127.0.0.1:12123:12123 --mount type=bind,src="$(pwd)",target=/src -dit sy-netsim-dev
++ docker run -p 127.0.0.1:12123:12123 --mount type=bind,src="$(pwd)",target=/sy-netsim -dit sy-netsim-dev
 + docker attach <ID>

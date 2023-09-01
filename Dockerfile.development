@@ -5,7 +5,7 @@ FROM gcc
 RUN apt-get update
 RUN apt-get install -y cmake
 
-WORKDIR /src
+WORKDIR /sy-netsim
 
 CMD ["/bin/bash"]
 
