@@ -41,7 +41,8 @@
         "string.h": "c",
         "route_iface.h": "c",
         "sim_hdlreport.h": "c",
-        "mq.h": "c"
+        "mq.h": "c",
+        "timerqueue.h": "c"
     },
     "cmake.configureOnOpen": true,
     "C_Cpp.errorSquiggles": "enabled"

@@ -225,12 +225,12 @@ void handle_route_pkt(PacketBuf *pkt)
 
     const int payload_len = pkt->length - IPUDP_HDRLEN;
 
-    if (payload_len <= 0){
+    if (payload_len <= 0) {
         TLOGF("Payload len is 0!\n");
         return;
     }
 
-    const uint8_t *payload_offset = &pkt->data[IPUDP_HDRLEN]; 
+    const uint8_t *payload_offset = &pkt->data[IPUDP_HDRLEN];
     uint8_t *offset = (uint8_t *)payload_offset;
 
     /* Skip olsr pkt header */
@@ -250,9 +250,37 @@ void handle_route_pkt(PacketBuf *pkt)
     }
 }
 
-void handle_data_pkt(PacketBuf *pkt)
+void handle_remote_data_pkt(PacketBuf *pkt)
 {
-    /*  */
-
+    OlsrContext *ctx = &g_olsr_ctx;
+    if (!ctx) {
+        TLOGF("Context is NULL! - Can't handle local data packet\n");
+        return;
+    }
 
 }
+
+void handle_local_data_pkt(PacketBuf *pkt)
+{
+    OlsrContext *ctx = &g_olsr_ctx;
+    if (!ctx) {
+        TLOGF("Context is NULL! - Can't handle local data packet\n");
+        return;
+    }
+
+    struct iphdr *iph = (struct iphdr *)pkt->data;
+
+    /* Get route */
+    RoutingEntry *entry =
+        (RoutingEntry *)rbtree_search(ctx->routing_table, &iph->daddr);
+
+    if (entry){
+        TLOGD("Route to %s => %d hop\n", ip2str(iph->daddr), entry->hop_count);
+    } else {
+        TLOGD("No route entry exist to %s\n", ip2str(iph->daddr));
+    }
+    /* If onehop, just send to mac */
+
+    /* If multihop, modify header and send to mac */
+}
+

@@ -5,7 +5,7 @@
 #include "olsr.h"
 #include "olsr_context.h"
 
-#define OLSR_ROUTE_IFACE_VERBOSE 0
+#define OLSR_ROUTE_IFACE_VERBOSE 1
 
 RouteFunctions olsr_iface = {
     .handle_local_pkt = olsr_handle_local_pkt,
@@ -15,22 +15,7 @@ RouteFunctions olsr_iface = {
     .end = olsr_end
 };
 
-void olsr_handle_local_pkt(void *data, size_t len)
-{
-    OlsrContext *ctx = &g_olsr_ctx;
-    if (!ctx)
-        return;
-
-    /* Get nexthop */
-
-    /* If onehop, just send to mac */
-
-    /* If multihop, modify header and send to mac */
-
-
-}
-
-static void statistics_update(void* ippkt)
+static void statistics_update(void *ippkt)
 {
     struct iphdr *iph = ippkt;
 
@@ -42,11 +27,27 @@ static void statistics_update(void* ippkt)
     info->traffic.dirty = 1;
 }
 
+void olsr_handle_local_pkt(void *data, size_t len)
+{
+    OlsrContext *ctx = &g_olsr_ctx;
+    if (!ctx)
+        return;
+
+    struct iphdr *iph = (struct iphdr *)data;
+
+    if (OLSR_ROUTE_IFACE_VERBOSE)
+        TLOGD("Handle packet from local(%s => %s)\n",
+              ip2str(iph->saddr), ip2str(iph->daddr));
+
+    PacketBuf pkb;
+    pkb.length = len;
+    memcpy(pkb.data, data, len);
+
+    handle_local_data_pkt(&pkb);
+}
+
 void olsr_handle_remote_pkt(void *data, size_t len)
 {
-    if (OLSR_ROUTE_IFACE_VERBOSE)
-        TLOGD("olsr_handle_remote_pkt() called\n");
-
     PacketBuf pkb;
     pkb.length = len;
     memcpy(pkb.data, data, len);
@@ -56,6 +57,10 @@ void olsr_handle_remote_pkt(void *data, size_t len)
     struct iphdr *iph = (struct iphdr *)pkb.data;
     struct udphdr *udph = (struct udphdr *)(ptr + iph->ihl * 4);
     statistics_update(pkb.data);
+
+    if (OLSR_ROUTE_IFACE_VERBOSE)
+        TLOGD("Handle packet from remote((%s <= %s)\n",
+              ip2str(iph->daddr), ip2str(iph->saddr));
 
     /* TODO : Check Mobile IP */
 
@@ -70,7 +75,7 @@ void olsr_handle_remote_pkt(void *data, size_t len)
             handle_route_pkt(&pkb);
         } else {
             TLOGD("Data pkt - port %u\n", port);
-            handle_data_pkt(&pkb);
+            handle_remote_data_pkt(&pkb);
         }
     }
 }
@@ -78,7 +83,7 @@ void olsr_handle_remote_pkt(void *data, size_t len)
 void olsr_start(CommonRouteConfig *config)
 {
     if (OLSR_ROUTE_IFACE_VERBOSE)
-        printf("olsr_start() called\n");
+        TLOGD("olsr_start() called\n");
 
     init_olsr_context(config);
     OlsrContext *ctx = &g_olsr_ctx;
@@ -87,9 +92,6 @@ void olsr_start(CommonRouteConfig *config)
 
 void olsr_work()
 {
-    if (OLSR_ROUTE_IFACE_VERBOSE)
-        printf("olsr_work() called\n");
-
     OlsrContext *ctx = &g_olsr_ctx;
     timerqueue_work(ctx->timerqueue);
 }
@@ -97,7 +99,7 @@ void olsr_work()
 void olsr_end()
 {
     if (OLSR_ROUTE_IFACE_VERBOSE)
-        printf("olsr_end() called\n");
+        TLOGD("olsr_end() called\n");
 
     finalize_olsr_context();
 }
