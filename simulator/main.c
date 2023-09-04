@@ -79,8 +79,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    TLOGI("Finish\n");
-    sleep(3600);
+    TLOGI("Exit simulator\n");
     free_simulator_context();
     return 0;
 }
