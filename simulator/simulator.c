@@ -108,18 +108,18 @@ static void send_dummystream_config_msgs(SimulatorCtx *sctx)
     for (int i = 0; i < conf->dummystream_conf_num; i++) {
         NetSetDummyTrafficConfig *info = &(conf->dummy_stream_info[i]);
 
-        send_mq( sctx->nodes[info->src_id].mqid_net_command,
-                    info, sizeof(NetSetDummyTrafficConfig),
-                    CONF_MSG_TYPE_NET_SET_DUMMY_TRAFFIC);
+        send_mq(sctx->nodes[info->src_id].mqid_net_command,
+                info, sizeof(NetSetDummyTrafficConfig),
+                CONF_MSG_TYPE_NET_SET_DUMMY_TRAFFIC);
     }
 }
 
 static void send_link_config_msgs(SimulatorCtx *sctx)
 {
     for (int i = 0; i < sctx->conf.simlink_conf_num; i++) {
-        send_mq( sctx->mqid_phy_command,
-                    &sctx->conf.linkconfs[i], sizeof(PhyLinkConfig),
-                    CONF_MSG_TYPE_PHY_LINK_CONFIG);
+        send_mq(sctx->mqid_phy_command,
+                &sctx->conf.linkconfs[i], sizeof(PhyLinkConfig),
+                CONF_MSG_TYPE_PHY_LINK_CONFIG);
     }
 }
 
@@ -163,7 +163,7 @@ void simulator_start_local(SimulatorCtx *sctx, const char *filepath)
     /* Wait until apps are ready.
      Message queues will be flushed when each apps initiate themselves.
      So we shouldn't send config before the apps complete initiating */
-    sleep(1); 
+    sleep(1);
 
     send_config_msgs(sctx);
 }

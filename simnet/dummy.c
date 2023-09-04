@@ -1,5 +1,6 @@
 #include "simnet.h"
 #include "mac_connection.h"
+#include "dummy.h"
 
 static void send_dummy_packet(void *arg)
 {
@@ -10,7 +11,7 @@ static void send_dummy_packet(void *arg)
     MAKE_BE32_IP(sender_ip, 192, 168, snctx->node_id, 1);
     MAKE_BE32_IP(receiver_ip, 192, 168, conf->dst_id, 1);
 
-    unsigned char* ptr = pkb.data;
+    unsigned char *ptr = pkb.data;
     build_ip_hdr(ptr, conf->payload_size + IPUDP_HDRLEN, 64,
                  sender_ip, receiver_ip, IPPROTO_UDP);
     ptr += sizeof(struct iphdr);
