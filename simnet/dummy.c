@@ -24,11 +24,10 @@ static void send_dummy_packet(void *arg)
 
     pkb.length = ptr - &pkb.data[0];
 
-    if (DEBUG_NET_TRX) {
+    if (DEBUG_NET_TRX) 
         TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %u)\n",
               ip2str(sender_ip), ip2str(receiver_ip), conf->payload_size);
-    }
-
+    
     snctx->route->handle_local_pkt(&pkb.data, pkb.length);
 }
 

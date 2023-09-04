@@ -97,8 +97,10 @@ void olsr_msg_forwarding(OlsrContext *ctx,
         return;
 
     /* Finally forwarding msg */
-    TLOGD("Forwarding msg from %s(orignator %s)\n",
+#if 0
+    TLOGD("Forwarding route msg from %s(orignator %s)\n",
           ip2str(src),
           ip2str(msg->originator));
+#endif
     RingBuffer_push(ctx->olsr_tx_msgbuf, msg, ntohs(msg->olsr_msgsize));
 }

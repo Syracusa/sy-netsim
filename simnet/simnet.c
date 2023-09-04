@@ -115,7 +115,8 @@ static void remote_send(void *data, size_t len)
 
 static void local_send(void *data, size_t len)
 {
-    /* TODO */
+    struct iphdr *iph = (struct iphdr *)data;
+    TLOGD("Send to local(%s => %s)\n", ip2str(iph->saddr), ip2str(iph->daddr));
 }
 
 static void init_log(SimNetCtx *snctx)

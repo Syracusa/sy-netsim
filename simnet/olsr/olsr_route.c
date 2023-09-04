@@ -250,6 +250,36 @@ void handle_route_pkt(PacketBuf *pkt)
     }
 }
 
+static void ip_route(OlsrContext* ctx, PacketBuf *pkt, int from_local)
+{
+    struct iphdr *iph = (struct iphdr *)pkt->data;
+
+    /* Get route */
+    RoutingEntry *entry =
+        (RoutingEntry *)rbtree_search(ctx->routing_table, &iph->daddr);
+
+    if (!entry) {
+        TLOGD("No route entry exist for %s\n", ip2str(iph->daddr));
+        return;
+    }
+
+    TLOGD("Route to %s => %d hop\n", ip2str(iph->daddr), entry->hop_count);
+
+    if (entry->hop_count == 1 && from_local) {
+        /* If onehop and local packet, just send to mac */
+        ctx->conf.send_remote(pkt->data, pkt->length);
+        return;
+    }
+
+    /* Multi-hop routing required. Encapsulate packet and send to mac */
+    AddrListElem *nexthop_elem = (AddrListElem *)entry->route.next;
+    in_addr_t nexthop = nexthop_elem->addr;
+
+    PacketBuf encap_pkt;
+    minimal_mip_encap(pkt, &encap_pkt, ctx->conf.own_ip, nexthop);
+    ctx->conf.send_remote(encap_pkt.data, encap_pkt.length);
+}
+
 void handle_remote_data_pkt(PacketBuf *pkt)
 {
     OlsrContext *ctx = &g_olsr_ctx;
@@ -257,7 +287,37 @@ void handle_remote_data_pkt(PacketBuf *pkt)
         TLOGF("Context is NULL! - Can't handle local data packet\n");
         return;
     }
+    struct iphdr *iph = (struct iphdr *)pkt->data;
 
+    /* Check c-class ip matching */
+    if (!IP_C_CLASS_MATCH(ctx->conf.own_ip, iph->daddr)) {
+        TLOGD("Drop packet from %s to %s\n",
+              ip2str(iph->saddr), ip2str(iph->daddr));
+        return;
+    }
+
+    switch (iph->protocol) {
+        case IPPROTO_MOBILE:
+            /* Encapsulated packet. First decapsulate it */
+            PacketBuf decap_pkt;
+            minimal_mip_decap(pkt, &decap_pkt);
+
+            struct iphdr *decap_iph = (struct iphdr *)decap_pkt.data;
+            if (IP_C_CLASS_MATCH(ctx->conf.own_ip, decap_iph->daddr)){
+                /* If decapsulated packet is for me, send to local */
+                ctx->conf.send_local(decap_pkt.data, decap_pkt.length);
+                return;
+            }
+            
+            /* Not for me. Search routing table and forwarding it */
+            ip_route(ctx, &decap_pkt, 0);
+            
+            break;
+        default:
+            /* Normal packet - send to local */
+            ctx->conf.send_local(pkt->data, pkt->length);
+            break;
+    }
 }
 
 void handle_local_data_pkt(PacketBuf *pkt)
@@ -270,17 +330,10 @@ void handle_local_data_pkt(PacketBuf *pkt)
 
     struct iphdr *iph = (struct iphdr *)pkt->data;
 
-    /* Get route */
-    RoutingEntry *entry =
-        (RoutingEntry *)rbtree_search(ctx->routing_table, &iph->daddr);
+    /* Do not send local network packet */
+    if (IP_C_CLASS_MATCH(ctx->conf.own_ip, iph->daddr))
+        return;
 
-    if (entry){
-        TLOGD("Route to %s => %d hop\n", ip2str(iph->daddr), entry->hop_count);
-    } else {
-        TLOGD("No route entry exist to %s\n", ip2str(iph->daddr));
-    }
-    /* If onehop, just send to mac */
-
-    /* If multihop, modify header and send to mac */
+    ip_route(ctx, pkt, 1);
 }
 

@@ -118,16 +118,14 @@ void minimal_mip_encap(PacketBuf *ip_pkt,
 }
 
 void minimal_mip_decap(PacketBuf *encap_ip_pkt,
-                       PacketBuf *decap_ip_pkt_buf,
-                       in_addr_t new_src,
-                       in_addr_t new_dst)
+                       PacketBuf *decap_ip_pkt_buf)
 {
     struct iphdr *old_ip_hdr = (struct iphdr *)encap_ip_pkt->data;
 
     int old_ip_hdr_len = old_ip_hdr->ihl * 4;
     int decap_ip_hdr_len = old_ip_hdr_len - sizeof(MinimalMobileIpHdr);
     MinimalMobileIpHdr *mip_hdr =
-        (MinimalMobileIpHdr *)&(old_ip_hdr[decap_ip_hdr_len]);
+        (MinimalMobileIpHdr *)&(encap_ip_pkt->data[decap_ip_hdr_len]);
 
     struct iphdr *new_ip_hdr = (struct iphdr *)decap_ip_pkt_buf->data;
     memcpy(new_ip_hdr, old_ip_hdr, decap_ip_hdr_len);

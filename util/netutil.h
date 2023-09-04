@@ -14,6 +14,7 @@
 #define MAX_PKT_PAYLOAD 1500
 #define MAX_ETHER_HEADER_MARGIN 50
 
+#define IP_C_CLASS_MATCH(ip1, ip2) (((ip1) & 0xffffff00) == ((ip2) & 0xffffff00))
 
 #define IPUDP_HDRLEN (sizeof(struct iphdr) + sizeof(struct udphdr))
 
@@ -115,8 +116,6 @@ void minimal_mip_encap(PacketBuf *ip_pkt,
  * @param new_dst 
  */
 void minimal_mip_decap(PacketBuf *encap_ip_pkt,
-                       PacketBuf *decap_ip_pkt_buf,
-                       in_addr_t new_src,
-                       in_addr_t new_dst);
+                       PacketBuf *decap_ip_pkt_buf);
 
 #endif

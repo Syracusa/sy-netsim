@@ -5,7 +5,7 @@
 #include "olsr.h"
 #include "olsr_context.h"
 
-#define OLSR_ROUTE_IFACE_VERBOSE 1
+#define OLSR_ROUTE_IFACE_VERBOSE 0
 
 RouteFunctions olsr_iface = {
     .handle_local_pkt = olsr_handle_local_pkt,
@@ -59,11 +59,9 @@ void olsr_handle_remote_pkt(void *data, size_t len)
     statistics_update(pkb.data);
 
     if (OLSR_ROUTE_IFACE_VERBOSE)
-        TLOGD("Handle packet from remote((%s <= %s)\n",
+        TLOGD("Handle packet from remote(%s <= %s)\n",
               ip2str(iph->daddr), ip2str(iph->saddr));
-
-    /* TODO : Check Mobile IP */
-
+    
     if (iph->protocol == IPPROTO_UDP) {
         uint16_t port = ntohs(udph->dest);
 
@@ -73,11 +71,11 @@ void olsr_handle_remote_pkt(void *data, size_t len)
                 hexdump(pkb.data, pkb.length, stdout);
             }
             handle_route_pkt(&pkb);
-        } else {
-            TLOGD("Data pkt - port %u\n", port);
-            handle_remote_data_pkt(&pkb);
+            return;
         }
     }
+
+    handle_remote_data_pkt(&pkb);
 }
 
 void olsr_start(CommonRouteConfig *config)
