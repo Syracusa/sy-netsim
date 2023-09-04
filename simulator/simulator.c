@@ -167,3 +167,11 @@ void simulator_start_local(SimulatorCtx *sctx, const char *filepath)
 
     send_config_msgs(sctx);
 }
+
+void simulator_local_mainloop(SimulatorCtx *sctx)
+{
+    while (1) {
+        recv_report(sctx);
+        usleep(10 * 1000);
+    }
+}

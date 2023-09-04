@@ -11,6 +11,9 @@
 /** Send json string with tcp(Send 2byte JSON length first and send json str) */
 static void send_json_to_front(SimulatorCtx *sctx, char *json)
 {
+    if (sctx->server_mode != 1)
+        return;
+
     /* Push to tcp send queue(json len, 2byte) */
     uint16_t jsonlen = htons(strlen(json));
     RingBuffer_push(sctx->server_ctx.sendq,

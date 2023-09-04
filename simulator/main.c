@@ -66,16 +66,19 @@ int main(int argc, char *argv[])
 
     if (argc == 2){
         /* Config file option - run as local mode */
+        sctx->server_mode = 0;
         simulator_start_local(sctx, argv[1]);
+        simulator_local_mainloop(sctx);
     } else if (argc == 1) {
         /* No config file option - run as server mode */
+        sctx->server_mode = 1;
         simulator_start_server(&sctx->server_ctx);
         simulator_server_mainloop(sctx);
     } else {
         TLOGF("Usage: %s [config_file]\n", argv[0]);
         exit(2);
     }
-    
+
     TLOGI("Finish\n");
     sleep(3600);
     free_simulator_context();

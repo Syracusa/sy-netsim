@@ -44,6 +44,8 @@ typedef struct SimulatorServerCtx {
 
 /** Simulator program context */
 typedef struct SimulatorCtx {
+    int server_mode; /** 1: server mode, 0: local mode */
+
     int mqid_phy_command; /** Phy simulator message queue id(Simulator => SimPHY) */
     int mqid_phy_report; /** Phy simulator message queue id(SimPHY => Simulator) */
     pid_t phy_pid; /** Phy simulator process id */
@@ -78,5 +80,12 @@ void simulator_kill_all_process(SimulatorCtx *sctx);
  * @param filepath Config file path
  */
 void simulator_start_local(SimulatorCtx *sctx, const char *filepath);
+
+/**
+ * @brief 
+ * 
+ * @param sctx 
+ */
+void simulator_local_mainloop(SimulatorCtx *sctx);
 
 #endif
