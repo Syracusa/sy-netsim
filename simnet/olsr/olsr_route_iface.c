@@ -47,11 +47,15 @@ void olsr_handle_remote_pkt(void *data, size_t len)
     if (OLSR_ROUTE_IFACE_VERBOSE)
         TLOGD("olsr_handle_remote_pkt() called\n");
 
-    unsigned char *ptr = data;
+    PacketBuf pkb;
+    pkb.length = len;
+    memcpy(pkb.data, data, len);
 
-    struct iphdr *iph = data;
+    unsigned char *ptr = pkb.data;
+
+    struct iphdr *iph = (struct iphdr *)pkb.data;
     struct udphdr *udph = (struct udphdr *)(ptr + iph->ihl * 4);
-    statistics_update(data);
+    statistics_update(pkb.data);
 
     /* TODO : Check Mobile IP */
 
@@ -61,11 +65,12 @@ void olsr_handle_remote_pkt(void *data, size_t len)
         if (port == OLSR_PROTO_PORT) {
             if (DUMP_ROUTE_PKT) {
                 TLOGD("Recv Route Pkt\n");
-                hexdump(data, len, stdout);
+                hexdump(pkb.data, pkb.length, stdout);
             }
-            handle_route_pkt(data);
+            handle_route_pkt(&pkb);
         } else {
-            handle_data_pkt(data);
+            TLOGD("Data pkt - port %u\n", port);
+            handle_data_pkt(&pkb);
         }
     }
 }

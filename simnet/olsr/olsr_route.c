@@ -23,6 +23,7 @@ void olsr_send_from_queue_cb(void *arg)
     /* UDP Header */
     build_udp_hdr_no_checksum(offset, OLSR_PROTO_PORT,
                               OLSR_PROTO_PORT, payload_len);
+    offset += sizeof(struct udphdr);
 
     /* Payload */
     uint16_t pktlen_be = htons(4 + read);
@@ -220,7 +221,7 @@ static void handle_olsr_msg(OlsrMsgHeader *msg,
 
 void handle_route_pkt(PacketBuf *pkt)
 {
-    const struct iphdr *iph = (struct iphdr *)pkt;
+    const struct iphdr *iph = (struct iphdr *)pkt->data;
 
     const int payload_len = pkt->length - IPUDP_HDRLEN;
 
