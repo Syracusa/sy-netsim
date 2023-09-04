@@ -5,31 +5,30 @@ static void send_dummy_packet(void *arg)
 {
     NetSetDummyTrafficConfig *conf = arg;
     SimNetCtx *snctx = g_snctx;
-    static uint8_t dummybuf[MAX_IPPKT_SIZE];
 
-    PktBuf pkb;
-    memset(&pkb, 0x00, sizeof(PktBuf));
-
-    pkb.payload_len = conf->payload_size;
-
+    PacketBuf pkb;
     MAKE_BE32_IP(sender_ip, 192, 168, snctx->node_id, 1);
     MAKE_BE32_IP(receiver_ip, 192, 168, conf->dst_id, 1);
 
-    build_ip_hdr(&(pkb.iph), pkb.payload_len + IPUDP_HDRLEN, 64,
+    unsigned char* ptr = pkb.data;
+    build_ip_hdr(ptr, conf->payload_size + IPUDP_HDRLEN, 64,
                  sender_ip, receiver_ip, IPPROTO_UDP);
-    pkb.iph_len = sizeof(struct iphdr);
-    build_udp_hdr_no_checksum(&(pkb.udph), 29111, 29112, pkb.payload_len);
+    ptr += sizeof(struct iphdr);
+
+    build_udp_hdr_no_checksum(ptr, 29111, 29112, conf->payload_size);
+    ptr += sizeof(struct udphdr);
+
+    memset(ptr, 0x00, conf->payload_size);
+    ptr += conf->payload_size;
+
+    pkb.length = ptr - &pkb.data[0];
 
     if (DEBUG_NET_TRX) {
-        TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %ld)\n",
-              ip2str(pkb.iph.saddr), ip2str(pkb.iph.daddr), pkb.payload_len);
-
-        if (PKT_HEXDUMP)
-            hexdump(&pkb.iph, pkb.payload_len + IPUDP_HDRLEN, stdout);
+        TLOGD("Send dummy pkt. %s -> %s(Payloadsz: %u)\n",
+              ip2str(sender_ip), ip2str(receiver_ip), conf->payload_size);
     }
-    size_t len = MAX_IPPKT_SIZE;
-    ippkt_pack(&pkb, dummybuf, &len);
-    snctx->route->handle_local_pkt(dummybuf, len);
+
+    snctx->route->handle_local_pkt(&pkb.data, pkb.length);
 }
 
 static void dummypkt_send_job_detach_cb(void *arg)

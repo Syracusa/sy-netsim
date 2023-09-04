@@ -21,9 +21,6 @@ void olsr_handle_local_pkt(void *data, size_t len)
     if (!ctx)
         return;
 
-    PktBuf buf;
-    ippkt_unpack(&buf, data, len);
-
     /* Get nexthop */
 
     /* If onehop, just send to mac */
@@ -33,12 +30,14 @@ void olsr_handle_local_pkt(void *data, size_t len)
 
 }
 
-static void statistics_update(PktBuf *buf)
+static void statistics_update(void* ippkt)
 {
+    struct iphdr *iph = ippkt;
+
     OlsrContext *ctx = &g_olsr_ctx;
-    NeighborStatInfo *stat_elem = get_neighborstat_buf(ctx, buf->iph.daddr);
+    NeighborStatInfo *stat_elem = get_neighborstat_buf(ctx, iph->daddr);
     NeighborInfo *info = stat_elem->info;
-    info->traffic.tx_bytes += ntohs(buf->iph.tot_len);
+    info->traffic.tx_bytes += ntohs(iph->tot_len);
     info->traffic.tx_pkts++;
     info->traffic.dirty = 1;
 }
@@ -48,23 +47,25 @@ void olsr_handle_remote_pkt(void *data, size_t len)
     if (OLSR_ROUTE_IFACE_VERBOSE)
         TLOGD("olsr_handle_remote_pkt() called\n");
 
-    PktBuf buf;
-    ippkt_unpack(&buf, data, len);
-    statistics_update(&buf);
+    unsigned char *ptr = data;
 
-    /* TODO : Check Mobile IP*/
+    struct iphdr *iph = data;
+    struct udphdr *udph = (struct udphdr *)(ptr + iph->ihl * 4);
+    statistics_update(data);
 
-    if (buf.iph.protocol == IPPROTO_UDP) {
-        uint16_t port = ntohs(buf.udph.dest);
+    /* TODO : Check Mobile IP */
+
+    if (iph->protocol == IPPROTO_UDP) {
+        uint16_t port = ntohs(udph->dest);
 
         if (port == OLSR_PROTO_PORT) {
             if (DUMP_ROUTE_PKT) {
                 TLOGD("Recv Route Pkt\n");
                 hexdump(data, len, stdout);
             }
-            handle_route_pkt(&buf);
+            handle_route_pkt(data);
         } else {
-            handle_data_pkt(&buf);
+            handle_data_pkt(data);
         }
     }
 }

@@ -12,15 +12,16 @@ char *ip2str(in_addr_t addr)
     return ipstr[bufidx];
 }
 
-void build_udp_hdr_no_checksum(struct udphdr *hdr_buf,
+void build_udp_hdr_no_checksum(void *hdr_buf,
                                uint16_t src_port,
                                uint16_t dst_port,
                                uint16_t payload_len /* Only payload, Udp hdr len should not be added */)
 {
-    hdr_buf->source = htons(src_port);
-    hdr_buf->dest = htons(dst_port);
-    hdr_buf->len = htons(sizeof(struct udphdr) + payload_len);
-    hdr_buf->check = 0; /* No checksum */
+    struct udphdr *hdr = hdr_buf;
+    hdr->source = htons(src_port);
+    hdr->dest = htons(dst_port);
+    hdr->len = htons(sizeof(struct udphdr) + payload_len);
+    hdr->check = 0; /* No checksum */
 }
 
 static uint16_t calc_ip_checksum(void *vdata, size_t length)
@@ -56,7 +57,7 @@ static uint16_t calc_ip_checksum(void *vdata, size_t length)
     return htons(~acc);
 }
 
-void build_ip_hdr(struct iphdr *hdr_buf,
+void build_ip_hdr(void *hdr_buf,
                   int len, /* iph + udph + payload */
                   int ttl,
                   in_addr_t srcaddr,
@@ -69,9 +70,9 @@ void build_ip_hdr(struct iphdr *hdr_buf,
     hdr->version = 4; /* ipv4 hdr */
     hdr->tos = 0;
     hdr->tot_len = htons(len);
-    hdr->id = 0;       /* use when ip is fregmented */
-    hdr->frag_off = 0; /* use when ip is fregmented */
-    hdr->ttl = ttl;    /* max 4-hop */
+    hdr->id = 0;       /* use when ip is fragmented */
+    hdr->frag_off = 0; /* use when ip is fragmented */
+    hdr->ttl = ttl;
     hdr->protocol = ipproto;
     hdr->check = 0;
     hdr->saddr = srcaddr;
@@ -79,47 +80,70 @@ void build_ip_hdr(struct iphdr *hdr_buf,
     hdr->check = calc_ip_checksum(hdr, sizeof(struct iphdr));
 }
 
-void ippkt_pack(PktBuf *pktbuf, void *buf, size_t *len)
+void minimal_mip_encap(PacketBuf *ip_pkt,
+                       PacketBuf *encap_ip_pkt_buf,
+                       in_addr_t new_src,
+                       in_addr_t new_dst)
 {
-    uint8_t *orig = buf;
-    uint8_t *ptr = buf;
+    struct iphdr *old_ip_hdr = (struct iphdr *)ip_pkt->data;
+    struct iphdr *new_ip_hdr = (struct iphdr *)encap_ip_pkt_buf->data;
 
-    memcpy(ptr, &pktbuf->iph, pktbuf->iph_len);
-    ptr += pktbuf->iph_len;
+    int old_ip_hdr_len = old_ip_hdr->ihl * 4;
+    memcpy(new_ip_hdr, old_ip_hdr, old_ip_hdr_len);
 
-    memcpy(ptr, &pktbuf->udph, sizeof(struct udphdr));
-    ptr += sizeof(struct udphdr);
+    MinimalMobileIpHdr *mip_hdr =
+        (MinimalMobileIpHdr *)&(encap_ip_pkt_buf->data[old_ip_hdr_len]);
+    mip_hdr->ipproto = old_ip_hdr->protocol;
+    mip_hdr->recv = 0; /* reserved */
+    mip_hdr->s = 1; /* Original source address will be preserved */
+    mip_hdr->checksum = 0;
+    mip_hdr->orig_dst_ip = old_ip_hdr->daddr;
+    mip_hdr->orig_src_ip = old_ip_hdr->saddr;
+    mip_hdr->checksum = calc_ip_checksum(mip_hdr, sizeof(MinimalMobileIpHdr));
 
-    memcpy(ptr, &pktbuf->payload, pktbuf->payload_len);
-    ptr += pktbuf->payload_len;
+    int new_ip_hdr_len = old_ip_hdr_len + sizeof(MinimalMobileIpHdr);
+    memcpy(&(encap_ip_pkt_buf->data[new_ip_hdr_len]),
+           &(ip_pkt->data[old_ip_hdr_len]),
+           ip_pkt->length - old_ip_hdr_len);
 
-    *len = ptr - orig;
+    new_ip_hdr->protocol = IPPROTO_MOBILE;
+    new_ip_hdr->ihl = new_ip_hdr_len / 4;
+    new_ip_hdr->tot_len = htons(ip_pkt->length + sizeof(MinimalMobileIpHdr));
+    new_ip_hdr->saddr = new_src;
+    new_ip_hdr->daddr = new_dst;
+    new_ip_hdr->check = 0;
+    new_ip_hdr->check = calc_ip_checksum(new_ip_hdr, new_ip_hdr_len);
+
+    encap_ip_pkt_buf->length = sizeof(MinimalMobileIpHdr) + ip_pkt->length;
 }
 
-void ippkt_unpack(PktBuf *pktbuf, void *buf, size_t len)
+void minimal_mip_decap(PacketBuf *encap_ip_pkt,
+                       PacketBuf *decap_ip_pkt_buf,
+                       in_addr_t new_src,
+                       in_addr_t new_dst)
 {
-    uint8_t *ptr = buf;
+    struct iphdr *old_ip_hdr = (struct iphdr *)encap_ip_pkt->data;
 
-    struct iphdr* ipp;
-    ipp = (struct iphdr*)buf;
+    int old_ip_hdr_len = old_ip_hdr->ihl * 4;
+    int decap_ip_hdr_len = old_ip_hdr_len - sizeof(MinimalMobileIpHdr);
+    MinimalMobileIpHdr *mip_hdr =
+        (MinimalMobileIpHdr *)&(old_ip_hdr[decap_ip_hdr_len]);
 
-    pktbuf->iph_len = ipp->ihl * 4;
-    memcpy(&pktbuf->iph, ptr, pktbuf->iph_len);
-    ptr += pktbuf->iph_len;
+    struct iphdr *new_ip_hdr = (struct iphdr *)decap_ip_pkt_buf->data;
+    memcpy(new_ip_hdr, old_ip_hdr, decap_ip_hdr_len);
 
-    memcpy(&pktbuf->udph, ptr, sizeof(struct udphdr));
-    ptr += sizeof(struct udphdr);
-    
-    pktbuf->payload_len = len - (pktbuf->iph_len + sizeof(struct udphdr));
-    memcpy(&pktbuf->payload, ptr, pktbuf->payload_len);
-    ptr += pktbuf->payload_len;
+    new_ip_hdr->protocol = mip_hdr->ipproto;
+    new_ip_hdr->ihl = decap_ip_hdr_len / 4;
+    new_ip_hdr->tot_len =
+        htons(encap_ip_pkt->length - sizeof(MinimalMobileIpHdr));
+    new_ip_hdr->saddr = mip_hdr->orig_src_ip;
+    new_ip_hdr->daddr = mip_hdr->orig_dst_ip;
+    new_ip_hdr->check = 0;
+    new_ip_hdr->check = calc_ip_checksum(new_ip_hdr, decap_ip_hdr_len);
+
+    memcpy(&(decap_ip_pkt_buf->data[decap_ip_hdr_len]),
+           &(encap_ip_pkt->data[old_ip_hdr_len]),
+           encap_ip_pkt->length - old_ip_hdr_len);
+
+    decap_ip_pkt_buf->length = encap_ip_pkt->length - sizeof(MinimalMobileIpHdr);
 }
-
-/* Minimal IP Encapsulation RFC 2004 */
-// void minimal_mip_encap(void* ippkt, ) {
-
-// }
-
-// void minimal_mip_decap() {
-
-// }

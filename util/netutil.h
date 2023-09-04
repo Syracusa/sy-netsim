@@ -22,48 +22,101 @@
     _pt[0] = (o1); _pt[1] = (o2); _pt[2] = (o3); _pt[3] = (o4);\
 } while (0); 
 
-typedef struct PktBuf
+typedef struct PacketBuf
 {
-    /* Packet itself */
-    unsigned char ether_margin[MAX_ETHER_HEADER_MARGIN];
-    struct iphdr iph;
-    uint8_t ip_margin[50];
-    struct udphdr udph;
-    unsigned char payload[MAX_PKT_PAYLOAD];
-
-    /* Additional information */
-    ssize_t iph_len;
-    ssize_t payload_len;
-}__attribute__((packed)) PktBuf;
+    size_t length;
+    unsigned char data[MAX_IPPKT_SIZE + MAX_ETHER_HEADER_MARGIN];
+}__attribute__((packed)) PacketBuf;
 
 
 #define IPPROTO_MOBILE 55 
 
-typedef struct MinMipHdr
+typedef struct MinimalMobileIpHdr
 {
+    /** IPPROTO_MOBILE = 55 */
     uint8_t ipproto;
-    uint8_t recv:7;
-    uint8_t is_mip:1;
+
+    /** Reserved */
+    uint8_t recv : 7;
+
+    /** Original Source Address Present. Always 1 in this implementation */
+    uint8_t s : 1;
+
+    /**
+     * Header Checksum
+     *
+     * The 16-bit one's complement of the one's complement sum of all
+     * 16-bit words in the minimal forwarding header.  For purposes of
+     * computing the checksum, the value of the checksum field is 0.
+     * The IP header and IP payload (after the minimal forwarding
+     * header) are not included in this checksum computation.
+     *  - RFC 2004(https://datatracker.ietf.org/doc/html/rfc2004)
+     */
     uint16_t checksum;
-    uint32_t dst_ip;
-    uint32_t src_ip;
-}__attribute__((packed)) MinMipHdr;
+
+    /** Original Destination Address */
+    uint32_t orig_dst_ip;
+
+    /** Original Source Address */
+    uint32_t orig_src_ip;
+}__attribute__((packed)) MinimalMobileIpHdr;
 
 char *ip2str(in_addr_t addr);
 
-void build_udp_hdr_no_checksum(struct udphdr *hdr_buf,
+/**
+ * @brief 
+ * 
+ * @param payload_len Only payload, Udp hdr len should not be added 
+ */
+void build_udp_hdr_no_checksum(void *hdr_buf,
                                uint16_t src_port,
                                uint16_t dst_port,
                                uint16_t payload_len);
 
-void build_ip_hdr(struct iphdr *hdr_buf,
-                  int len, int ttl,
+
+/**
+ * @brief Build UDP header
+ * 
+ * @param hdr_buf Buffer to store IP header
+ * @param len Length of IP header + UDP header + payload
+ * @param ttl Time to live
+ * @param srcaddr Source IP address
+ * @param dstaddr Destination IP address
+ * @param ipproto IP protocol number(IPPROTO_UDP, IPPROTO_ICMP)
+ */
+void build_ip_hdr(void *hdr_buf,
+                  int len,
+                  int ttl,
                   in_addr_t srcaddr,
                   in_addr_t dstaddr,
-                  unsigned char ipproto /* IPPROTO_UDP, IPPROTO_ICMP */
+                  unsigned char ipproto
 );
 
-void ippkt_pack(PktBuf* pktbuf, void* buf, size_t* len);
-void ippkt_unpack(PktBuf* pktbuf, void* buf, size_t len);
+/**
+ * @brief Minimal IP Encapsulation RFC 2004
+ * 
+ * @param ip_pkt 
+ * @param encap_ip_pkt_buf 
+ * @param new_src 
+ * @param new_dst 
+ */
+void minimal_mip_encap(PacketBuf *ip_pkt,
+                       PacketBuf *encap_ip_pkt_buf,
+                       in_addr_t new_src,
+                       in_addr_t new_dst);
+
+
+/**
+ * @brief Minimal IP Decapsulation RFC 2004
+ * 
+ * @param encap_ip_pkt 
+ * @param decap_ip_pkt_buf 
+ * @param new_src 
+ * @param new_dst 
+ */
+void minimal_mip_decap(PacketBuf *encap_ip_pkt,
+                       PacketBuf *decap_ip_pkt_buf,
+                       in_addr_t new_src,
+                       in_addr_t new_dst);
 
 #endif

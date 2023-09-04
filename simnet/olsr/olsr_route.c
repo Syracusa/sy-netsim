@@ -5,16 +5,26 @@ void olsr_send_from_queue_cb(void *arg)
 {
     OlsrContext *ctx = arg;
 
-    PktBuf pkt;
+    PacketBuf pkt;
 
     ssize_t read = RingBuffer_get_readable_bufsize(ctx->olsr_tx_msgbuf);
 
     if (read <= 0)
         return;
+    int payload_len = read + 4/* OLSR PACKET HDR */;
+    uint8_t *offset = pkt.data;
+
+    /* IP Header */
+    MAKE_BE32_IP(broadcast_ip, 255, 255, 255, 255);
+    build_ip_hdr(offset, IPUDP_HDRLEN + payload_len, 64,
+                 ctx->conf.own_ip, broadcast_ip, IPPROTO_UDP);
+    offset += sizeof(struct iphdr);
+
+    /* UDP Header */
+    build_udp_hdr_no_checksum(offset, OLSR_PROTO_PORT,
+                              OLSR_PROTO_PORT, payload_len);
 
     /* Payload */
-    uint8_t *offset = pkt.payload;
-
     uint16_t pktlen_be = htons(4 + read);
     memcpy(offset, &pktlen_be, sizeof(pktlen_be));
     offset += sizeof(pktlen_be);
@@ -26,29 +36,14 @@ void olsr_send_from_queue_cb(void *arg)
     RingBuffer_pop(ctx->olsr_tx_msgbuf, offset, read);
     offset += read;
 
-    pkt.payload_len = offset - pkt.payload;
+    pkt.length = offset - pkt.data;
 
-    /* UDP Header */
-    build_udp_hdr_no_checksum(&(pkt.udph), OLSR_PROTO_PORT,
-                              OLSR_PROTO_PORT, pkt.payload_len);
-
-    /* IP Header */
-    MAKE_BE32_IP(broadcast_ip, 255, 255, 255, 255);
-
-    build_ip_hdr(&(pkt.iph), pkt.payload_len + IPUDP_HDRLEN, 64,
-                 ctx->conf.own_ip, broadcast_ip, IPPROTO_UDP);
-    pkt.iph_len = sizeof(struct iphdr);
-
-    unsigned char buf[MAX_IPPKT_SIZE];
-    size_t sendlen = MAX_IPPKT_SIZE;
-    ippkt_pack(&pkt, buf, &sendlen);
-
-    ctx->conf.send_remote(buf, sendlen);
+    ctx->conf.send_remote(pkt.data, pkt.length);
     ctx->msg_seq++;
 
     if (DUMP_ROUTE_PKT) {
         TLOGD("Send Route Pkt\n");
-        hexdump(buf, sendlen, stdout);
+        hexdump(pkt.data, pkt.length, stdout);
     }
 }
 
@@ -223,32 +218,38 @@ static void handle_olsr_msg(OlsrMsgHeader *msg,
 #endif
 }
 
-void handle_route_pkt(PktBuf *pkt)
+void handle_route_pkt(PacketBuf *pkt)
 {
-    // fprintf(stderr, "Routepktlen : %ld\n", pkt->payload_len);
-    if (pkt->payload_len <= 0)
-        return;
+    const struct iphdr *iph = (struct iphdr *)pkt;
 
-    uint8_t *offset = pkt->payload;
+    const int payload_len = pkt->length - IPUDP_HDRLEN;
+
+    if (payload_len <= 0){
+        TLOGF("Payload len is 0!\n");
+        return;
+    }
+
+    const uint8_t *payload_offset = &pkt->data[IPUDP_HDRLEN]; 
+    uint8_t *offset = (uint8_t *)payload_offset;
 
     /* Skip olsr pkt header */
     offset += 4;
 
     /* Parse olsr msg */
-    while (offset - pkt->payload < pkt->payload_len) {
+    while (offset - payload_offset < payload_len) {
         OlsrMsgHeader *msghdr = (OlsrMsgHeader *)offset;
         size_t msgsize = ntohs(msghdr->olsr_msgsize);
         if (msgsize == 0) {
             TLOGF("Msgsize is 0!\n");
             exit(2);
         }
-        handle_olsr_msg(msghdr, pkt->iph.saddr);
+        handle_olsr_msg(msghdr, iph->saddr);
 
         offset += msgsize;
     }
 }
 
-void handle_data_pkt(PktBuf *pkt)
+void handle_data_pkt(PacketBuf *pkt)
 {
     /*  */
 

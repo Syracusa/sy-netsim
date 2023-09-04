@@ -7,16 +7,14 @@ void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
 
 void process_mac_msg(SimNetCtx *snctx, void *data, int len)
 {
-    PktBuf pkb;
-
-    ippkt_unpack(&pkb, data, len);
+    struct iphdr *iph = data;
 
     if (DEBUG_NET_TRX) {
         if (PKT_HEXDUMP)
             hexdump(data, len, stdout);
 
         TLOGD("Recv pkt. %s <- %s(Payloadsz: %ld)\n",
-              ip2str(pkb.iph.daddr), ip2str(pkb.iph.saddr), pkb.payload_len);
+              ip2str(iph->daddr), ip2str(iph->saddr), len - IPUDP_HDRLEN);
     }
 
     snctx->route->handle_remote_pkt(data, len);
