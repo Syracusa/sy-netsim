@@ -120,6 +120,7 @@ void parse_config(SimulatorConfig *conf, const char *filepath)
             NetSetDummyTrafficConfig *stream_info =
                 &(conf->dummy_stream_info[conf->dummystream_conf_num]);
 
+            stream_info->conf_id = conf->dummystream_conf_num;
             stream_info->src_id = src_id;
             stream_info->dst_id = dst_id;
             stream_info->payload_size = payload_size;
