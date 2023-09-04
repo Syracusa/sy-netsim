@@ -36,7 +36,7 @@ static char *read_file(const char *filename)
     return string;
 }
 
-void parse_config(SimulatorConfig *conf)
+void parse_config(SimulatorConfig *conf, const char *filepath)
 {
     char *config_string = read_file(SIMULATOR_CONFIG_FILE);
     cJSON *json = cJSON_Parse(config_string);

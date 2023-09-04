@@ -155,9 +155,9 @@ void simulator_kill_all_process(SimulatorCtx *sctx)
     TLOGD("%d processes terminated\n", killnum);
 }
 
-void simulator_start_local(SimulatorCtx *sctx)
+void simulator_start_local(SimulatorCtx *sctx, const char *filepath)
 {
-    parse_config(&sctx->conf);
+    parse_config(&sctx->conf, filepath);
     start_simulate_local(sctx);
 
     /* Wait until apps are ready.

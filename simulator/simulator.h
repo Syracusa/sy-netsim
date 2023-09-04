@@ -75,7 +75,8 @@ void simulator_kill_all_process(SimulatorCtx *sctx);
  * This function will block 1 second to wait for all process to be ready.
  * 
  * @param sctx Simulator program context
+ * @param filepath Config file path
  */
-void simulator_start_local(SimulatorCtx* sctx);
+void simulator_start_local(SimulatorCtx *sctx, const char *filepath);
 
 #endif

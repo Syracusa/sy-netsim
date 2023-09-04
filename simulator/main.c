@@ -55,7 +55,7 @@ static void handle_signal()
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
     dbgfile = stderr;
     TLOGI("Start simulator...\n");
@@ -64,14 +64,18 @@ int main()
 
     handle_signal();
 
-    int SERVER_MODE = 1;
-    if (SERVER_MODE) {
+    if (argc == 2){
+        /* Config file option - run as local mode */
+        simulator_start_local(sctx, argv[1]);
+    } else if (argc == 1) {
+        /* No config file option - run as server mode */
         simulator_start_server(&sctx->server_ctx);
         simulator_server_mainloop(sctx);
     } else {
-        simulator_start_local(sctx);
+        TLOGF("Usage: %s [config_file]\n", argv[0]);
+        exit(2);
     }
-
+    
     TLOGI("Finish\n");
     sleep(3600);
     free_simulator_context();

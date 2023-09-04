@@ -35,7 +35,8 @@ typedef struct SimulatorConfig {
  * Check sample file({project_root_dir}/config_sample.json})
  * 
  * @param sctx Program context
+ * @param filename Config file path
  */
-void parse_config(SimulatorConfig *conf);
+void parse_config(SimulatorConfig *conf, const char *filepath);
 
 #endif
