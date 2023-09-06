@@ -178,7 +178,7 @@ void simphy_init_mq(SimPhyCtx *spctx)
  *
  * @param spctx Simphy context
  */
-static init_link_state(SimPhyCtx *spctx)
+static void init_link_state(SimPhyCtx *spctx)
 {
     for (int i = 0; i < MAX_NODE_ID; i++) {
         for (int j = 0; j < MAX_NODE_ID; j++) {
