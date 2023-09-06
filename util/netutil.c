@@ -2,28 +2,13 @@
 #include <string.h>
 #include "netutil.h"
 
-char *ip2str(in_addr_t addr)
-{
-    static int bufidx = 0;
-    static char ipstr[100][INET_ADDRSTRLEN];
-    if (++bufidx > 99)
-        bufidx = 0;
-    inet_ntop(AF_INET, &(addr), ipstr[bufidx], INET_ADDRSTRLEN);
-    return ipstr[bufidx];
-}
-
-void build_udp_hdr_no_checksum(void *hdr_buf,
-                               uint16_t src_port,
-                               uint16_t dst_port,
-                               uint16_t payload_len /* Only payload, Udp hdr len should not be added */)
-{
-    struct udphdr *hdr = hdr_buf;
-    hdr->source = htons(src_port);
-    hdr->dest = htons(dst_port);
-    hdr->len = htons(sizeof(struct udphdr) + payload_len);
-    hdr->check = 0; /* No checksum */
-}
-
+/**
+ * @brief Calculate IP checksum
+ * 
+ * @param vdata IP header. Checksum field should be 0.
+ * @param length Length of IP header
+ * @return uint16_t Calculated checksum
+ */
 static uint16_t calc_ip_checksum(void *vdata, size_t length)
 {
     // Cast the data pointer to one that can be indexed.
@@ -56,6 +41,29 @@ static uint16_t calc_ip_checksum(void *vdata, size_t length)
     // Return the checksum in network byte order.
     return htons(~acc);
 }
+
+char *ip2str(in_addr_t addr)
+{
+    static int bufidx = 0;
+    static char ipstr[100][INET_ADDRSTRLEN];
+    if (++bufidx > 99)
+        bufidx = 0;
+    inet_ntop(AF_INET, &(addr), ipstr[bufidx], INET_ADDRSTRLEN);
+    return ipstr[bufidx];
+}
+
+void build_udp_hdr_no_checksum(void *hdr_buf,
+                               uint16_t src_port,
+                               uint16_t dst_port,
+                               uint16_t payload_len /* Only payload, Udp hdr len should not be added */)
+{
+    struct udphdr *hdr = hdr_buf;
+    hdr->source = htons(src_port);
+    hdr->dest = htons(dst_port);
+    hdr->len = htons(sizeof(struct udphdr) + payload_len);
+    hdr->check = 0; /* No checksum */
+}
+
 
 void build_ip_hdr(void *hdr_buf,
                   int len, /* iph + udph + payload */
