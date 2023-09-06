@@ -1,4 +1,5 @@
 add_executable(simphy  
+                "main.c"
                 "simphy.c"
                 "../util/util.c"
                 "../util/mq.c"
