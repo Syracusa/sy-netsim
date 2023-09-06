@@ -14,4 +14,6 @@ int main()
     simphy_mainloop(spctx);
 
     delete_symphy_context(spctx);
+
+    return 0;
 }
