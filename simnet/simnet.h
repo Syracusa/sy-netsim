@@ -46,8 +46,14 @@ typedef struct
     NetStats stat;
 } SimNetCtx;
 
+extern SimNetCtx *g_snctx; /** Global singleton simnet context */
 
-extern SimNetCtx *g_snctx;
+SimNetCtx *get_simnet_context();
+void delete_simnet_context(SimNetCtx *snctx);
+
+void remote_send(void *data, size_t len);
+void local_send(void *data, size_t len);
+void simnet_mainloop(SimNetCtx *snctx);
 
 
 #endif

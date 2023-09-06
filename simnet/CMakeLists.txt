@@ -4,6 +4,7 @@ add_subdirectory(aodv)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(simnet  
+                "main.c"
                 "simnet.c"
                 "dummy.c"
                 "mac_connection.c"
