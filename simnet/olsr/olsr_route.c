@@ -298,6 +298,7 @@ void handle_remote_data_pkt(PacketBuf *pkt)
 
     switch (iph->protocol) {
         case IPPROTO_MOBILE:
+        {
             /* Encapsulated packet. First decapsulate it */
             PacketBuf decap_pkt;
             minimal_mip_decap(pkt, &decap_pkt);
@@ -313,6 +314,7 @@ void handle_remote_data_pkt(PacketBuf *pkt)
             ip_route(ctx, &decap_pkt, 0);
             
             break;
+        }
         default:
             /* Normal packet - send to local */
             ctx->conf.send_local(pkt->data, pkt->length);
