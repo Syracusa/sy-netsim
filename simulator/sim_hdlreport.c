@@ -128,14 +128,25 @@ static void recv_mac_report(SimulatorCtx *sctx)
 /** Receive simnet report msg form message queue and call handler */
 static void recv_net_report(SimulatorCtx *sctx)
 {
-    MqMsgbuf msg;
-    for (int i = 0; i < MAX_NODE_ID; i++) {
-        ssize_t ret = msgrcv(sctx->nodes[i].mqid_net_report, &msg,
-                             MQ_MAX_DATA_LEN, 0, IPC_NOWAIT);
-        if (ret < 0)
-            break;
+    // MqMsgbuf msg;
+    // for (int i = 0; i < MAX_NODE_ID; i++) {
+    //     ssize_t ret = msgrcv(sctx->nodes[i].mqid_net_report, &msg,
+    //                          MQ_MAX_DATA_LEN, 0, IPC_NOWAIT);
+    //     if (ret < 0)
+    //         continue;
 
-        handle_net_report(sctx, i, msg.type, msg.text, ret);
+    //     handle_net_report(sctx, i, msg.type, msg.text, ret);
+    // }
+
+    MqMsgbuf msg;
+
+    for (int i = 0; i < MAX_NODE_ID; i++) {
+        while (1) {
+            ssize_t ret = recv_mq(sctx->nodes[i].mqid_net_report, &msg);
+            if (ret < 0)
+                break;
+            handle_net_report(sctx, i, msg.type, msg.text, ret);
+        }
     }
 }
 

@@ -108,18 +108,24 @@ static void send_dummystream_config_msgs(SimulatorCtx *sctx)
     for (int i = 0; i < conf->dummystream_conf_num; i++) {
         NetSetDummyTrafficConfig *info = &(conf->dummy_stream_info[i]);
 
-        send_mq(sctx->nodes[info->src_id].mqid_net_command,
-                info, sizeof(NetSetDummyTrafficConfig),
-                CONF_MSG_TYPE_NET_SET_DUMMY_TRAFFIC);
+        int res = send_mq(sctx->nodes[info->src_id].mqid_net_command,
+                          info, sizeof(NetSetDummyTrafficConfig),
+                          CONF_MSG_TYPE_NET_SET_DUMMY_TRAFFIC);
+        if (res < 0) {
+            TLOGE("Failed to send dummy stream config to NET\n");
+        }
     }
 }
 
 static void send_link_config_msgs(SimulatorCtx *sctx)
 {
     for (int i = 0; i < sctx->conf.simlink_conf_num; i++) {
-        send_mq(sctx->mqid_phy_command,
-                &sctx->conf.linkconfs[i], sizeof(PhyLinkConfig),
-                CONF_MSG_TYPE_PHY_LINK_CONFIG);
+        int res = send_mq(sctx->mqid_phy_command,
+                          &sctx->conf.linkconfs[i], sizeof(PhyLinkConfig),
+                          CONF_MSG_TYPE_PHY_LINK_CONFIG);
+        if (res < 0) {
+            TLOGE("Failed to send link config to PHY\n");
+        }
     }
 }
 

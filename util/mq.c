@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h> /* abort() */
 
 #include "mq.h"
 
@@ -17,7 +18,7 @@ void mq_flush(int mqid)
     }
 }
 
-void send_mq(int mqid,
+int send_mq(int mqid,
              void *data,
              size_t len,
              long type)
@@ -25,7 +26,7 @@ void send_mq(int mqid,
     /* The mtype field must have a strictly positive integer value. */
     if (type < 1) {
         fprintf(stderr, "Can't send meg with type %ld\n", type);
-        return;
+        return -1;
     }
 
     MqMsgbuf msg;
@@ -38,12 +39,17 @@ void send_mq(int mqid,
     int ret = msgsnd(mqid, &msg, len, IPC_NOWAIT);
     if (ret < 0) {
         if (errno == EAGAIN) {
-            fprintf(stderr, "Message queue full!\n");
+            fprintf(stderr, "Message queue full! mqid: %d len: %lu(%s)\n",  mqid, len, strerror(errno));
+            // abort();
+            return 0;
         } else {
-            fprintf(stderr, "Can't send. mqid: %d len: %lu(%s)\n",
+            fprintf(stderr, "Can't send. mqid: %x len: %lu(%s)\n",
                     mqid, len, strerror(errno));
+            return -2;
         }
     }
+
+    return 1;
 }
 
 ssize_t recv_mq(int mqid,

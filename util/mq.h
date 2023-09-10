@@ -11,7 +11,7 @@ typedef struct  {
 
 void mq_flush(int mqid);
 
-void send_mq(int mqid,
+int send_mq(int mqid,
 			 void *data,
 			 size_t len,
 			 long type);

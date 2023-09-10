@@ -37,14 +37,14 @@ static void handle_start_simulation_msg(SimulatorCtx *sctx, cJSON *json)
 
 /**
  * @brief Handle link info msg from frontend.
- * 
+ *
  * @param sctx Program context
  * @param json Recved msg. It should be like this:
  * {
  *   "type": "LinkInfo",
  *   "links": 2D array of number(indicate link quality)
  * }
- * 
+ *
  * @note Currently, 1000 is used as threshold to determine whether link is available or not.
  */
 static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
@@ -69,7 +69,7 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
 
                     msg.node_id_1 = node1;
                     msg.node_id_2 = node2;
-                    if (linkval > 1000.0 /* TBD */ ) {
+                    if (linkval > 1000.0 /* TBD */) {
                         msg.los = 0;
                     } else {
                         msg.los = 1;
@@ -83,9 +83,11 @@ static void handle_link_info_msg(SimulatorCtx *sctx, cJSON *json)
                     }
                 }
 
-                send_mq(sctx->mqid_phy_command,
-                        &msg, sizeof(msg), CONF_MSG_TYPE_PHY_LINK_CONFIG);
-
+                int res = send_mq(sctx->mqid_phy_command,
+                                  &msg, sizeof(msg), CONF_MSG_TYPE_PHY_LINK_CONFIG);
+                if (res < 0) {
+                    TLOGE("Failed to send link config to PHY\n");
+                }
                 if (REMOTE_CONF_VERBOSE)
                     TLOGD("UPDATE %d <=> %d\n", node1, node2);
 
@@ -148,8 +150,12 @@ static void handle_start_dummy_traffic(SimulatorCtx *sctx, cJSON *json, int is_u
     if (is_update)
         code = CONF_MSG_TYPE_NET_UPDATE_DUMMY_TRAFFIC;
 
-    send_mq(sctx->nodes[msg->src_id].mqid_net_command,
+    int res = send_mq(sctx->nodes[msg->src_id].mqid_net_command,
             msg, sizeof(NetSetDummyTrafficConfig), code);
+
+    if (res < 0) {
+        TLOGE("Failed to send link config to PHY\n");
+    }
 }
 
 /** Handle StopDummyTraffic and DeleteDummyTrafficConf msg. These have same content */
@@ -167,9 +173,12 @@ static void handle_stop_dummy_traffic(SimulatorCtx *sctx, cJSON *json)
     NetSetDummyTrafficConfig *stream_info =
         &(sctx->conf.dummy_stream_info[msg.conf_id]);
 
-    send_mq(sctx->nodes[stream_info->src_id].mqid_net_command,
-            &msg, sizeof(NetUnsetDummyTrafficConfig),
-            CONF_MSG_TYPE_NET_UNSET_DUMMY_TRAFFIC);
+    int res = send_mq(sctx->nodes[stream_info->src_id].mqid_net_command,
+                      &msg, sizeof(NetUnsetDummyTrafficConfig),
+                      CONF_MSG_TYPE_NET_UNSET_DUMMY_TRAFFIC);
+    if (res < 0) {
+        TLOGE("Failed to send link config to PHY\n");
+    }
 }
 
 void handle_remote_conf_msg(SimulatorCtx *sctx, char *jsonstr)

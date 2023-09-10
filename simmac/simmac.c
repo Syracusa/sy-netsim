@@ -55,12 +55,20 @@ void init_mq(SimMacCtx *smctx)
 
 void sendto_net(SimMacCtx *smctx, void *data, size_t len, long type)
 {
-    send_mq(smctx->mqid_send_net, data, len, type);
+    int res = send_mq(smctx->mqid_send_net, data, len, type);
+    
+    if (res < 0) {
+        TLOGE("Failed to send to MAC %d\n", smctx->node_id);
+    }
 }
 
 void sendto_phy(SimMacCtx *smctx, void *data, size_t len, long type)
 {
-    send_mq(smctx->mqid_send_phy, data, len, type);
+    int res = send_mq(smctx->mqid_send_phy, data, len, type);
+
+    if (res < 0) {
+        TLOGE("Failed to send to PHY %d\n", smctx->node_id);
+    }
 }
 
 void process_net_msg(SimMacCtx *smctx, void *data, int len)

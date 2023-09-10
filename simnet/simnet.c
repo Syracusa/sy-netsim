@@ -10,31 +10,6 @@
 
 SimNetCtx *g_snctx = NULL; /* Global singleton simnet context */
 
-static void simnet_init_mq(SimNetCtx *snctx)
-{
-    /* NET => MAC Message queue init */
-    int mqkey_send_mac = MQ_KEY_NET_TO_MAC + snctx->node_id;
-    snctx->mqid_send_mac = msgget(mqkey_send_mac, IPC_CREAT | 0666);
-
-    /* MAC => NET Message queue init */
-    int mqkey_recv_mac = MQ_KEY_MAC_TO_NET + snctx->node_id;
-    snctx->mqid_recv_mac = msgget(mqkey_recv_mac, IPC_CREAT | 0666);
-
-    /* NET => Simulator Message queue init */
-    int mqkey_send_report = MQ_KEY_NET_REPORT + snctx->node_id;
-    snctx->mqid_send_report = msgget(mqkey_send_report, IPC_CREAT | 0666);
-
-    /* Simulator => NET Message queue init */
-    int mqkey_recv_command = MQ_KEY_NET_COMMAND + snctx->node_id;
-    snctx->mqid_recv_command = msgget(mqkey_recv_command, IPC_CREAT | 0666);
-
-    /* Flush old messages */
-    mq_flush(snctx->mqid_send_mac);
-    mq_flush(snctx->mqid_recv_mac);
-    mq_flush(snctx->mqid_send_report);
-    mq_flush(snctx->mqid_recv_command);
-}
-
 /**
  * @brief Actual works of simnet
  * 
@@ -80,9 +55,6 @@ SimNetCtx *get_simnet_context()
         memset(snctx, 0x00, sizeof(SimNetCtx));
 
         snctx->timerqueue = create_timerqueue();
-
-        /* Initiate message queue */
-        simnet_init_mq(snctx);
 
         g_snctx = snctx;
     }

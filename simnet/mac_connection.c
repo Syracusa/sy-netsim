@@ -2,7 +2,10 @@
 
 void sendto_mac(SimNetCtx *snctx, void *data, size_t len, long type)
 {
-    send_mq(snctx->mqid_send_mac, data, len, type);
+    int res =send_mq(snctx->mqid_send_mac, data, len, type);
+    if (res != 1){
+        TLOGE("Failed to send msg to mac\n");
+    }
 }
 
 void process_mac_msg(SimNetCtx *snctx, void *data, int len)

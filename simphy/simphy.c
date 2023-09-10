@@ -32,7 +32,11 @@ static void send_to_mac(SimPhyCtx *spctx,
                         size_t len,
                         long type)
 {
-    send_mq(spctx->nodes[receiver_nid].mqid_send_mac, data, len, type);
+    int res = send_mq(spctx->nodes[receiver_nid].mqid_send_mac, data, len, type);
+
+    if (res < 0) {
+        TLOGE("Failed to send to MAC %d\n", receiver_nid);
+    }
 }
 
 /**
