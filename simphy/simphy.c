@@ -211,7 +211,7 @@ SimPhyCtx *create_simphy_context()
     return spctx;
 }
 
-void delete_symphy_context(SimPhyCtx *spctx)
+void delete_simphy_context(SimPhyCtx *spctx)
 {
     free(spctx);
 }

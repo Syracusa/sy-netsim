@@ -13,7 +13,7 @@ int main()
     simphy_init_mq(spctx);
     simphy_mainloop(spctx);
 
-    delete_symphy_context(spctx);
+    delete_simphy_context(spctx);
 
     return 0;
 }

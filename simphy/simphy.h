@@ -57,6 +57,6 @@ SimPhyCtx *create_simphy_context();
  * 
  * @param spctx Simphy context
  */
-void delete_symphy_context(SimPhyCtx *spctx);
+void delete_simphy_context(SimPhyCtx *spctx);
 
 #endif
